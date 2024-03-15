@@ -1,0 +1,19 @@
+{
+  "name": "client",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "vite",
+    "preview": "vite preview",
+    "start": "node js/webflow.js",
+    "build": "webpack"
+  },
+  "devDependencies": {
+    "vite": "^4.1.0",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "@radixdlt/radix-dapp-toolkit": "^1.1.0"
+  }
+}
