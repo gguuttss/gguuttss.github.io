@@ -106,6 +106,38 @@ function customRound(num) {
     }
 }
 
+// Store the original texts of the buttons
+var originalTexts = [];
+var isConnected = false;
+
+// Select all buttons
+var buttons = document.querySelectorAll('input[type="button"]:not(.exclude)');
+
+// Add a click event listener to each button
+for (var i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener('click', function () {
+        // Store the original text and change the button text to "Connect wallet"
+        if (!isConnected) {
+            originalTexts[this.id] = { text: this.value, bgColor: this.style.backgroundColor, textColor: this.style.color };
+            this.value = "Connect wallet";
+            this.style.backgroundColor = "red"; // Change to the desired background color
+            this.style.color = "black"; // Change to the desired text color
+        }
+    });
+}
+
+// Function to restore the original text and color of the buttons
+function restoreButtonLabels() {
+    for (var i = 0; i < buttons.length; i++) {
+        if (originalTexts[buttons[i].id]) {
+            buttons[i].value = originalTexts[buttons[i].id].text;
+            buttons[i].style.backgroundColor = originalTexts[buttons[i].id].bgColor;
+            buttons[i].style.color = originalTexts[buttons[i].id].textColor;
+        }
+    }
+    isConnected = true;
+}
+
 // Instantiate DappToolkit
 const rdt = RadixDappToolkit({
     dAppDefinitionAddress: dAppId,
@@ -125,6 +157,10 @@ function update() {
         console.log("subscription wallet data: ", walletData)
         if (walletData && walletData.accounts && walletData.accounts.length > 0) {
             accountAddress = walletData.accounts[0].address;
+            console.log("hoi");
+            console.log(isConnected);
+            restoreButtonLabels();
+            console.log(isConnected);
         }
 
         async function getFungibleResources(accountAddress) {
@@ -320,10 +356,17 @@ function update() {
             }
 
             if (window.location.pathname === '/swap.html') {
-                document.getElementById('swap-sell-amount').textContent = "max. " + (Math.floor((walletXrd) * 10) / 10).toLocaleString('en-US');
-                formattedWallet = (Math.floor(walletXrd * 10) / 10);
-                formattedProvideStab = (Math.floor((walletStab) * 10) / 10); cdp_ids
-                formattedRemoveLp = (Math.floor(walletLp * 10) / 10);
+                if (sell == true) {
+                    formattedWallet = Math.floor(walletXrd * 10) / 10;
+                    document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
+                } else {
+                    if (walletStab >= 0.1) {
+                        formattedWallet = Math.floor((walletStab - 0.1) * 10) / 10;
+                    } else {
+                        formattedWallet = 0;
+                    }
+                    document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
+                }
                 document.getElementById('internal-price-xrd').innerHTML = stabXrdRatio.toFixed(2) + " XRD";
                 document.getElementById('internal-price-usd').innerHTML = "$" + (stabXrdRatio * xrdPrice).toFixed(2);
                 document.getElementById('market-price-xrd').innerHTML = (xrdPoolAmount / stabPoolAmount).toFixed(2) + " XRD";
@@ -513,6 +556,9 @@ if (window.location.pathname === '/swap.html') {
 
     // *********** Swap ***********
     document.getElementById('sell').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let sellAmount = document.getElementById("amount-sell").value;
         let sellAddress;
 
@@ -597,6 +643,9 @@ if (window.location.pathname === '/swap.html') {
 
     // *********** Add liq ***********
     document.getElementById('provide').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let provideAmountXrd = document.getElementById("amount-xrd-provide-lp").value;
         let provideAmountStab = document.getElementById("amount-stab-provide-lp").value;
         let manifest = `
@@ -648,6 +697,9 @@ if (window.location.pathname === '/swap.html') {
 
     // *********** Remove liq. ***********
     document.getElementById('remove').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let removeAmount = document.getElementById("amount-remove-lp").value;
         let manifest = `
     CALL_METHOD
@@ -688,6 +740,9 @@ if (window.location.pathname === '/swap.html') {
 if (window.location.pathname === '/update.html') {
     // *********** update ***********
     document.getElementById('update').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let manifest = `
     CALL_METHOD
       Address("${componentAddress}")
@@ -711,6 +766,9 @@ if (window.location.pathname === '/update.html') {
 
     // *********** mark ***********
     document.getElementById('mark').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let manifest = `
     CALL_METHOD
       Address("${componentAddress}")
@@ -736,6 +794,9 @@ if (window.location.pathname === '/update.html') {
 
     // *********** LiquidateWithMarker ***********
     document.getElementById('liqwithmark').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let markerId = document.getElementById("marker-select").value;
         let stabAmount = walletStab;
         let manifest = `
@@ -780,6 +841,9 @@ if (window.location.pathname === '/update.html') {
 
     // *********** LiquidateWithoutMarker next***********
     document.getElementById('liqnext').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let skipAmount = 1;
         let stabAmount = walletStab;
 
@@ -818,6 +882,9 @@ if (window.location.pathname === '/update.html') {
 
     // *********** LiquidateWithoutMarker next***********
     document.getElementById('liqnextskip').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let skipAmount = document.getElementById("amount-to-skip").value + 1;
         let stabAmount = walletStab;
 
@@ -938,6 +1005,9 @@ if (window.location.pathname === '/dashboard.html') {
 
     // *********** Create ID ***********
     document.getElementById('new-id').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let manifest = `
     CALL_METHOD    
     Address("${componentAddress}") #proxy comp address
@@ -964,6 +1034,9 @@ if (window.location.pathname === '/dashboard.html') {
 
     // *********** Claim ***********
     document.getElementById('claim-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let stabId = document.getElementById('id-select').value;
         let manifest = `
     CALL_METHOD
@@ -1003,6 +1076,9 @@ if (window.location.pathname === '/dashboard.html') {
 
     // *********** Claim with restake ***********
     document.getElementById('claim-button-restake').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let stabId = document.getElementById('id-select').value;
         let manifest = `
     CALL_METHOD
@@ -1042,6 +1118,9 @@ if (window.location.pathname === '/dashboard.html') {
 
     // *********** Stake ***********
     document.getElementById('stake-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let stabId = document.getElementById('id-select').value;
         let lpAmount = document.getElementById('stake-lp-field').value;
         let ilisAmount = document.getElementById('stake-ilis-field').value;
@@ -1200,6 +1279,9 @@ if (window.location.pathname === '/dashboard.html') {
 
     // *********** Unstake ***********
     document.getElementById('unstake-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let stabId = document.getElementById('id-select').value;
         let lpAmount = document.getElementById('unstake-lp-field').value;
         let ilisAmount = document.getElementById('unstake-ilis-field').value;
@@ -1476,6 +1558,9 @@ if (window.location.pathname === '/manage-cdps.html') {
 
     // *********** Top up CDP ***********
     document.getElementById('add-col-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let cdpId = document.getElementById('cdp-select').value;
         let collateralAmount = document.getElementById('amount-to-remove').value;
         let collateralAddress = resourceAddress;
@@ -1558,6 +1643,9 @@ if (window.location.pathname === '/manage-cdps.html') {
 
     // *********** Remove collateral CDP ***********
     document.getElementById('remove-col-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let cdpId = document.getElementById('cdp-select').value;
         let collateralAmount = document.getElementById('amount-to-remove').value;
         let manifest = `
@@ -1598,6 +1686,9 @@ if (window.location.pathname === '/manage-cdps.html') {
 
     // *********** Close CDP ***********
     document.getElementById('close-entire-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         if (warned == true || stakedTo == "#0#") {
             console.log("hello");
             let cdpId = document.getElementById('cdp-select').value;
@@ -1714,6 +1805,14 @@ if (window.location.pathname === '/open-cdp.html') {
             collateralAmount = 0;
             document.getElementById("outputStab").innerHTML = customRound(result, 4);
         }
+
+        if (this.value >= 200) {
+            document.getElementById('warning-low-ratio').style.display = 'none';
+            document.getElementById('warning-good-ratio').style.display = '';
+        } else {
+            document.getElementById('warning-low-ratio').style.display = '';
+            document.getElementById('warning-good-ratio').style.display = 'none';
+        }
     }
 
     plus.onclick = function () {
@@ -1728,6 +1827,14 @@ if (window.location.pathname === '/open-cdp.html') {
             collateralAmount = 0;
             document.getElementById("outputStab").innerHTML = customRound(result, 4);
         }
+
+        if (slider.value >= 200) {
+            document.getElementById('warning-low-ratio').style.display = 'none';
+            document.getElementById('warning-good-ratio').style.display = '';
+        } else {
+            document.getElementById('warning-low-ratio').style.display = '';
+            document.getElementById('warning-good-ratio').style.display = 'none';
+        }
     }
 
     minus.onclick = function () {
@@ -1741,6 +1848,14 @@ if (window.location.pathname === '/open-cdp.html') {
             let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100) * 1;
             collateralAmount = 0;
             document.getElementById("outputStab").innerHTML = customRound(result, 4);
+        }
+
+        if (slider.value >= 200) {
+            document.getElementById('warning-low-ratio').style.display = 'none';
+            document.getElementById('warning-good-ratio').style.display = '';
+        } else {
+            document.getElementById('warning-low-ratio').style.display = '';
+            document.getElementById('warning-good-ratio').style.display = 'none';
         }
     }
 
@@ -1869,8 +1984,11 @@ if (window.location.pathname === '/open-cdp.html') {
 
     // *********** Mint safe ***********
     document.getElementById('mint-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let mintAmount = 1;
-        mintAmount = document.getElementById("colToUse").value;
+        mintAmount = document.getElementById("outputStab").innerHTML;
         let poolUnit = document.getElementById("collateral-select").value;
         let stabId = document.getElementById('id-select').value;
         if (poolUnit === "link1") {
@@ -1951,8 +2069,11 @@ if (window.location.pathname === '/open-cdp.html') {
 
     // *********** Mint unsafe *********** //
     document.getElementById('unsafe-mint-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
         let mintAmount = 1;
-        mintAmount = document.getElementById("colToUse").value;
+        mintAmount = document.getElementById("outputStab").innerHTML;
         let poolUnit = document.getElementById("collateral-select").value;
         if (poolUnit === "link1") {
             poolUnit = xrdAddress;

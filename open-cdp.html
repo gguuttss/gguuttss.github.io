@@ -58,10 +58,10 @@
   <h1 class="heading-5 full" id="recommendation"><b>Have no idea what to do?</b> Read the <a
       href="./images/quickstart-guide-p-1080.jpg" target="_blank"
       style="color: rgb(99, 99, 99); text-decoration: underline;">quick
-      start guide</a> or <a href="https://docs.ilikeitstable.com/pages/open-cdp" target="_blank"
+      start guide</a> or <a href="https://docs.ilikeitstable.com/website/typical-user-flow" target="_blank"
       style="color: rgb(99, 99, 99); text-decoration: underline;">typical user flow</a> described in the docs! <br> To
-    learn more about this specific page, read the <a href="./images/quickstart-guide-p-1080.jpg" target="_blank"
-      style="color: rgb(99, 99, 99); text-decoration: underline;">relevant docs section</a>.</h1>
+    learn more about this specific page, read the <a href="https://docs.ilikeitstable.com/website/borrow"
+      target="_blank" style="color: rgb(99, 99, 99); text-decoration: underline;">relevant docs section</a>.</h1>
   <section class="section">
     <div class="w-layout-blockcontainer container-7 w-container">
       <div class="div-block-7">
@@ -73,8 +73,8 @@
         </div>
       </div>
       <div class="text-block-4 on-white">Which will be used to track your Stabilis ecosystem activity, and reward you
-        accordingly.<br>To keep track of your rewards, visit the <a href="https://ilikeitstable.com/dashboard.html"
-          target="_blank" style="color: rgb(99, 99, 99); text-decoration: underline;">Incentives page</a>.<br></div>
+        accordingly.<br>To keep track of your rewards, visit the <a href="./dashboard.html" target="_blank"
+          style="color: rgb(99, 99, 99); text-decoration: underline;">Incentives page</a>.<br></div>
     </div>
   </section>
   <div class="columns-2 w-row">
@@ -107,7 +107,7 @@
               <div class="columns-3 w-row" style="display: flex; align-items: center; justify-content: center;">
                 <div class="column-11 w-col w-col-3"
                   style="display: flex; align-items: center; justify-content: center;">
-                  <input type="button" data-wait="Please wait..." class="submit-button mini w-button" value="-"
+                  <input type="button" data-wait="Please wait..." class="submit-button mini w-button exclude" value="-"
                     id="minus-button">
                 </div>
                 <div class="column-9 w-col w-col-6"
@@ -119,16 +119,29 @@
                 </div>
                 <div class="column-10 w-col w-col-3"
                   style="display: flex; align-items: center; justify-content: center;">
-                  <input type="button" data-wait="Please wait..." class="submit-button mini right w-button" value="+"
-                    id="plus-button">
+                  <input type="button" data-wait="Please wait..." class="submit-button mini right w-button exclude"
+                    value="+" id="plus-button">
                 </div>
               </div>
               <div style="width: 100%">
                 <input type="range" id="slider-single" min="75" max="1000" value="250" required style="width: 100%;">
               </div>
+              <div class="w-layout-blockcontainer container-8 w-container" id="warning-low-ratio"
+                style="display: none;">
+                <p class="paragraph-2"><strong>Low collateralization ratio!</strong><br>When your loan's
+                  collateralization ratio drops below 150%, it is prone to being liquidated. <br><br> Please manage your
+                  risk appropriately.</p>
+              </div>
+              <div class="w-layout-blockcontainer container-8 w-container" id="warning-good-ratio"
+                style="background-color: rgb(79, 202, 79);">
+                <p class="paragraph-2"><strong>Awesome collateralization ratio!</strong><br>Careful though: when your
+                  loan's
+                  collateralization ratio drops below 150%, it is prone to being liquidated! <br><br> Please manage your
+                  risk appropriately.</p>
+              </div>
             </div>
             <div class="input-field-wrap">
-              <div class="field-label">Corresponding STAB:<br></div>
+              <div class="field-label">Corresponding borrowed STAB:<br></div>
               <div class="div-block-2">
                 <h2 id="outputStab" class="rendered-number">0.044</h2>
                 <p class="prefix-text" id="ratio-suffix">STAB/XRD</p>
