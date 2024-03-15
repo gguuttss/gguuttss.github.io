@@ -1,7 +1,7 @@
 import { RadixDappToolkit, DataRequestBuilder, RadixNetwork } from '@radixdlt/radix-dapp-toolkit'
 // You can create a dApp definition in the dev console at https://stokenet-console.radixdlt.com/dapp-metadata 
 // then use that account for your dAppId
-const dAppId = 'account_tdx_2_12ys5dcytt0hc0yhq5a78stl7upchljsvs36ujdunlszlrgu90mz44d'
+const dAppId = 'account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd'
 let stabIdAddress = "resource_tdx_2_1ntp46n7hp6w9ztapgemp03r02f0682apvkpsg8dspsqkqj7x76dh9u"
 let componentAddress = "component_tdx_2_1cqwjl65pjzaa58np0ajh4kxwwnnfdzrdq8n6f78gw94q7njye8eu0p"
 let poolComponentAddress = "component_tdx_2_1czu7msv4fx3c78f6fr3xyuw4pz02vfrksfzl83lxj5ldgdttptlgj0"
