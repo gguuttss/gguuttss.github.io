@@ -255,6 +255,7 @@ function update() {
                     const xrd_option = document.createElement('option');
                     xrd_option.text = 'XRD';
                     xrd_option.value = "link1";
+                    xrd_option.setAttribute('identifier', "XRD");
                     selectElement.add(xrd_option);
 
                     // Add new options
@@ -262,6 +263,7 @@ function update() {
                         const option = document.createElement('option');
                         option.text = resource.name;
                         option.value = resource.resourceAddress;
+                        option.setAttribute('identifier', "LSU");
                         selectElement.add(option);
                     });
                 });
@@ -1845,17 +1847,17 @@ if (window.location.pathname === '/open-cdp.html') {
         }
 
         if (colToUse.value !== "") {
-            let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (this.value / 100)) * colToUse.value;
+            let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
             collateralAmount = colToUse.value;
             document.getElementById("outputStab").innerHTML = customRound(result, 4);
         } else {
-            let result = (1 / (stabXrdRatio * validatorMultiplier)) / (this.value / 100);
+            let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
             collateralAmount = 0;
             document.getElementById("outputStab").innerHTML = customRound(result, 4);
         }
 
         let selectElement = document.getElementById("collateral-select");
-        selectedText = selectElement.options[selectElement.selectedIndex].text;
+        selectedText = selectElement.options[selectElement.selectedIndex].getAttribute('identifier');
 
         if (colToUse.value !== "") {
             document.getElementById("ratio-suffix").innerHTML = "STAB";
