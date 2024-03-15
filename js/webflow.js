@@ -534,11 +534,11 @@ if (window.location.pathname === '/swap.html') {
         inputFieldProvideStab.value = (inputFieldProvideXrd.value * (stabPoolAmount / xrdPoolAmount)).toFixed(1);
     });
     provideMaxStab.addEventListener('click', function () {
-        inputFieldProvideStab.value = formattedProvideStab;
+        inputFieldProvideStab.value = (Math.floor((walletStab - 0.1) * 10) / 10).toLocaleString('en-US');
         inputFieldProvideXrd.value = (inputFieldProvideStab.value * (xrdPoolAmount / stabPoolAmount)).toFixed(1);
     });
     removeMaxLp.addEventListener('click', function () {
-        inputFieldRemoveLp.value = formattedRemoveLp;
+        inputFieldRemoveLp.value = Math.floor(walletLp * 10) / 10;
     });
 
     inputFieldProvideStab.oninput = function () {
