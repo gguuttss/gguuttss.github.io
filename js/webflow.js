@@ -521,23 +521,23 @@ if (window.location.pathname === '/swap.html') {
         }
 
         let manifest = `
-    CALL_METHOD
-      Address("${accountAddress}")
-      "withdraw"    
-      Address("${sellAddress}")
-      Decimal("${sellAmount}");
-    TAKE_ALL_FROM_WORKTOP
-      Address("${sellAddress}")
-      Bucket("sell");
-    CALL_METHOD
-      Address("${poolComponentAddress}")
-      "swap"
-      Bucket("sell");
-    CALL_METHOD
-      Address("${accountAddress}")
-      "deposit_batch"
-      Expression("ENTIRE_WORKTOP");
-      `
+                CALL_METHOD
+                Address("${accountAddress}")
+                "withdraw"    
+                Address("${sellAddress}")
+                Decimal("${sellAmount}");
+                TAKE_ALL_FROM_WORKTOP
+                Address("${sellAddress}")
+                Bucket("sell");
+                CALL_METHOD
+                Address("${poolComponentAddress}")
+                "swap"
+                Bucket("sell");
+                CALL_METHOD
+                Address("${accountAddress}")
+                "deposit_batch"
+                Expression("ENTIRE_WORKTOP");
+                `
         console.log('Swap manifest: ', manifest)
 
         // Send manifest to extension for signing
@@ -589,6 +589,8 @@ if (window.location.pathname === '/swap.html') {
             .catch((error) => {
                 console.error('Error:', error);
             });
+
+        update();
     }
 
     // *********** Add liq ***********
@@ -638,7 +640,8 @@ if (window.location.pathname === '/swap.html') {
                 version: 1,
             })
         if (result.isErr()) throw result.error
-        console.log("add liq sendTransaction Result: ", result.value)
+        console.log("add liq sendTransaction Result: ", result.value);
+        update();
     }
 
     // *********** Remove liq. ***********
@@ -675,7 +678,8 @@ if (window.location.pathname === '/swap.html') {
                 version: 1,
             })
         if (result.isErr()) throw result.error
-        console.log("remove liq sendTransaction Result: ", result.value)
+        console.log("remove liq sendTransaction Result: ", result.value);
+        update();
     }
 }
 
@@ -725,6 +729,7 @@ if (window.location.pathname === '/update.html') {
             })
         if (result.isErr()) throw result.error
         console.log("mark sendTransaction Result: ", result.value)
+        update();
     }
 
     // *********** LiquidateWithMarker ***********
@@ -951,6 +956,7 @@ if (window.location.pathname === '/dashboard.html') {
             })
         if (result.isErr()) throw result.error
         console.log("create id sendTransaction Result: ", result.value)
+        update();
         update_id();
     }
 
@@ -1938,6 +1944,7 @@ if (window.location.pathname === '/open-cdp.html') {
             })
         if (result.isErr()) throw result.error
         console.log("Mint Result: ", result.value)
+        update();
     }
 
     // *********** Mint unsafe *********** //
@@ -2014,5 +2021,6 @@ if (window.location.pathname === '/open-cdp.html') {
             })
         if (result.isErr()) throw result.error
         console.log("Unsafe mint Result: ", result.value)
+        update();
     }
 }
