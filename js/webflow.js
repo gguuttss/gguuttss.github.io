@@ -1820,7 +1820,7 @@ if (window.location.pathname === '/open-cdp.html') {
         h2.textContent = slider.value;
         if (colToUse.value !== "") {
             let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
-            collateralAmount = this.value;
+            collateralAmount = colToUse.value;
             document.getElementById("outputStab").innerHTML = customRound(result, 4);
         } else {
             let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100) * 1;
@@ -1842,7 +1842,7 @@ if (window.location.pathname === '/open-cdp.html') {
         h2.textContent = slider.value;
         if (colToUse.value !== "") {
             let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
-            collateralAmount = this.value;
+            collateralAmount = colToUse.value;
             document.getElementById("outputStab").innerHTML = customRound(result, 4);
         } else {
             let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100) * 1;
