@@ -1,12 +1,12 @@
 <!DOCTYPE html><!--  This site was created in Webflow. https://www.webflow.com  -->
 <!--  Last Published: Mon Jan 22 2024 12:01:32 GMT+0000 (Coordinated Universal Time)  -->
-<html data-wf-page="65ad7c27b73a50781a45467f" data-wf-site="65ad46b72f555f0605ccd9ae">
+<html data-wf-page="65ad9c8e9ea0112409794d0a" data-wf-site="65ad46b72f555f0605ccd9ae">
 
 <head>
   <meta charset="utf-8">
-  <title>Stabilis - My loans</title>
-  <meta content="Dashboard" property="og:title">
-  <meta content="Dashboard" property="twitter:title">
+  <title>Stabilis - Advanced</title>
+  <meta content="Update" property="og:title">
+  <meta content="Update" property="twitter:title">
   <meta content="width=device-width, initial-scale=1" name="viewport">
   <meta content="Webflow" name="generator">
   <link href="css/normalize.css" rel="stylesheet" type="text/css">
@@ -36,9 +36,9 @@
               <li>
                 <a href="swap.html" class="nav-link-accent-2">Swap</a>
                 <a href="open-cdp.html" class="nav-link-accent-2">Borrow</a>
-                <a href="manage-cdps.html" aria-current="page" class="nav-link-accent-2 w--current">Manage loans</a>
-                <a href="dashboard.html" class="nav-link-accent-2">Incentives</a>
-                <a href="update.html" class="nav-link-accent-2">Advanced</a>
+                <a href="manage-cdps.html" class="nav-link-accent-2">Manage loans</a>
+                <a href="incentives" class="nav-link-accent-2">Incentives</a>
+                <a href="update.html" aria-current="page" class="nav-link-accent-2 w--current">Advanced</a>
               </li>
               <li class="mobile-margin-top-11">
                 <div class="button-connect" style="--radix-connect-button-border-radius: 12px;">
@@ -54,61 +54,23 @@
       </div>
     </div>
   </div>
-  <h1 class="heading-4">Manage loans</h1>
-  <h1 class="heading-5 full" id="recommendation">To ensure the health of your outstanding loans, manage them
-    appropriately.<br>Read up on managing your loans in the <a
-      href="https://docs.ilikeitstable.com/website/manage-loans" target="_blank"
-      style="color: rgb(99, 99, 99); text-decoration: underline;">relevant docs section</a>!</h1>
+  <h1 class="heading-4">Advanced</h1>
+  <h1 class="heading-5 full" id="recommendation">Update the protocol and handle liquidations to receive rewards.<br>To
+    learn more about the specifics, read <a href="https://docs.ilikeitstable.com/website/advanced" target="_blank"
+      style="color: rgb(99, 99, 99); text-decoration: underline;">the relevant docs section</a>!</h1>
   <div class="columns-2 w-row">
     <div class="column-7 w-col w-col-6">
       <div class="card-flowbase">
         <div class="form-block w-form">
-          <form id="stab-form-manage-cdp" name="email-form" data-name="Email Form" method="get"
-            data-wf-page-id="65ad7c27b73a50781a45467f" data-wf-element-id="91c4749e-befd-1192-c614-492a737145db">
-            <h2 class="title-large">Manage STAB loans</h2>
-            <div class="div-block-7">
-              <div class="text-block">by selecting loan receipt:</div>
-              <select id="cdp-select">
-                <option value="" selected disabled>Loan receipt</option>
-              </select>
-            </div>
+          <form id="stab-form" name="email-form" data-name="Email Form" method="get"
+            data-wf-page-id="65ad9c8e9ea0112409794d0a" data-wf-element-id="91c4749e-befd-1192-c614-492a737145db">
+            <h2 class="title-large">Protocol updates</h2>
             <div class="form-line-break"></div>
-            <h1 class="heading-6">Loan info</h1>
-            <div class="div-block-6">
-              <div class="text-block">Status</div>
-              <div class="text-block" id="status">-</div>
-            </div>
-            <div class="div-block-6">
-              <div class="text-block">Collateral type</div>
-              <div class="text-block" id="collateral">-</div>
-            </div>
-            <div class="div-block-6">
-              <div class="text-block">Collateral amount</div>
-              <div class="text-block" id="collateralAmount">-</div>
-            </div>
-            <div class="div-block-6">
-              <div class="text-block">Debt amount</div>
-              <div class="text-block" id="debtAmount">-</div>
-            </div>
-            <div class="div-block-6">
-              <div class="text-block">Collateralization ratio</div>
-              <div class="text-block" id="cr">-</div>
-            </div>
-            <div class="div-block-6">
-              <div class="text-block">Linked to Activity ID</div>
-              <div class="text-block" id="stakedTo">-</div>
-            </div>
+            <h1 class="heading-6">Update internal values</h1><input type="button" data-wait="Please wait..."
+              class="submit-button w-button" value="Update" , id="update">
             <div class="form-line-break"></div>
-            <h1 class="heading-6">Manage position</h1>
-            <div class="div-block-6"><img src="images/radix-logo.png" loading="lazy" alt="radix token logo"
-                class="stab-logo"><input class="input-field full w-input" maxlength="256" name="amount"
-                data-name="amount" placeholder="amount to add/remove" type="text" required="" id="amount-to-remove">
-            </div>
-            <div class="div-block-6"><input type="button" data-wait="Please wait..."
-                class="submit-button third w-button" value="Add col." id="add-col-button"><input type="button"
-                data-wait="Please wait..." class="submit-button third w-button" value="Remove col."
-                id="remove-col-button"><input type="button" data-wait="Please wait..."
-                class="submit-button third w-button" value="Close fully" id="close-entire-button"></div>
+            <h1 class="heading-6">Mark next for liquidation</h1><input type="button" data-wait="Please wait..."
+              class="submit-button w-button" value="Mark" id="mark">
           </form>
           <div class="success-message w-form-done">
             <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks ;D
@@ -118,20 +80,35 @@
             <div>Oops! Something went wrong while submitting the form.</div>
           </div>
         </div>
-        <div class="w-layout-blockcontainer container-8 w-container" id="close-fully-warning" style="display: none;">
-          <p class="paragraph-2"><strong>Are you sure you want to close this loan?<br><br>‍</strong>Possible ILIS
-            rewards will be forsaken. Consider claiming these first on the <a href="./dashboard.html" target="_blank"
-              style="color: rgb(99, 99, 99); text-decoration: underline;">Incentives page</a>.</p>
-        </div>
       </div>
     </div>
     <div class="column-8 w-col w-col-6">
       <div class="card-flowbase">
         <div class="form-block w-form">
           <form id="stab-form" name="email-form" data-name="Email Form" method="get"
-            data-wf-page-id="65ad7c27b73a50781a45467f" data-wf-element-id="497c8722-5747-bd04-b540-6e9d7be94b7a">
-            <h2 class="title-large">Manage USDS loans</h2>
-            This is a placeholder.
+            data-wf-page-id="65ad9c8e9ea0112409794d0a" data-wf-element-id="497c8722-5747-bd04-b540-6e9d7be94b7a">
+            <h2 class="title-large">Liquidations</h2>
+            <div class="form-line-break"></div>
+            <h1 class="heading-6">Liquidate with marker</h1>
+            <div class="div-block-6">
+              <div data-hover="false" data-delay="0" class="w-dropdown">
+                <select id="marker-select">
+                  <option value="" selected disabled>Select marker</option>
+                </select>
+              </div><input type="button" data-wait="Please wait..." class="submit-button half w-button"
+                value="Liquidate" id="liqwithmark">
+            </div>
+            <div class="form-line-break"></div>
+            <h1 class="heading-6">Liquidate next</h1>
+            <div class="div-block-6"><input type="button" data-wait="Please wait..." class="submit-button w-button"
+                value="Liquidate" id="liqnext"></div>
+            <div class="form-line-break"></div>
+            <h1 class="heading-6">Liquidate, but skip</h1>
+            <div class="div-block-6"><input class="input-field w-input" maxlength="256" name="amount-3"
+                data-name="Amount 3" placeholder="amount" type="text" id="amount-to-skip" required="">
+              <div class="text-block-3">liquidations</div>
+            </div><input type="button" data-wait="Please wait..." class="submit-button w-button" value="Liquidate"
+              id="liqnextskip">
           </form>
           <div class="success-message w-form-done">
             <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks ;D

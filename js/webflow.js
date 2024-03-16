@@ -342,7 +342,7 @@ function update() {
             xrdPrice = data[1].details.state.fields[19].value;
             interestRate = (100 * ((data[1].details.state.fields[13].value ** (24 * 60 * 365)) - 1)).toFixed(2);
 
-            if (window.location.pathname === '/dashboard.html') {
+            if (window.location.pathname === '/incentives') {
                 document.getElementById('ilis-staking-rewards').textContent = stakeRewards + " ILIS/week";
                 document.getElementById('lpstab-staking-rewards').textContent = lpRewards + " ILIS/week";
                 document.getElementById('stab-debt-rewards').textContent = cdpRewards + " ILIS/week";
@@ -406,7 +406,7 @@ function update() {
                 });
             }
 
-            if (window.location.pathname === '/dashboard.html' || window.location.pathname === '/open-cdp.html') {
+            if (window.location.pathname === '/incentives' || window.location.pathname === '/open-cdp.html') {
                 // Assuming cdp_ids is your array of ids
                 stab_ids.forEach(id => {
                     // Get the dropdown element
@@ -922,7 +922,7 @@ if (window.location.pathname === '/update.html') {
     }
 }
 
-if (window.location.pathname === '/dashboard.html') {
+if (window.location.pathname === '/incentives') {
     async function update_id() {
         let request = {
             "resource_address": stabIdAddress,
