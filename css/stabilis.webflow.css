@@ -501,7 +501,8 @@ h1 {
   color: #a0a6b0;
 }
 
-.input-field.dex, .input-field.full {
+.input-field.dex,
+.input-field.full {
   width: 80%;
 }
 
@@ -977,8 +978,9 @@ h1 {
   text-decoration: none;
 }
 
-.nav-link-accent-2:hover, .nav-link-accent-2.w--current {
-  color: #fff;
+.nav-link-accent-2:hover,
+.nav-link-accent-2.w--current {
+  color: #ffffff;
 }
 
 .heading-6 {
@@ -1244,7 +1246,7 @@ h1 {
   }
 
   .nav-menu {
-    background-color: #fff;
+    background-color: #ffffff;
     flex-wrap: wrap;
     justify-content: space-around;
     align-items: center;
@@ -1275,7 +1277,8 @@ h1 {
     background-color: #a6b1bf;
   }
 
-  .container, .container-2 {
+  .container,
+  .container-2 {
     max-width: 728px;
   }
 
@@ -1283,7 +1286,8 @@ h1 {
     grid-column-gap: 60px;
   }
 
-  .column-7, .column-8 {
+  .column-7,
+  .column-8 {
     justify-content: center;
   }
 
@@ -1335,7 +1339,7 @@ h1 {
   }
 
   .nav-menu-two {
-    background-color: #fff;
+    background-color: #000000;
     border-radius: 50px;
     flex-wrap: wrap;
     justify-content: space-around;
@@ -1344,6 +1348,10 @@ h1 {
     padding: 20px;
     display: flex;
     box-shadow: 0 8px 50px rgba(0, 0, 0, .05);
+    border: 2px solid #ffffff;
+    /* Add a 2px red border */
+    opacity: 0.9;
+    /* Set the opacity to 50% */
   }
 }
 
@@ -1431,7 +1439,9 @@ h1 {
     margin-top: 60px;
   }
 
-  .column-3, .column-4, .column-5 {
+  .column-3,
+  .column-4,
+  .column-5 {
     display: block;
   }
 
@@ -1453,7 +1463,8 @@ h1 {
     margin-right: 0;
   }
 
-  .column-7, .column-8 {
+  .column-7,
+  .column-8 {
     justify-content: center;
   }
 
@@ -1550,7 +1561,8 @@ h1 {
     width: auto;
   }
 
-  .container, .container-2 {
+  .container,
+  .container-2 {
     max-width: none;
   }
 
@@ -1560,12 +1572,30 @@ h1 {
     padding-right: 24px;
   }
 
-  .nav-menu-three, .nav-menu-two {
+  .nav-menu-three,
+  .nav-menu-two {
     flex-direction: column;
   }
 }
 
-#w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dc0-05ccd9b6, #w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dc9-05ccd9b6, #w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dd4-05ccd9b6, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-a0059d2e, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-a0059d2e, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-a0059d2e, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-1a45467f, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-1a45467f, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-1a45467f, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-87fdd64c, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-87fdd64c, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-87fdd64c, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-09794d0a, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-09794d0a, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-09794d0a, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-e70a4ca7, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-e70a4ca7, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-e70a4ca7 {
+#w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dc0-05ccd9b6,
+#w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dc9-05ccd9b6,
+#w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dd4-05ccd9b6,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-a0059d2e,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-a0059d2e,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-a0059d2e,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-1a45467f,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-1a45467f,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-1a45467f,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-87fdd64c,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-87fdd64c,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-87fdd64c,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-09794d0a,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-09794d0a,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-09794d0a,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-e70a4ca7,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-e70a4ca7,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-e70a4ca7 {
   grid-area: span 1 / span 1 / span 1 / span 1;
 }
 
@@ -1577,6 +1607,7 @@ h1 {
   font-style: normal;
   font-display: swap;
 }
+
 @font-face {
   font-family: 'Fa 400';
   src: url('../fonts/fa-regular-400.ttf') format('truetype');

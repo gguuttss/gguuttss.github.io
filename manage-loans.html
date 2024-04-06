@@ -29,16 +29,16 @@
       role="banner" class="navbar-logo-left-container shadow-three w-nav">
       <div class="container-2">
         <div class="navbar-wrapper-2">
-          <a href="/secret_index.html" class="navbar-brand-2 w-nav-brand"><img
+          <a href="/index" class="navbar-brand-2 w-nav-brand"><img
               src="images/6591759c82a086a532a90d33_stabilis-1-p-130x130q80.png" loading="lazy" alt="Stabilis logo"></a>
           <nav role="navigation" class="nav-menu-wrapper-2 w-nav-menu">
             <ul role="list" class="nav-menu-two w-list-unstyled">
               <li>
-                <a href="swap.html" class="nav-link-accent-2">Swap</a>
-                <a href="open-cdp.html" class="nav-link-accent-2">Borrow</a>
-                <a href="manage-cdps.html" aria-current="page" class="nav-link-accent-2 w--current">Manage loans</a>
+                <a href="swap" class="nav-link-accent-2">Swap</a>
+                <a href="borrow" class="nav-link-accent-2">Borrow</a>
+                <a href="manage-loans" aria-current="page" class="nav-link-accent-2 w--current">Manage loans</a>
                 <a href="incentives" class="nav-link-accent-2">Incentives</a>
-                <a href="update.html" class="nav-link-accent-2">Advanced</a>
+                <a href="liquidations" class="nav-link-accent-2">Liquidations</a>
               </li>
               <li class="mobile-margin-top-11">
                 <div class="button-connect" style="--radix-connect-button-border-radius: 12px;">
@@ -94,10 +94,6 @@
               <div class="text-block">Collateralization ratio</div>
               <div class="text-block" id="cr">-</div>
             </div>
-            <div class="div-block-6">
-              <div class="text-block">Linked to Activity ID</div>
-              <div class="text-block" id="stakedTo">-</div>
-            </div>
             <div class="form-line-break"></div>
             <h1 class="heading-6">Manage position</h1>
             <div class="div-block-6"><img src="images/radix-logo.png" loading="lazy" alt="radix token logo"
@@ -118,11 +114,6 @@
             <div>Oops! Something went wrong while submitting the form.</div>
           </div>
         </div>
-        <div class="w-layout-blockcontainer container-8 w-container" id="close-fully-warning" style="display: none;">
-          <p class="paragraph-2"><strong>Are you sure you want to close this loan?<br><br>‍</strong>Possible ILIS
-            rewards will be forsaken. Consider claiming these first on the <a href="./incentives" target="_blank"
-              style="color: rgb(99, 99, 99); text-decoration: underline;">Incentives page</a>.</p>
-        </div>
       </div>
     </div>
     <div class="column-8 w-col w-col-6">
@@ -130,16 +121,24 @@
         <div class="form-block w-form">
           <form id="stab-form" name="email-form" data-name="Email Form" method="get"
             data-wf-page-id="65ad7c27b73a50781a45467f" data-wf-element-id="497c8722-5747-bd04-b540-6e9d7be94b7a">
-            <h2 class="title-large">Manage USDS loans</h2>
-            This is a placeholder.
-          </form>
-          <div class="success-message w-form-done">
-            <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks ;D
+            <h2 class="title-large">Protocol overview</h2>
+            <div class="div-block-6">
+              <div class="text-block">Yearly interest</div>
+              <div class="text-block" id="interest-rate">-</div>
             </div>
-          </div>
-          <div class="w-form-fail">
-            <div>Oops! Something went wrong while submitting the form.</div>
-          </div>
+            <div class="div-block-6">
+              <div class="text-block">STAB circulating</div>
+              <div class="text-block" id="circulating-stab">-</div>
+            </div>
+            <div class="div-block-6">
+              <div class="text-block">STAB internal price</div>
+              <div class="text-block" id="stab-internal-price">-</div>
+            </div>
+            <div class="div-block-6">
+              <div class="text-block">STAB market price</div>
+              <div class="text-block" id="stab-market-price">-</div>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -173,7 +172,7 @@
     type="text/javascript" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
     crossorigin="anonymous"></script>
   <script src="dist/main.js"></script>
-  <script src="dist/669.main.js"></script>
+  <script src="dist/812.main.js"></script>
 </body>
 
 </html>

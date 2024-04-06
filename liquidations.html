@@ -4,7 +4,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title>Stabilis - Advanced</title>
+  <title>Stabilis - Liquidations</title>
   <meta content="Update" property="og:title">
   <meta content="Update" property="twitter:title">
   <meta content="width=device-width, initial-scale=1" name="viewport">
@@ -29,16 +29,16 @@
       role="banner" class="navbar-logo-left-container shadow-three w-nav">
       <div class="container-2">
         <div class="navbar-wrapper-2">
-          <a href="/secret_index.html" class="navbar-brand-2 w-nav-brand"><img
+          <a href="/index" class="navbar-brand-2 w-nav-brand"><img
               src="images/6591759c82a086a532a90d33_stabilis-1-p-130x130q80.png" loading="lazy" alt="Stabilis logo"></a>
           <nav role="navigation" class="nav-menu-wrapper-2 w-nav-menu">
             <ul role="list" class="nav-menu-two w-list-unstyled">
               <li>
-                <a href="swap.html" class="nav-link-accent-2">Swap</a>
-                <a href="open-cdp.html" class="nav-link-accent-2">Borrow</a>
-                <a href="manage-cdps.html" class="nav-link-accent-2">Manage loans</a>
+                <a href="swap" class="nav-link-accent-2">Swap</a>
+                <a href="borrow" class="nav-link-accent-2">Borrow</a>
+                <a href="manage-loans" class="nav-link-accent-2">Manage loans</a>
                 <a href="incentives" class="nav-link-accent-2">Incentives</a>
-                <a href="update.html" aria-current="page" class="nav-link-accent-2 w--current">Advanced</a>
+                <a href="liquidations" aria-current="page" class="nav-link-accent-2 w--current">Liquidations</a>
               </li>
               <li class="mobile-margin-top-11">
                 <div class="button-connect" style="--radix-connect-button-border-radius: 12px;">
@@ -54,9 +54,9 @@
       </div>
     </div>
   </div>
-  <h1 class="heading-4">Advanced</h1>
-  <h1 class="heading-5 full" id="recommendation">Update the protocol and handle liquidations to receive rewards.<br>To
-    learn more about the specifics, read <a href="https://docs.ilikeitstable.com/website/advanced" target="_blank"
+  <h1 class="heading-4">Liquidations</h1>
+  <h1 class="heading-5 full" id="recommendation">Handle liquidations to receive rewards.<br>To
+    learn more about the specifics, read <a href="https://docs.ilikeitstable.com/website/liquidations" target="_blank"
       style="color: rgb(99, 99, 99); text-decoration: underline;">the relevant docs section</a>!</h1>
   <div class="columns-2 w-row">
     <div class="column-7 w-col w-col-6">
@@ -64,13 +64,44 @@
         <div class="form-block w-form">
           <form id="stab-form" name="email-form" data-name="Email Form" method="get"
             data-wf-page-id="65ad9c8e9ea0112409794d0a" data-wf-element-id="91c4749e-befd-1192-c614-492a737145db">
-            <h2 class="title-large">Protocol updates</h2>
-            <div class="form-line-break"></div>
-            <h1 class="heading-6">Update internal values</h1><input type="button" data-wait="Please wait..."
-              class="submit-button w-button" value="Update" , id="update">
+            <h2 class="title-large">Marked liquidations</h2>
             <div class="form-line-break"></div>
             <h1 class="heading-6">Mark next for liquidation</h1><input type="button" data-wait="Please wait..."
               class="submit-button w-button" value="Mark" id="mark">
+            <div class="form-line-break"></div>
+            <h1 class="heading-6">Liquidate with marker</h1>
+            <div class="div-block-6">
+              <div data-hover="false" data-delay="0" class="w-dropdown">
+                <select id="marker-select">
+                  <option value="" selected disabled>Select marker</option>
+                </select>
+              </div><input type="button" data-wait="Please wait..." class="submit-button half w-button"
+                value="Liquidate" id="liqwithmark">
+            </div>
+            <div class="div-block-6">
+              <div class="text-block">Marked time</div>
+              <div class="text-block" id="marker-time">-</div>
+            </div>
+            <div class="div-block-6">
+              <div class="text-block">Marker state</div>
+              <div class="text-block" id="marker-state">-</div>
+            </div>
+            <div class="div-block-6">
+              <div class="text-block">Marked loan status</div>
+              <div class="text-block" id="status">-</div>
+            </div>
+            <div class="div-block-6">
+              <div class="text-block">Loan collateral amount</div>
+              <div class="text-block" id="collateralAmount">-</div>
+            </div>
+            <div class="div-block-6">
+              <div class="text-block">Debt amount</div>
+              <div class="text-block" id="debtAmount">-</div>
+            </div>
+            <div class="div-block-6">
+              <div class="text-block">Collateralization ratio</div>
+              <div class="text-block" id="cr">-</div>
+            </div>
           </form>
           <div class="success-message w-form-done">
             <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks ;D
@@ -87,17 +118,7 @@
         <div class="form-block w-form">
           <form id="stab-form" name="email-form" data-name="Email Form" method="get"
             data-wf-page-id="65ad9c8e9ea0112409794d0a" data-wf-element-id="497c8722-5747-bd04-b540-6e9d7be94b7a">
-            <h2 class="title-large">Liquidations</h2>
-            <div class="form-line-break"></div>
-            <h1 class="heading-6">Liquidate with marker</h1>
-            <div class="div-block-6">
-              <div data-hover="false" data-delay="0" class="w-dropdown">
-                <select id="marker-select">
-                  <option value="" selected disabled>Select marker</option>
-                </select>
-              </div><input type="button" data-wait="Please wait..." class="submit-button half w-button"
-                value="Liquidate" id="liqwithmark">
-            </div>
+            <h2 class="title-large">Unmarked liquidations</h2>
             <div class="form-line-break"></div>
             <h1 class="heading-6">Liquidate next</h1>
             <div class="div-block-6"><input type="button" data-wait="Please wait..." class="submit-button w-button"
@@ -150,7 +171,7 @@
     type="text/javascript" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
     crossorigin="anonymous"></script>
   <script src="dist/main.js"></script>
-  <script src="dist/669.main.js"></script>
+  <script src="dist/812.main.js"></script>
 </body>
 
 </html>
