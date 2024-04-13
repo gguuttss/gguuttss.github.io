@@ -29,16 +29,16 @@
       role="banner" class="navbar-logo-left-container shadow-three w-nav">
       <div class="container-2">
         <div class="navbar-wrapper-2">
-          <a href="/secret_index.html" class="navbar-brand-2 w-nav-brand"><img
+          <a href="/index" class="navbar-brand-2 w-nav-brand"><img
               src="images/6591759c82a086a532a90d33_stabilis-1-p-130x130q80.png" loading="lazy" alt="Stabilis logo"></a>
           <nav role="navigation" class="nav-menu-wrapper-2 w-nav-menu">
             <ul role="list" class="nav-menu-two w-list-unstyled">
               <li>
-                <a href="swap.html" class="nav-link-accent-2">Swap</a>
-                <a href="open-cdp.html" class="nav-link-accent-2">Borrow</a>
-                <a href="manage-cdps.html" class="nav-link-accent-2">Manage loans</a>
-                <a href="dashboard.html" aria-current="page" class="nav-link-accent-2 w--current">Incentives</a>
-                <a href="update.html" class="nav-link-accent-2">Advanced</a>
+                <a href="swap" class="nav-link-accent-2">Swap</a>
+                <a href="borrow" class="nav-link-accent-2">Borrow</a>
+                <a href="manage-loans" class="nav-link-accent-2">Manage loans</a>
+                <a href="incentives" aria-current="page" class="nav-link-accent-2 w--current">Incentives</a>
+                <a href="liquidations" class="nav-link-accent-2">Liquidations</a>
               </li>
               <li class="mobile-margin-top-11">
                 <div class="button-connect" style="--radix-connect-button-border-radius: 12px;">
@@ -55,10 +55,10 @@
     </div>
   </div>
   <h1 class="heading-4">Stabilis Incentives</h1>
-  <h1 class="heading-5 full" id="recommendation">Engaging with the Stabilis ecosystem is rewarded! Usage is tracked via
-    your Stabilis Activity ID.<br>Stake ILIS and LPSTAB,
+  <h1 class="heading-5 full" id="recommendation">Engaging with the Stabilis ecosystem is rewarded!<br>Stake ILIS and
+    LPSTAB via your Staking ID,
     or
-    claim rewards from your outstanding loans. Learn more in <a href="https://docs.ilikeitstable.com/website/incentives"
+    update the system parameters. Learn more in <a href="https://docs.ilikeitstable.com/website/incentives"
       target="_blank" style="color: rgb(99, 99, 99); text-decoration: underline;">the relevant docs section</a>!</h1>
   <div class="columns-2 w-row">
     <div class="column-7 w-col w-col-6">
@@ -66,27 +66,21 @@
         <div class="form-block w-form">
           <form id="stab-form-manage-cdp" name="email-form" data-name="Email Form" method="get"
             data-wf-page-id="65ad7c27b73a50781a45467f" data-wf-element-id="91c4749e-befd-1192-c614-492a737145db">
-            <h2 class="title-large">Manage Activity ID</h2>
+            <h2 class="title-large">Manage Staking ID</h2>
             <div class="div-block-5">
               <div class="text-block _2-3">by selecting an ID:</div>
-              <select id="id-select">
-                <option value="" selected disabled>Activity ID</option>
-              </select>
+              <div class="dropdown-custom">
+                <button type="button" class="dropdown-custom-button">Select ID</button>
+                <div class="dropdown-custom-content">
+                </div>
+              </div>
             </div>
             <div class="div-block-5">
               <div class="text-block _2-3">Don&#x27;t have an ID yet? Create one:</div><input type="button"
-                data-wait="Please wait..." class="submit-button third w-button" value="New ID" id="new-id">
+                data-wait="Please wait..." class="submit-button create w-button" value="New ID" id="new-id">
             </div>
             <div class="form-line-break"></div>
-            <h1 class="heading-6">Activity ID info</h1>
-            <div class="div-block-6">
-              <div class="text-block">Outstanding STAB debt</div>
-              <div class="text-block" id="cdpAmountId">-</div>
-            </div>
-            <div class="div-block-6">
-              <div class="text-block">Linked loans</div>
-              <div class="text-block" id="cdpIds">-</div>
-            </div>
+            <h1 class="heading-6">Staking ID info</h1>
             <div class="div-block-6">
               <div class="text-block">Staked LP</div>
               <div class="text-block" id="lpAmountId">-</div>
@@ -153,11 +147,7 @@
             <h2 class="title-large">Incentives overview</h2>
             <div class="form-line-break"></div>
 
-            <h1 class="heading-6">ILIS rewards</h1>
-            <div class="div-block-6">
-              <div class="text-block">STAB debt</div>
-              <div class="text-block" id="stab-debt-rewards">-</div>
-            </div>
+            <h1 class="heading-6">Staking rewards</h1>
             <div class="div-block-6">
               <div class="text-block">LP staking</div>
               <div class="text-block" id="lpstab-staking-rewards">-</div>
@@ -166,10 +156,14 @@
               <div class="text-block"> ILIS staking</div>
               <div class="text-block" id="ilis-staking-rewards">-</div>
             </div>
+            <div class="form-line-break"></div>
+            <h1 class="heading-6">Updating rewards</h1>
             <div class="div-block-6">
               <div class="text-block">System updating</div>
               <div class="text-block" id="update-rewards">-</div>
             </div>
+            <input type="button" data-wait="Please wait..." class="submit-button w-button" value="Update system" ,
+              id="update">
           </form>
           <div class="success-message w-form-done">
             <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks ;D
@@ -191,6 +185,7 @@
           <div id="w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dc0-05ccd9b6" class="footer-block">
             <div class="title-small">INFORMATION</div>
             <a href="https://docs.ilikeitstable.com" target="_blank" class="footer-link">Docs</a>
+            <a href="https://wedonthave.com" target="_blank" class="footer-link">Terms &amp; Conditions</a>
           </div>
           <div id="w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dc9-05ccd9b6" class="footer-block">
             <div class="title-small">SOCIALS</div>
@@ -198,8 +193,8 @@
             <a href="https://twitter.com" target="_blank" class="footer-link">Twitter</a>
           </div>
           <div id="w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dd4-05ccd9b6" class="footer-block">
-            <div class="title-small">About</div>
-            <a href="https://wedonthave.com" target="_blank" class="footer-link">Terms &amp; Conditions</a>
+            <div class="title-small"><a href="https://radixdlt.com" class="footer-brand w-inline-block"><img
+                  src="images/runs-on-radix.webp" loading="lazy" alt="Runs on radix logo"></a></div>
           </div>
         </div>
       </div>
@@ -211,7 +206,7 @@
     type="text/javascript" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
     crossorigin="anonymous"></script>
   <script src="dist/main.js"></script>
-  <script src="dist/669.main.js"></script>
+  <script src="dist/812.main.js"></script>
 </body>
 
 </html>

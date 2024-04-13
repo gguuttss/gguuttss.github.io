@@ -51,6 +51,118 @@ h1 {
   padding: 20px;
 }
 
+.dropdown-custom {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-custom-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+  border: 1px solid black;
+  border-radius: 5px;
+  max-height: 300px;
+  /* Adjust as needed */
+  overflow-y: auto;
+  /* Add this line */
+}
+
+.dropdown-custom-button,
+.dropdown-custom-content {
+  width: max-content;
+}
+
+.dropdown-custom-option {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.dropdown-custom-option:hover {
+  background-color: #e3e3e3
+}
+
+.footer-brand img {
+  max-width: 200px;
+  /* Replace with the maximum width you want */
+}
+
+.dropdown-custom-button {
+  background-image: url('arrow.png');
+  background-repeat: no-repeat;
+  background-position: calc(100% - 10px) center;
+  background-color: #969696;
+  background-size: 20px;
+  font-family: Lato, sans-serif;
+  color: #000;
+  transition: all .3s;
+  padding: 10px;
+  padding-right: 40px;
+  font-size: 16px;
+  box-shadow: 2px 2px 2px rgba(114, 129, 167, .04);
+  border-radius: 16px;
+  border: 2px solid #969696;
+  width: 100%;
+  /* Adjust as needed to round the corners */
+}
+
+.dropdown-custom-button:hover {
+  border: 2px solid #000;
+  background-color: #e4e4e4;
+}
+
+.dropdown-custom-option img {
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+  /* Adjust as needed */
+}
+
+/* Style the scrollbar itself */
+.dropdown-custom-content::-webkit-scrollbar {
+  width: 10px;
+  /* Adjust as needed */
+}
+
+/* Style the scrollbar thumb */
+.dropdown-custom-content::-webkit-scrollbar-thumb {
+  background: #888;
+  /* Adjust as needed */
+}
+
+/* Style the scrollbar thumb on hover */
+.dropdown-custom-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
+  /* Adjust as needed */
+}
+
+.dropdown-custom-content .dropdown-custom-option.selected {
+  background-color: #b7b7b7;
+  /* Adjust as needed */
+}
+
+.option-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.option-title {
+  font-weight: bold;
+}
+
+.option-subtext {
+  font-size: 0.8em;
+  color: #666;
+}
+
 .container-regular {
   width: 100%;
   max-width: 1260px;
@@ -501,7 +613,8 @@ h1 {
   color: #a0a6b0;
 }
 
-.input-field.dex, .input-field.full {
+.input-field.dex,
+.input-field.full {
   width: 80%;
 }
 
@@ -621,6 +734,12 @@ h1 {
   width: 31%;
   margin-left: 0;
   margin-right: 12px;
+}
+
+.submit-button.create {
+  width: 31%;
+  margin-left: 0;
+  float: right;
 }
 
 .submit-button.half {
@@ -977,8 +1096,9 @@ h1 {
   text-decoration: none;
 }
 
-.nav-link-accent-2:hover, .nav-link-accent-2.w--current {
-  color: #fff;
+.nav-link-accent-2:hover,
+.nav-link-accent-2.w--current {
+  color: #ffffff;
 }
 
 .heading-6 {
@@ -1060,6 +1180,7 @@ h1 {
 .stab-logo {
   width: 15%;
   margin-right: 10px;
+  border-radius: 50%;
 }
 
 .div-block-6 {
@@ -1244,7 +1365,7 @@ h1 {
   }
 
   .nav-menu {
-    background-color: #fff;
+    background-color: #ffffff;
     flex-wrap: wrap;
     justify-content: space-around;
     align-items: center;
@@ -1275,7 +1396,8 @@ h1 {
     background-color: #a6b1bf;
   }
 
-  .container, .container-2 {
+  .container,
+  .container-2 {
     max-width: 728px;
   }
 
@@ -1283,7 +1405,8 @@ h1 {
     grid-column-gap: 60px;
   }
 
-  .column-7, .column-8 {
+  .column-7,
+  .column-8 {
     justify-content: center;
   }
 
@@ -1335,7 +1458,7 @@ h1 {
   }
 
   .nav-menu-two {
-    background-color: #fff;
+    background-color: #000000;
     border-radius: 50px;
     flex-wrap: wrap;
     justify-content: space-around;
@@ -1344,6 +1467,10 @@ h1 {
     padding: 20px;
     display: flex;
     box-shadow: 0 8px 50px rgba(0, 0, 0, .05);
+    border: 2px solid #ffffff;
+    /* Add a 2px red border */
+    opacity: 0.9;
+    /* Set the opacity to 50% */
   }
 }
 
@@ -1431,7 +1558,9 @@ h1 {
     margin-top: 60px;
   }
 
-  .column-3, .column-4, .column-5 {
+  .column-3,
+  .column-4,
+  .column-5 {
     display: block;
   }
 
@@ -1453,7 +1582,8 @@ h1 {
     margin-right: 0;
   }
 
-  .column-7, .column-8 {
+  .column-7,
+  .column-8 {
     justify-content: center;
   }
 
@@ -1550,7 +1680,8 @@ h1 {
     width: auto;
   }
 
-  .container, .container-2 {
+  .container,
+  .container-2 {
     max-width: none;
   }
 
@@ -1560,12 +1691,30 @@ h1 {
     padding-right: 24px;
   }
 
-  .nav-menu-three, .nav-menu-two {
+  .nav-menu-three,
+  .nav-menu-two {
     flex-direction: column;
   }
 }
 
-#w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dc0-05ccd9b6, #w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dc9-05ccd9b6, #w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dd4-05ccd9b6, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-a0059d2e, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-a0059d2e, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-a0059d2e, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-1a45467f, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-1a45467f, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-1a45467f, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-87fdd64c, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-87fdd64c, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-87fdd64c, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-09794d0a, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-09794d0a, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-09794d0a, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-e70a4ca7, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-e70a4ca7, #w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-e70a4ca7 {
+#w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dc0-05ccd9b6,
+#w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dc9-05ccd9b6,
+#w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dd4-05ccd9b6,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-a0059d2e,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-a0059d2e,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-a0059d2e,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-1a45467f,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-1a45467f,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-1a45467f,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-87fdd64c,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-87fdd64c,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-87fdd64c,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-09794d0a,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-09794d0a,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-09794d0a,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c892-e70a4ca7,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c897-e70a4ca7,
+#w-node-a8a3bc6f-477b-48dc-1184-d7255895c89e-e70a4ca7 {
   grid-area: span 1 / span 1 / span 1 / span 1;
 }
 
@@ -1577,6 +1726,7 @@ h1 {
   font-style: normal;
   font-display: swap;
 }
+
 @font-face {
   font-family: 'Fa 400';
   src: url('../fonts/fa-regular-400.ttf') format('truetype');
