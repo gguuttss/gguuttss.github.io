@@ -1,10 +1,12 @@
 <!DOCTYPE html><!--  This site was created in Webflow. https://www.webflow.com  -->
 <!--  Last Published: Mon Jan 22 2024 12:01:32 GMT+0000 (Coordinated Universal Time)  -->
-<html data-wf-page="65ad46b72f555f0605ccd9b6" data-wf-site="65ad46b72f555f0605ccd9ae">
+<html data-wf-page="65ad7c27b73a50781a45467f" data-wf-site="65ad46b72f555f0605ccd9ae">
 
 <head>
   <meta charset="utf-8">
-  <title>Stabilis</title>
+  <title>Stabilis - Incentives</title>
+  <meta content="Dashboard" property="og:title">
+  <meta content="Dashboard" property="twitter:title">
   <meta content="width=device-width, initial-scale=1" name="viewport">
   <meta content="Webflow" name="generator">
   <link href="css/normalize.css" rel="stylesheet" type="text/css">
@@ -21,80 +23,67 @@
   <link href="images/webclip.png" rel="apple-touch-icon">
 </head>
 
-<body class="body">
-  <div class="navbar-no-shadow">
+<body class="body-2">
+  <div class="navbar-logo-left">
     <div data-animation="default" data-collapse="medium" data-duration="400" data-easing="ease" data-easing2="ease"
-      role="banner" class="navbar-no-shadow-container w-nav">
-      <div class="container-regular">
-        <div class="navbar-wrapper">
-          <a href="#" class="navbar-brand w-nav-brand"><img
+      role="banner" class="navbar-logo-left-container shadow-three w-nav">
+      <div class="container-2">
+        <div class="navbar-wrapper-2">
+          <a href="/index" class="navbar-brand-2 w-nav-brand"><img
               src="images/6591759c82a086a532a90d33_stabilis-1-p-130x130q80.png" loading="lazy" alt="Stabilis logo"></a>
-          <nav role="navigation" class="nav-menu-wrapper w-nav-menu">
-            <ul role="list" class="nav-menu w-list-unstyled">
-              <li class="mobile-margin-top-10">
-                <div class="nav-button-wrapper">
-                  <a href="app-home" class="button-primary w-button">LAUNCH APP</a>
+          <nav role="navigation" class="nav-menu-wrapper-2 w-nav-menu">
+            <ul role="list" class="nav-menu-two w-list-unstyled">
+              <li>
+                <a href="dao-home" class="nav-link-accent-2">Home</a>
+                <a href="incentives" aria-current="page" class="nav-link-accent-2  w--current">Incentives</a>
+                <a href="governance" class="nav-link-accent-2">Governance</a>
+              </li>
+              <li class="mobile-margin-top-11">
+                <div class="button-connect" style="--radix-connect-button-border-radius: 12px;">
+                  <radix-connect-button />
                 </div>
               </li>
             </ul>
           </nav>
-          <div class="menu-button w-nav-button">
+          <div class="menu-button-2 w-nav-button">
             <div class="w-icon-nav-menu"></div>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <section class="hero-without-image">
-    <div class="container">
-      <div class="hero-wrapper-two">
-        <h1 class="heading">Fair-priced <strong class="bold-text">stability</strong></h1>
-        <div class="columns w-row">
-          <div class="column-3 w-col w-col-4">
-            <h1 class="counter1">$</h1>
-            <h1 class="counter1" id="price-counter">0</h1>
-            <p class="paragraph">STAB price</p>
-          </div>
-          <div class="column-4 w-col w-col-4">
-            <h1 class="counter1" id="circulating-counter">0</h1>
-            <p class="paragraph">Circulating STAB</p>
-          </div>
-          <div class="column-5 w-col w-col-4">
-            <h1 class="counter1" id="interest-rate">0</h1>
-            <h1 class="counter1">%</h1>
-            <p class="paragraph">Yearly interest</p>
-          </div>
-        </div>
-        <div class="w-row">
-          <div class="column-6 w-col w-col-6">
-            <a href="app-home" class="button-primary w-button" target="_blank">LAUNCH APP</a>
-          </div>
-          <div class="column w-col w-col-6">
-            <a href="dao-home" target="_blank" class="button-primary-2 w-button">DOCS</a>
-          </div>
+  <h1 class="heading-4">Governance Portal</h1>
+  <div class="home-screen-columns w-row">
+    <div class="column-7 w-col w-col-6" style="border-right:none">
+      <div class="card-flowbase">
+        <div class="form-block w-form">
+          <form id="stab-form-manage-cdp" name="email-form" data-name="Email Form" method="get"
+            data-wf-page-id="65ad7c27b73a50781a45467f" data-wf-element-id="91c4749e-befd-1192-c614-492a737145db">
+            <h2 class="title-large">Welcome!</h2>
+            <div class="form-line-break"></div>
+            <p>You have found your way to the <a href="https://docs.ilikeitstable.com" target="_blank"
+                style="color: rgb(99, 99, 99); text-decoration: underline;">unofficial</a> Stabilis DAO interface as
+              provided to you by Stabilis Labs. <br><br>
+
+              This interface
+              Lorem
+              ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
+              dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
+              ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+              fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+              mollit anim id est laborum.</p>
+            <div class="div-block-6">
+              <input type="button" style="margin-right: 10px;" data-wait="Please wait..." class="submit-button w-button"
+                value="Claim staking rewards" id="claim-button">
+            </div>
+          </form>
         </div>
       </div>
     </div>
-  </section>
-  <section class="section-3">
-    <div class="w-layout-blockcontainer container-9 w-container"><img src="images/Scroll-Down-Arrow.png" loading="lazy"
-        width="54" alt="Arrow pointing downwards" class="image-5">
-      <h1 class="heading-7">Need some help getting started?</h1><img src="images/Scroll-Down-Arrow.png" loading="lazy"
-        width="54" alt="Arrow pointing downwards" class="image-5">
+    <div class="column-8 w-col w-col-6">
+      <img src="images/3dstab-logo.png" style="width: 60%;">
     </div>
-    <div class="w-layout-blockcontainer container-9 w-container">
-      <h1 class="heading-7 smaller">Scroll on down</h1>
-    </div>
-  </section>
-  <h1 class="heading-5 full" id="recommendation"><b>Have no idea what to do?</b> Read about the <a
-      href="https://docs.ilikeitstable.com/website/typical-user-flow" target="_blank"
-      style="color: rgb(99, 99, 99); text-decoration: underline;">typical user flow</a> in the docs. <br> Or see the
-    below quick start guide for a more visual explanation.</h1>
-  <section class="section-2">
-    <div><img src="images/quickstart-guide-p-1080.png" loading="lazy" width="1064" sizes="100vw" alt=""
-        srcset="images/quickstart-guide-p-1080-p-500.png 500w, images/quickstart-guide-p-1080-p-800.png 800w, images/quickstart-guide-p-1080-p-1080.png 1080w, images/quickstart-guide-p-1080.png 1200w">
-    </div>
-  </section>
+  </div>
   <section class="footer-dark">
     <div class="container-2">
       <div class="footer-wrapper">

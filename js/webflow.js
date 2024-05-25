@@ -1,6 +1,7 @@
 import { RadixDappToolkit, DataRequestBuilder, RadixNetwork } from '@radixdlt/radix-dapp-toolkit'
 // You can create a dApp definition in the dev console at https://stokenet-console.radixdlt.com/dapp-metadata 
 // then use that account for your dAppId
+
 const dAppId = 'account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd'
 let stabIdAddress = "resource_tdx_2_1ngnptx4ly75dwcv2knf6cp957qfjjprsz90kc8qmqh4ttamj4a2as3"
 let componentAddress = "component_tdx_2_1crc4v5vgktc2l6fusvyn00w5gsysqq8vf6l5kl6k2aytthsxwl7h8u"
@@ -355,29 +356,33 @@ var originalTexts = [];
 var isConnected = false;
 
 // Select all buttons
-var buttons = document.querySelectorAll('input[type="button"]:not(.exclude)');
+var buttons = document.querySelectorAll('button.wallet-necessary');
 
 // Add a click event listener to each button
 for (var i = 0; i < buttons.length; i++) {
     buttons[i].addEventListener('click', function () {
         // Store the original text and change the button text to "Connect wallet"
         if (!isConnected) {
-            originalTexts[this.id] = { text: this.value, bgColor: this.style.backgroundColor, textColor: this.style.color };
-            this.value = "Connect wallet";
+            this.querySelector('.warning').style.display = 'block';
+            this.querySelector('.chevron').style.display = 'none';
+            this.querySelector('.button-text').style.display = 'none';
+            this.querySelector('.button-warning').style.display = 'block';
             this.style.backgroundColor = "red"; // Change to the desired background color
-            this.style.color = "black"; // Change to the desired text color
         }
     });
 }
 
 // Function to restore the original text and color of the buttons
 function restoreButtonLabels() {
+    if (isConnected) {
+        return;
+    }
     for (var i = 0; i < buttons.length; i++) {
-        if (originalTexts[buttons[i].id]) {
-            buttons[i].value = originalTexts[buttons[i].id].text;
-            buttons[i].style.backgroundColor = originalTexts[buttons[i].id].bgColor;
-            buttons[i].style.color = originalTexts[buttons[i].id].textColor;
-        }
+        buttons[i].querySelector('.warning').style.display = 'none';
+        buttons[i].querySelector('.chevron').style.display = 'block';
+        buttons[i].querySelector('.button-text').style.display = 'block';
+        buttons[i].querySelector('.button-warning').style.display = 'none';
+        buttons[i].style.backgroundColor = "";
     }
     isConnected = true;
 }
@@ -778,9 +783,9 @@ function update() {
             interestRate = (100 * ((data[1].details.state.fields[15].value ** (24 * 60 * 365)) - 1)).toFixed(2);
 
             if (window.location.pathname === '/incentives') {
-                document.getElementById('ilis-staking-rewards').textContent = stakeRewards + " ILIS/week";
-                document.getElementById('lpstab-staking-rewards').textContent = lpRewards + " ILIS/week";
-                document.getElementById('update-rewards').textContent = updateRewards + " ILIS/week";
+                document.getElementById('ilis-staking-rewards').textContent = stakeRewards + " ILIS/day";
+                document.getElementById('lpstab-staking-rewards').textContent = lpRewards + " ILIS/day";
+                document.getElementById('update-rewards').textContent = updateRewards + " ILIS/day";
             }
 
             if (window.location.pathname === '/' || window.location.pathname === '/secret_index' || window.location.pathname === '/index') {
@@ -1104,6 +1109,25 @@ function update() {
 update();
 
 if (window.location.pathname === '/swap') {
+    // Get all buttons with the class 'stake-button'
+    const buttons = document.querySelectorAll('.stake-button');
+
+    // Add an event listener to each button
+    buttons.forEach(button => {
+        button.addEventListener('click', function () {
+            // Perform different actions depending on the id of the clicked button
+            buttons.forEach(button => button.classList.remove('selected'));
+            this.classList.add('selected');
+            if (this.id === 'provide-liq-button') {
+                document.getElementById('provide-section').style.display = 'block';
+                document.getElementById('remove-section').style.display = 'none';
+            } else {
+                document.getElementById('provide-section').style.display = 'none';
+                document.getElementById('remove-section').style.display = 'block';
+            }
+        });
+    });
+
     let swapMax = document.getElementById('swap-sell-amount');
     let swapReceive = document.getElementById('amount-receive');
     let inputFieldSwap = document.getElementById('amount-sell');
@@ -1204,6 +1228,21 @@ if (window.location.pathname === '/swap') {
         if (!isConnected) {
             return;
         }
+
+        console.log('Sell button clicked');
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
         let sellAmount = document.getElementById("amount-sell").value;
         let sellAddress;
 
@@ -1234,13 +1273,32 @@ if (window.location.pathname === '/swap') {
         console.log('Swap manifest: ', manifest)
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
-        console.log("Swap sendTransaction Result: ", result.value)
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
 
         let requestBody = {
             "addresses": [poolComponentAddress],
@@ -1291,6 +1349,19 @@ if (window.location.pathname === '/swap') {
         if (!isConnected) {
             return;
         }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
         let provideAmountXrd = document.getElementById("amount-xrd-provide-lp").value;
         let provideAmountStab = document.getElementById("amount-stab-provide-lp").value;
         let manifest = `
@@ -1330,12 +1401,33 @@ if (window.location.pathname === '/swap') {
         console.log('add liq manifest: ', manifest)
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
+
         console.log("add liq sendTransaction Result: ", result.value);
         update();
     }
@@ -1345,6 +1437,19 @@ if (window.location.pathname === '/swap') {
         if (!isConnected) {
             return;
         }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
         let removeAmount = document.getElementById("amount-remove-lp").value;
         let manifest = `
     CALL_METHOD
@@ -1370,13 +1475,33 @@ if (window.location.pathname === '/swap') {
         `
         console.log('remove liq manifest: ', manifest)
 
-        // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
+
         console.log("remove liq sendTransaction Result: ", result.value);
         update();
     }
@@ -1431,6 +1556,19 @@ if (window.location.pathname === '/liquidations') {
         if (!isConnected) {
             return;
         }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
         let manifest = `
     CALL_METHOD
       Address("${componentAddress}")
@@ -1444,13 +1582,33 @@ if (window.location.pathname === '/liquidations') {
         console.log('mark manifest: ', manifest)
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
-        console.log("mark sendTransaction Result: ", result.value)
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Mint Result: ", result.value)
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
         update();
     }
 
@@ -1462,6 +1620,18 @@ if (window.location.pathname === '/liquidations') {
         let markerId = selectedMarker;
         let stabAmount = walletStab;
         let manifest;
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
 
         if (markerUsed == false) {
             manifest = `
@@ -1519,13 +1689,34 @@ if (window.location.pathname === '/liquidations') {
         }
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
-        console.log("liq /w mark sendTransaction Result: ", result.value)
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Mint Result: ", result.value)
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
+
         update_liq();
     }
 
@@ -1536,6 +1727,18 @@ if (window.location.pathname === '/liquidations') {
         }
         let skipAmount = 1;
         let stabAmount = walletStab;
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
 
         let manifest = `
     CALL_METHOD
@@ -1561,13 +1764,33 @@ if (window.location.pathname === '/liquidations') {
         console.log('liq w/o mark manifest: ', manifest)
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
-        console.log("liq w/o mark sendTransaction Result: ", result.value)
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Mint Result: ", result.value)
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
         update_liq();
     }
 
@@ -1576,6 +1799,19 @@ if (window.location.pathname === '/liquidations') {
         if (!isConnected) {
             return;
         }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
         let skipAmount;
 
         if (document.getElementById("amount-to-skip").value == "0") {
@@ -1611,13 +1847,34 @@ if (window.location.pathname === '/liquidations') {
         console.log('liquidate manifest: ', manifest)
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
-        console.log("liquidate sendTransaction Result: ", result.value)
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Mint Result: ", result.value)
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
+
         update_liq();
     }
 }
@@ -1628,7 +1885,6 @@ if (window.location.pathname === '/incentives') {
     var initialWidth = window.getComputedStyle(button).width;
     button.style.minWidth = initialWidth;
     button2.style.minWidth = initialWidth;
-
 
     // Get the dropdown button and content
     var dropdownButton = document.querySelector('.dropdown-custom-button');
@@ -1673,6 +1929,19 @@ if (window.location.pathname === '/incentives') {
         if (!isConnected) {
             return;
         }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
         let manifest = `
     CALL_METHOD    
     Address("${componentAddress}") #proxy comp address
@@ -1686,13 +1955,33 @@ if (window.location.pathname === '/incentives') {
         console.log('create id manifest: ', manifest)
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
-        console.log("create id sendTransaction Result: ", result.value)
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Mint Result: ", result.value)
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
         update();
         update_id();
     }
@@ -1702,6 +1991,19 @@ if (window.location.pathname === '/incentives') {
         if (!isConnected) {
             return;
         }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
         let manifest = `
     CALL_METHOD
       Address("${componentAddress}")
@@ -1714,13 +2016,33 @@ if (window.location.pathname === '/incentives') {
         console.log('update manifest: ', manifest)
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
-        console.log("Update sendTransaction Result: ", result.value)
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Mint Result: ", result.value)
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
         update_id();
     }
 
@@ -1729,6 +2051,19 @@ if (window.location.pathname === '/incentives') {
         if (!isConnected) {
             return;
         }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
         let stabId = selectedId;
         let manifest = `
     CALL_METHOD
@@ -1756,13 +2091,33 @@ if (window.location.pathname === '/incentives') {
         console.log('claim manifest: ', manifest)
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
-        console.log("claim sendTransaction Result: ", result.value)
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Mint Result: ", result.value)
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
         update_id();
     }
 
@@ -1771,7 +2126,21 @@ if (window.location.pathname === '/incentives') {
         if (!isConnected) {
             return;
         }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
         let stabId = selectedId;
+
         let manifest = `
     CALL_METHOD
       Address("${accountAddress}")
@@ -1798,13 +2167,33 @@ if (window.location.pathname === '/incentives') {
         console.log('claim manifest: ', manifest)
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
-        console.log("claim sendTransaction Result: ", result.value)
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Mint Result: ", result.value)
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
         update_id();
     }
 
@@ -1817,6 +2206,18 @@ if (window.location.pathname === '/incentives') {
         let lpAmount = document.getElementById('stake-lp-field').value;
         let ilisAmount = document.getElementById('stake-ilis-field').value;
         let manifest;
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
 
         if (lpAmount !== "") {
             if (ilisAmount == "") {
@@ -1959,13 +2360,34 @@ if (window.location.pathname === '/incentives') {
         }
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
-        console.log("stake sendTransaction Result: ", result.value)
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Mint Result: ", result.value)
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
+
         if (lpAmount !== "") {
             walletLp -= lpAmount;
         }
@@ -1984,6 +2406,18 @@ if (window.location.pathname === '/incentives') {
         let lpAmount = document.getElementById('unstake-lp-field').value;
         let ilisAmount = document.getElementById('unstake-ilis-field').value;
         let manifest;
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
 
         if (lpAmount !== "") {
             if (ilisAmount == "") {
@@ -2090,13 +2524,33 @@ if (window.location.pathname === '/incentives') {
         }
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
-        console.log("unstake sendTransaction Result: ", result.value)
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Mint Result: ", result.value)
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
 
         if (lpAmount !== "") {
             let lpChange = Math.min(lpAmount, lpAmountId + lpWaitingAmount);
@@ -2120,6 +2574,25 @@ if (window.location.pathname === '/manage-loans') {
     // Get the dropdown button and content
     var dropdownButton = document.querySelector('.dropdown-custom-button');
     var dropdownContent = document.querySelector('.dropdown-custom-content');
+
+    // Get all buttons with the class 'stake-button'
+    const buttons = document.querySelectorAll('.stake-button');
+
+    // Add an event listener to each button
+    buttons.forEach(button => {
+        button.addEventListener('click', function () {
+            // Perform different actions depending on the id of the clicked button
+            buttons.forEach(button => button.classList.remove('selected'));
+            this.classList.add('selected');
+            if (this.id === 'add-collateral-selector') {
+                document.getElementById('add-col-button').style.display = '';
+                document.getElementById('remove-col-button').style.display = 'none';
+            } else {
+                document.getElementById('add-col-button').style.display = 'none';
+                document.getElementById('remove-col-button').style.display = '';
+            }
+        });
+    });
 
     // Add click event listeners to each option
     var options = document.querySelectorAll('.dropdown-custom-option');
@@ -2160,6 +2633,19 @@ if (window.location.pathname === '/manage-loans') {
         if (!isConnected) {
             return;
         }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
         let cdpId = selectedCdp;
         let collateralAmount = document.getElementById('amount-to-remove').value;
         let collateralAddress = resourceAddress;
@@ -2196,14 +2682,33 @@ if (window.location.pathname === '/manage-loans') {
         console.log('top up manifest: ', manifest)
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
-        console.log("top up sendTransaction Result: ", result.value)
-        update_cdp();
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Mint Result: ", result.value)
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
     }
 
     // *********** Remove collateral CDP ***********
@@ -2211,6 +2716,19 @@ if (window.location.pathname === '/manage-loans') {
         if (!isConnected) {
             return;
         }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
         let cdpId = selectedCdp;
         let collateralAmount = document.getElementById('amount-to-remove').value;
         let manifest = `
@@ -2239,13 +2757,33 @@ if (window.location.pathname === '/manage-loans') {
         console.log('remove col. manifest: ', manifest)
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
-        console.log("remove col. Result: ", result.value)
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Mint Result: ", result.value)
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
         update_cdp();
     }
 
@@ -2254,7 +2792,19 @@ if (window.location.pathname === '/manage-loans') {
         if (!isConnected) {
             return;
         }
-        console.log("hello");
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
         let cdpId = selectedCdp;
 
         if (status == "Liquidated" || status == "ForceLiquidated") {
@@ -2283,13 +2833,33 @@ if (window.location.pathname === '/manage-loans') {
             console.log('retrieve col. manifest: ', manifest)
 
             // Send manifest to extension for signing
-            const result = await rdt.walletApi
+            rdt.walletApi
                 .sendTransaction({
                     transactionManifest: manifest,
                     version: 1,
                 })
-            if (result.isErr()) throw result.error
-            console.log("retrieve col. sendTransaction Result: ", result.value)
+                .then(result => {
+                    // Hide the spinner, show the angle icon, and change the button text back
+                    spinner.style.display = 'none';
+                    angleIcon.style.display = 'inline-block';
+                    buttonText.style.display = 'inline-block';
+                    buttonWaiting.style.display = 'none';
+                    button.disabled = false;
+                    button.style.backgroundColor = '';
+                    console.log("Mint Result: ", result.value)
+                })
+                .catch(error => {
+                    // Hide the spinner, show the angle icon, and change the button text back
+                    spinner.style.display = 'none';
+                    angleIcon.style.display = 'inline-block';
+                    buttonText.style.display = 'inline-block';
+                    buttonWaiting.style.display = 'none';
+                    button.disabled = false;
+                    button.style.backgroundColor = '';
+
+                    // Handle the error
+                    console.error(error);
+                });
 
         } else {
 
@@ -2331,13 +2901,33 @@ if (window.location.pathname === '/manage-loans') {
             console.log('Close cdp manifest: ', manifest)
 
             // Send manifest to extension for signing
-            const result = await rdt.walletApi
+            rdt.walletApi
                 .sendTransaction({
                     transactionManifest: manifest,
                     version: 1,
                 })
-            if (result.isErr()) throw result.error
-            console.log("Close cdp Result: ", result.value)
+                .then(result => {
+                    // Hide the spinner, show the angle icon, and change the button text back
+                    spinner.style.display = 'none';
+                    angleIcon.style.display = 'inline-block';
+                    buttonText.style.display = 'inline-block';
+                    buttonWaiting.style.display = 'none';
+                    button.disabled = false;
+                    button.style.backgroundColor = '';
+                    console.log("Mint Result: ", result.value)
+                })
+                .catch(error => {
+                    // Hide the spinner, show the angle icon, and change the button text back
+                    spinner.style.display = 'none';
+                    angleIcon.style.display = 'inline-block';
+                    buttonText.style.display = 'inline-block';
+                    buttonWaiting.style.display = 'none';
+                    button.disabled = false;
+                    button.style.backgroundColor = '';
+
+                    // Handle the error
+                    console.error(error);
+                });
         }
         update_cdp();
 
@@ -2408,9 +2998,15 @@ if (window.location.pathname === '/borrow') {
         if (this.value >= 200) {
             document.getElementById('warning-low-ratio').style.display = 'none';
             document.getElementById('warning-good-ratio').style.display = '';
-        } else {
+            document.getElementById('warning-impossible-ratio').style.display = 'none';
+        } else if (this.value >= 150) {
             document.getElementById('warning-low-ratio').style.display = '';
             document.getElementById('warning-good-ratio').style.display = 'none';
+            document.getElementById('warning-impossible-ratio').style.display = 'none';
+        } else {
+            document.getElementById('warning-low-ratio').style.display = 'none';
+            document.getElementById('warning-good-ratio').style.display = 'none';
+            document.getElementById('warning-impossible-ratio').style.display = '';
         }
     }
 
@@ -2432,9 +3028,15 @@ if (window.location.pathname === '/borrow') {
         if (slider.value >= 200) {
             document.getElementById('warning-low-ratio').style.display = 'none';
             document.getElementById('warning-good-ratio').style.display = '';
-        } else {
+            document.getElementById('warning-impossible-ratio').style.display = 'none';
+        } else if (slider.value >= 150) {
             document.getElementById('warning-low-ratio').style.display = '';
             document.getElementById('warning-good-ratio').style.display = 'none';
+            document.getElementById('warning-impossible-ratio').style.display = 'none';
+        } else {
+            document.getElementById('warning-low-ratio').style.display = 'none';
+            document.getElementById('warning-good-ratio').style.display = 'none';
+            document.getElementById('warning-impossible-ratio').style.display = '';
         }
     }
 
@@ -2456,9 +3058,15 @@ if (window.location.pathname === '/borrow') {
         if (slider.value >= 200) {
             document.getElementById('warning-low-ratio').style.display = 'none';
             document.getElementById('warning-good-ratio').style.display = '';
-        } else {
+            document.getElementById('warning-impossible-ratio').style.display = 'none';
+        } else if (slider.value >= 150) {
             document.getElementById('warning-low-ratio').style.display = '';
             document.getElementById('warning-good-ratio').style.display = 'none';
+            document.getElementById('warning-impossible-ratio').style.display = 'none';
+        } else {
+            document.getElementById('warning-low-ratio').style.display = 'none';
+            document.getElementById('warning-good-ratio').style.display = 'none';
+            document.getElementById('warning-impossible-ratio').style.display = '';
         }
     }
 
@@ -2489,6 +3097,19 @@ if (window.location.pathname === '/borrow') {
         if (!isConnected) {
             return;
         }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
         let mintAmount = 1;
         mintAmount = document.getElementById("outputStab").innerHTML;
         let manifest;
@@ -2516,12 +3137,33 @@ if (window.location.pathname === '/borrow') {
         console.log('Mint manifest: ', manifest)
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
+
         console.log("Mint Result: ", result.value)
         availableCollateral -= collateralAmount;
         document.getElementById('col-max').textContent = "max. " + availableCollateral.toFixed(2).toLocaleString('en-US');
@@ -2533,6 +3175,19 @@ if (window.location.pathname === '/borrow') {
         if (!isConnected) {
             return;
         }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
         let mintAmount = 1;
         mintAmount = document.getElementById("outputStab").innerHTML;
         let manifest;
@@ -2560,13 +3215,34 @@ if (window.location.pathname === '/borrow') {
         console.log('Mint manifest: ', manifest)
 
         // Send manifest to extension for signing
-        const result = await rdt.walletApi
+        rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
             })
-        if (result.isErr()) throw result.error
-        console.log("Mint Result: ", result.value)
+            .then(result => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Mint Result: ", result.value)
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
+
         update();
     }
 }

@@ -22,11 +22,17 @@
   }
 }
 
+* {
+  margin: 0;
+  padding: 0;
+}
+
 body {
   color: #333;
   font-family: Arial, Helvetica Neue, Helvetica, sans-serif;
   font-size: 14px;
   line-height: 20px;
+  background-image: linear-gradient(90deg, #000000 0%, #191919 50%, #000000 100%);
 }
 
 h1 {
@@ -95,22 +101,20 @@ h1 {
 }
 
 .dropdown-custom-button {
-  background-image: url('arrow.png');
-  background-repeat: no-repeat;
-  background-position: calc(100% - 10px) center;
   background-color: #969696;
   background-size: 20px;
   font-family: Lato, sans-serif;
   color: #000;
   transition: all .3s;
   padding: 10px;
-  padding-right: 40px;
   font-size: 16px;
   box-shadow: 2px 2px 2px rgba(114, 129, 167, .04);
   border-radius: 16px;
   border: 2px solid #969696;
   width: 100%;
-  /* Adjust as needed to round the corners */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .dropdown-custom-button:hover {
@@ -312,6 +316,8 @@ h1 {
   -webkit-text-fill-color: inherit;
   background-color: #000;
   background-clip: border-box;
+  background-size: 200%;
+  animation: bg-animation 40s infinite alternate;
 }
 
 .body:hover {
@@ -325,6 +331,17 @@ h1 {
   margin-bottom: 0;
   padding: 160px 60px 0;
   position: relative;
+}
+
+@keyframes bg-animation {
+  0% {
+    background-position: left;
+  }
+
+  100% {
+    background-position: right;
+  }
+
 }
 
 .container {
@@ -392,7 +409,6 @@ h1 {
 .footer-dark {
   height: 30%;
   min-height: 30%;
-  background-color: #000;
   border-top: 1px solid #1a1b1f;
   border-bottom: 1px #000;
   padding: 50px 30px 15px;
@@ -694,6 +710,78 @@ h1 {
   margin-bottom: 20px;
 }
 
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes warning {
+  0% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(0.9);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+.warning {
+  animation: warning 1.5s ease-in-out infinite;
+}
+
+.spin {
+  animation: rotate 2s linear infinite;
+}
+
+.buttons-box {
+  background-color: #969696;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  width: 100%;
+  padding: 4px;
+  padding-right: 0px;
+  padding-left: 4px;
+}
+
+.stake-button {
+  flex: 1;
+  padding: 10px 10px;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  color: white;
+  border: 3px solid rgba(0, 0, 0, 0);
+  font-family: Outfit, sans-serif;
+  margin-right: 4px;
+}
+
+.stake-button:hover {
+  border: 3px solid #96969600;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  color: rgb(74, 74, 74);
+}
+
+.stake-button.selected {
+  background-color: #ffffffb6;
+  border-radius: 10px;
+  border: 3px solid #96969600;
+  color: black;
+}
+
 .submit-button {
   width: 97%;
   min-height: 48px;
@@ -708,26 +796,15 @@ h1 {
   margin-top: 10px;
   margin-bottom: 10px;
   padding: 12px 32px;
-  font-family: Lato, sans-serif;
-  font-size: 16px;
-  transition: all .3s;
+  font-family: Outfit, sans-serif;
+  font-size: 18px;
   display: flex;
   position: relative;
   box-shadow: 2px 2px 2px rgba(114, 129, 167, .04);
 }
 
 .submit-button:hover {
-  background-color: #e4e4e4;
-  border-style: solid;
-  border-color: #000;
-}
-
-.submit-button:active {
-  background-color: #fff;
-}
-
-.submit-button:focus {
-  border-color: #333;
+  background-color: hsl(0, 0%, 78%);
 }
 
 .submit-button.third {
@@ -757,8 +834,6 @@ h1 {
 }
 
 .submit-button.mini {
-  width: 10%;
-  height: auto;
   max-height: none;
   max-width: none;
   min-height: 0;
@@ -808,10 +883,19 @@ h1 {
   margin-top: 20px;
   margin-bottom: 20px;
   padding-right: 0;
+
+}
+
+.home-screen-columns {
+  background-color: rgba(0, 0, 0, 0);
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding-right: 0;
+  display: flex;
+  align-items: center;
 }
 
 .column-8 {
-  border: 3px solid #000;
   justify-content: flex-start;
   display: flex;
 }
@@ -1015,6 +1099,16 @@ h1 {
   color: rgba(26, 27, 31, .75);
 }
 
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .button-primary-3 {
   color: #fff;
   letter-spacing: 2px;
@@ -1038,7 +1132,6 @@ h1 {
 
 .navbar-logo-left {
   min-height: 10%;
-  border-bottom: 1px solid #646464;
   justify-content: center;
   display: flex;
 }
@@ -1275,16 +1368,16 @@ h1 {
   width: 100%;
   height: auto;
   max-width: 980px;
-  background-color: #fff;
+  background-color: #e28484;
   border-radius: 20px;
   flex-flow: wrap;
   flex: 0 auto;
   justify-content: center;
   align-self: auto;
-  margin-top: 20px;
+  margin-top: 0px;
   margin-left: 60px;
   margin-right: 60px;
-  padding: 32px;
+  padding: 25px;
   display: flex;
 }
 

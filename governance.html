@@ -35,8 +35,8 @@
             <ul role="list" class="nav-menu-two w-list-unstyled">
               <li>
                 <a href="dao-home" class="nav-link-accent-2">Home</a>
-                <a href="incentives" aria-current="page" class="nav-link-accent-2  w--current">Incentives</a>
-                <a href="governance" class="nav-link-accent-2">Governance</a>
+                <a href="incentives" class="nav-link-accent-2">Incentives</a>
+                <a href="governance" aria-current="page" class="nav-link-accent-2 w--current">Governance</a>
               </li>
               <li class="mobile-margin-top-11">
                 <div class="button-connect" style="--radix-connect-button-border-radius: 12px;">
@@ -52,20 +52,18 @@
       </div>
     </div>
   </div>
-  <h1 class="heading-4">Stabilis Incentives</h1>
-  <h1 class="heading-5 full" id="recommendation">Engaging with the Stabilis ecosystem is rewarded!<br>Stake ILIS and
-    LPSTAB via your Staking ID,
-    or
-    update the system parameters. Learn more in <a href="https://docs.ilikeitstable.com/website/incentives"
-      target="_blank" style="color: rgb(99, 99, 99); text-decoration: underline;">the relevant docs section</a>!</h1>
+  <h1 class="heading-4">Governance</h1>
+  <h1 class="heading-5 full" id="recommendation">Participate in Stabilis' governance by voting using your staked ILIS.
+    Learn more in <a href="https://docs.ilikeitstable.com/website/incentives" target="_blank"
+      style="color: rgb(99, 99, 99); text-decoration: underline;">the relevant docs section</a>!</h1>
 
   <div class="columns-2 w-row">
     <div class="column-7 w-col w-col-6">
-      <div class="card-flowbase">
+      <div class="card-flowbase" style="position: fixed">
         <div class="form-block w-form">
           <form id="stab-form-manage-cdp" name="email-form" data-name="Email Form" method="get"
             data-wf-page-id="65ad7c27b73a50781a45467f" data-wf-element-id="91c4749e-befd-1192-c614-492a737145db">
-            <h2 class="title-large">Manage Staking ID</h2>
+            <h2 class="title-large">Vote on proposal</h2>
             <div class="div-block-5">
               <div class="text-block _2-3">by selecting an ID:</div>
               <div class="dropdown-custom">
@@ -74,56 +72,28 @@
                 </div>
               </div>
             </div>
-            <div class="div-block-5">
-              <div class="text-block _2-3">Don&#x27;t have an ID yet? Create one:</div><input type="button"
-                data-wait="Please wait..." class="submit-button create w-button" value="New ID" id="new-id">
-            </div>
             <div class="form-line-break"></div>
-            <h1 class="heading-6">Staking ID info</h1>
+            <h1 class="heading-6">Proposal info</h1>
             <div class="div-block-6">
-              <div class="text-block">Staked LP</div>
-              <div class="text-block" id="lpAmountId">-</div>
+              <div class="text-block">Status</div>
+              <div class="text-block" id="lpAmountId">Pending</div>
             </div>
             <div class="div-block-6">
-              <div class="text-block">Staked ILIS</div>
-              <div class="text-block" id="ilisAmountId">-</div>
+              <div class="text-block">Total votes</div>
+              <div class="text-block" id="ilisAmountId">- ILIS</div>
             </div>
             <div class="div-block-6">
-              <div class="text-block">Unclaimed periods</div>
-              <div class="text-block" id="nextClaim">-</div>
+              <div class="text-block">For</div>
+              <div class="text-block" id="ilisAmountId">-%</div>
+            </div>
+            <div class="div-block-6">
+              <div class="text-block">Against</div>
+              <div class="text-block" id="ilisAmountId">-%</div>
             </div>
             <div class="div-block-6">
               <input type="button" style="margin-right: 10px;" data-wait="Please wait..." class="submit-button w-button"
                 value="Claim staking rewards" id="claim-button">
             </div>
-            <div class="form-line-break"></div>
-            <h1 class="heading-6">Stake</h1>
-            <div class="w-layout-blockcontainer container-5 w-container">
-              <div class="left-text double" id="stake-lp-amount">max. -</div>
-              <div class="right-text double" id="stake-ilis-amount">max. -</div>
-            </div>
-            <div class="div-block-6"><img src="images/lplogo.png" loading="lazy" alt="lp token logo"
-                class="stab-logo"><input class="input-field w-input" maxlength="256" name="LP" data-name="LP"
-                placeholder="LP token" type="text" id="stake-lp-field" required=""><input class="input-field w-input"
-                maxlength="256" name="amount-3" data-name="Amount 3" placeholder="ILIS" type="text"
-                id="stake-ilis-field" required=""><img src="images/ilislogo.png" loading="lazy" alt="ilis token logo"
-                class="stab-logo"></div>
-            <div class="div-block-6"><input type="button" data-wait="Please wait..." class="submit-button w-button"
-                value="Stake" id="stake-button"></div>
-            <div class="form-line-break"></div>
-            <h1 class="heading-6">Unstake</h1>
-            <div class="w-layout-blockcontainer container-5 w-container">
-              <div class="left-text double" id="unstake-lp-amount">max. -</div>
-              <div class="right-text double" id="unstake-ilis-amount">max. -</div>
-            </div>
-            <div class="div-block-6"><img src="images/lplogo.png" loading="lazy" alt="lp token logo"
-                class="stab-logo"><input class="input-field w-input" maxlength="256" name="LP-2" data-name="LP 2"
-                placeholder="LP token" type="text" id="unstake-lp-field" required=""><input class="input-field w-input"
-                maxlength="256" name="amount-3" data-name="Amount 3" placeholder="ILIS" type="text"
-                id="unstake-ilis-field" required=""><img src="images/ilislogo.png" loading="lazy" alt="ilis token logo"
-                class="stab-logo"></div>
-            <input type="button" data-wait="Please wait..." class="submit-button w-button" value="Unstake"
-              id="unstake-button">
           </form>
           <div class="success-message w-form-done">
             <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks ;D
@@ -140,34 +110,86 @@
         <div class="form-block w-form">
           <form id="stab-form" name="email-form" data-name="Email Form" method="get"
             data-wf-page-id="65ad7c27b73a50781a45467f" data-wf-element-id="497c8722-5747-bd04-b540-6e9d7be94b7a">
-            <h2 class="title-large">Incentives overview</h2>
+            <h2 class="title-large">Proposal #-</h2>
             <div class="form-line-break"></div>
 
-            <h1 class="heading-6">Staking rewards</h1>
+            <h1 class="heading-6">Title</h1>
             <div class="div-block-6">
-              <div class="text-block">LP staking</div>
+              <div class="text-block">description</div>
               <div class="text-block" id="lpstab-staking-rewards">-</div>
             </div>
-            <div class="div-block-6">
-              <div class="text-block"> ILIS staking</div>
-              <div class="text-block" id="ilis-staking-rewards">-</div>
-            </div>
-            <div class="form-line-break"></div>
-            <h1 class="heading-6">Updating rewards</h1>
-            <div class="div-block-6">
-              <div class="text-block">System updating</div>
-              <div class="text-block" id="update-rewards">-</div>
-            </div>
-            <input type="button" data-wait="Please wait..." class="submit-button w-button" value="Update system" ,
+            <input type="button" data-wait="Please wait..." class="submit-button w-button" value="Select proposal" ,
               id="update">
           </form>
-          <div class="success-message w-form-done">
-            <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks ;D
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="columns-2 w-row">
+    <div class="column-7 w-col w-col-6">
+    </div>
+    <div class="column-8 w-col w-col-6">
+      <div class="card-flowbase">
+        <div class="form-block w-form">
+          <form id="stab-form" name="email-form" data-name="Email Form" method="get"
+            data-wf-page-id="65ad7c27b73a50781a45467f" data-wf-element-id="497c8722-5747-bd04-b540-6e9d7be94b7a">
+            <h2 class="title-large">Proposal #-</h2>
+            <div class="form-line-break"></div>
+
+            <h1 class="heading-6">Title</h1>
+            <div class="div-block-6">
+              <div class="text-block">description</div>
+              <div class="text-block" id="lpstab-staking-rewards">-</div>
             </div>
-          </div>
-          <div class="w-form-fail">
-            <div>Oops! Something went wrong while submitting the form.</div>
-          </div>
+            <input type="button" data-wait="Please wait..." class="submit-button w-button" value="Select proposal" ,
+              id="update">
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="columns-2 w-row">
+    <div class="column-7 w-col w-col-6">
+    </div>
+    <div class="column-8 w-col w-col-6">
+      <div class="card-flowbase">
+        <div class="form-block w-form">
+          <form id="stab-form" name="email-form" data-name="Email Form" method="get"
+            data-wf-page-id="65ad7c27b73a50781a45467f" data-wf-element-id="497c8722-5747-bd04-b540-6e9d7be94b7a">
+            <h2 class="title-large">Proposal #-</h2>
+            <div class="form-line-break"></div>
+
+            <h1 class="heading-6">Title</h1>
+            <div class="div-block-6">
+              <div class="text-block">description</div>
+              <div class="text-block" id="lpstab-staking-rewards">-</div>
+            </div>
+            <input type="button" data-wait="Please wait..." class="submit-button w-button" value="Select proposal" ,
+              id="update">
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="columns-2 w-row">
+    <div class="column-7 w-col w-col-6">
+    </div>
+    <div class="column-8 w-col w-col-6">
+      <div class="card-flowbase">
+        <div class="form-block w-form">
+          <form id="stab-form" name="email-form" data-name="Email Form" method="get"
+            data-wf-page-id="65ad7c27b73a50781a45467f" data-wf-element-id="497c8722-5747-bd04-b540-6e9d7be94b7a">
+            <h2 class="title-large">Proposal #-</h2>
+            <div class="form-line-break"></div>
+
+            <h1 class="heading-6">Title</h1>
+            <div class="div-block-6">
+              <div class="text-block">description</div>
+              <div class="text-block" id="lpstab-staking-rewards">-</div>
+            </div>
+            <input type="button" data-wait="Please wait..." class="submit-button w-button" value="Select proposal" ,
+              id="update">
+          </form>
         </div>
       </div>
     </div>
