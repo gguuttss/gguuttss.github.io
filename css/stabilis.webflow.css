@@ -684,6 +684,13 @@ h1 {
   text-decoration: none;
 }
 
+.title-large .centered {
+  text-align: center;
+  text-align: justify;
+  text-align-last: center;
+  -moz-text-align-last: center;
+}
+
 .card-flowbase {
   width: 100%;
   max-width: 420px;
@@ -893,6 +900,15 @@ h1 {
   padding-right: 0;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.home-screen-columns .left-element {
+  flex: 0 0 auto;
+}
+
+.home-screen-columns .right-element {
+  flex: 1;
 }
 
 .column-8 {
