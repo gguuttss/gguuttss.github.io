@@ -103,14 +103,12 @@ h1 {
 .dropdown-custom-button {
   background-color: #969696;
   background-size: 20px;
-  font-family: Lato, sans-serif;
+  font-family: Outfit, sans-serif;
   color: #000;
-  transition: all .3s;
   padding: 10px;
   font-size: 16px;
   box-shadow: 2px 2px 2px rgba(114, 129, 167, .04);
   border-radius: 16px;
-  border: 2px solid #969696;
   width: 100%;
   display: flex;
   align-items: center;
@@ -118,7 +116,6 @@ h1 {
 }
 
 .dropdown-custom-button:hover {
-  border: 2px solid #000;
   background-color: #e4e4e4;
 }
 
@@ -790,7 +787,7 @@ h1 {
 }
 
 .submit-button {
-  width: 97%;
+  width: 100%;
   min-height: 48px;
   color: #000;
   text-align: center;
@@ -841,8 +838,8 @@ h1 {
 }
 
 .submit-button.mini {
-  max-height: none;
-  max-width: none;
+  width: 85px;
+  height: 85px;
   min-height: 0;
   aspect-ratio: 1 / 1;
   border-radius: 400px;
@@ -1391,6 +1388,23 @@ h1 {
   justify-content: center;
   align-self: auto;
   margin-top: 0px;
+  margin-left: 60px;
+  margin-right: 60px;
+  padding: 25px;
+  display: flex;
+}
+
+.container-vote {
+  width: 100%;
+  height: auto;
+  max-width: 980px;
+  background-color: #ffffff;
+  border-radius: 20px;
+  flex-flow: wrap;
+  flex: 0 auto;
+  justify-content: center;
+  align-self: auto;
+  margin-top: 20px;
   margin-left: 60px;
   margin-right: 60px;
   padding: 25px;

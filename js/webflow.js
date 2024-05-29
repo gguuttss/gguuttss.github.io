@@ -3,21 +3,24 @@ import { RadixDappToolkit, DataRequestBuilder, RadixNetwork } from '@radixdlt/ra
 // then use that account for your dAppId
 
 const dAppId = 'account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd'
-let stabIdAddress = "resource_tdx_2_1ngnptx4ly75dwcv2knf6cp957qfjjprsz90kc8qmqh4ttamj4a2as3"
-let componentAddress = "component_tdx_2_1crc4v5vgktc2l6fusvyn00w5gsysqq8vf6l5kl6k2aytthsxwl7h8u"
-let poolComponentAddress = "component_tdx_2_1cqdagch7crr242lggsshgrzmz6zx5r20m5wajqlzz4yule66pw72r3"
-let poolAddress = "pool_tdx_2_1chyk452kzhh05gs8k7ycm8aejlmegesufxg5x4jl0lgy3a2eekcfnt"
-let stabAddress = "resource_tdx_2_1th5hmej7hmvw59ymeaxmerflnhy24drhglstgvcvsc82km9g7vw9dc"
-let cdpAddress = "resource_tdx_2_1ntzy7z9003gntsfqymaczz2mja09genpczhe4e2krdyfutkwnxtl4c"
+let stabIdAddress = "resource_tdx_2_1ngnptx4ly75dwcv2knf6cp957qfjjprsz90kc8qmqh4ttamj4a2as3" //still need
+let componentAddress = "component_tdx_2_1cqeh8j4wgyezttn969kf0c7644m0cc33c0jpfsc9zf770rnpg69y4z"
+let poolComponentAddress = "component_tdx_2_1cp6hegmzx90e6ndhruq6kaucqkk39y045jm2xhd00cu0hgh2ategk2"
+let poolAddress = "pool_tdx_2_1c5as5t4ymlpnr634eluv2s2l7tv4avgrnvu2ednmwlgmc3ytv0lukg"
+let stabAddress = "resource_tdx_2_1t5fksgjt4cf7ru2jfarlvtk3lz33yp48jwqw0u3vxlc70m20nlrxfs"
+let cdpAddress = "resource_tdx_2_1ng08wj8qq35zl74uxgxpl9yu2fr3mrqxxr7x3nyrvptffds6tekerh"
 let xrdAddress = "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc"
-let ilisAddress = "resource_tdx_2_1t4tsw7n2d0yfs27myw7x5khx00an2lwnvdsj9tyhkv3l8xvgn7mxdc"
-let lpAddress = "resource_tdx_2_1t4u2hylmz8gqdgwlwmp0gvhune7mtuw96wf3jq9zttyznr8rj7z56e"
-let liqAddress = "resource_tdx_2_1n2wdumcyxfpvuza9ag7guwfs7zpts3rap8km382rkx5mhea4zg3wk8"
-let markerAddress = "resource_tdx_2_1ngjgrjhhs4uwphdaf8nwvujwe675v9vkwwlenefj7zavqhey3559uy"
-let stakingAddress = "component_tdx_2_1cp3k6zm5xqgx0wcf0qtcndjzlxvpusdfpm4eq4838wuswn5h66j8px"
+let ilisAddress = "resource_tdx_2_1t4tsw7n2d0yfs27myw7x5khx00an2lwnvdsj9tyhkv3l8xvgn7mxdc" //still need
+let lpAddress = "resource_tdx_2_1t58kwzu5fc0ucqfkk6vm0smr3rw4uax0mmskyzkkdsq2jj0538htv0"
+let liqAddress = "resource_tdx_2_1ngtmz07wp3mkzt4f7m2fjm0fwqvzzhe9ha39ysdlrw5qqwu2v7us0f"
+let markerAddress = "resource_tdx_2_1nt8dz29mh8pjgte9gx5992qczsykj27cvckrlycv3pj66ykyxhg2we"
+let stakingAddress = "component_tdx_2_1cp3k6zm5xqgx0wcf0qtcndjzlxvpusdfpm4eq4838wuswn5h66j8px" // still need
 let accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec"
-let stakesKvs = "internal_keyvaluestore_tdx_2_1kzphr34g06wgtygn5eppvtavyt4qptp4xn9y0uzwgdesh324zrl7yu"
+let stakesKvs = "internal_keyvaluestore_tdx_2_1kzphr34g06wgtygn5eppvtavyt4qptp4xn9y0uzwgdesh324zrl7yu" // still need
 let kvsHexes = ["5c805d78ab93fb11d006a1df76c2f432fc9e7db5f1c5d3931900a25ac8298ce3", "5c805d57077a6a6bc8982bdb23bc6a5ae67bfb357dd3636122ac97b323f39988"]
+const acceptedResources = [["XRD", "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc", "", "images/radix-logo.svg", 1, 'XRD', 0],
+["Hermes LSU", "resource_tdx_2_1th9k30slgu9uekfu42llstgcq80dx8d59hxgexe5hdaqzyp8etc2dv", "validator_tdx_2_1s0l6946a2kx33vjmuuh3qrax3ueauznd2fc3d69md2exx29rcnjmnj", "https://hermesprotocol.io/assets/images/icon.svg", 1, 'LSU', 0],
+["Radst0kes LSU", "resource_tdx_2_1thutwwmqwk6z4vyju8v0fhdlxdhgj2h7kgc8822cfsdeyjp7e5j3hd", "validator_tdx_2_1sdvnyupyl2atq72f5lsq7lcyw3cc4vnevf05yvtemn5c8fyncvv3xw", "images/radstokes-logo.png", 1, 'LSU', 0]]
 let selectedText;
 let xrdPrice;
 let interestRate;
@@ -67,13 +70,23 @@ let selectedCdp;
 let selectedId;
 let selectedMarker;
 
-const acceptedResources = [["XRD", "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc", "", "images/radix-logo.svg", 1, 'XRD', 0],
-["Astrolescent LSU", "resource_tdx_2_1t5nr68djv90t3fk9ahqtw3q96ps8mhdsa5lcxgx6unqsj6xjavmpwh", "validator_tdx_2_1sdkarf3cr699ptgdlnyy6nhvelzvjla3kslhlghxcvpnkn3494ttlw", "images/astrolescent-badge.png", 1, 'LSU', 0],
-["Radst0kes LSU", "resource_tdx_2_1tkwt5yn34qkk9lppyjmej8dulmfgaggx954yqz28ffpgn58pvfz04y", "validator_tdx_2_1s0hly3nphfkcztjjyfyn7juxyeev523fkrrzpk9ud4e47eut4zrmp7", "images/radix-logo.svg", 1, 'LSU', 0],
-["Hermes LSU", "resource_tdx_2_1thydcf5zxpp20us8jka3p02ryzudndm82603j306zry8gr23p2s3mu", "validator_tdx_2_1s0j35ansmur5q8kxem4edr23j2leutupveqc9g8kuuj29wc7uvmd8z", "images/radix-logo.svg", 1, 'LSU', 0]]
-
 let resourceAddresses = []
 let validatorAddresses = []
+
+function setChevron(customContent) {
+    var dropdownCustom = customContent.parentElement;
+    var customButton = dropdownCustom.querySelector('.dropdown-custom-button');
+    var chevronDown = customButton.querySelector('.chevron-down');
+    var chevronUp = customButton.querySelector('.chevron-up');
+
+    if (customContent.style.display === 'none') {
+        chevronDown.style.display = 'block';
+        chevronUp.style.display = 'none';
+    } else {
+        chevronDown.style.display = 'none';
+        chevronUp.style.display = 'block';
+    }
+}
 
 async function update_id() {
     if (window.location.pathname === '/incentives') {
@@ -276,26 +289,21 @@ async function update_cdp() {
         document.getElementById('cr').textContent = (cr * xrdPrice * 100).toFixed(2) + "%";
 
         if (status == "Liquidated" || status == "ForceLiquidated") {
-            document.getElementById('close-entire-button').value = "Recover col.";
-            document.getElementById('close-entire-button').style.backgroundColor = 'black';
-            document.getElementById('close-entire-button').style.color = 'white';
             document.getElementById('status').style.color = 'red';
             document.getElementById('debtAmount').textContent = "-";
             document.getElementById('cr').textContent = "-";
         } else if (status == "Marked") {
-            document.getElementById('close-entire-button').value = "Close fully";
             document.getElementById('status').style.color = '#ef7200';
         }
-        else if (status == "Closed" || status == "Healthy") {
-            document.getElementById('close-entire-button').value = "Close fully";
+        else if (status == "Closed") {
             document.getElementById('status').style.color = 'black';
+            document.getElementById('debtAmount').textContent = "-";
+            document.getElementById('cr').textContent = "-";
+            document.getElementById('collateralAmount').textContent = "-";
+        } else if (status == "Healthy") {
+            document.getElementById('status').style.color = 'green';
         }
 
-        if (status !== "Liquidated" && status !== "ForceLiquidated") {
-            document.getElementById('close-entire-button').style.backgroundColor = '#999999';
-            document.getElementById('close-entire-button').style.color = 'black';
-            document.getElementById('close-entire-button').value = "Close fully";
-        }
     }
 }
 
@@ -362,6 +370,7 @@ var buttons = document.querySelectorAll('button.wallet-necessary');
 for (var i = 0; i < buttons.length; i++) {
     buttons[i].addEventListener('click', function () {
         // Store the original text and change the button text to "Connect wallet"
+        update(true);
         if (!isConnected) {
             this.querySelector('.warning').style.display = 'block';
             this.querySelector('.chevron').style.display = 'none';
@@ -382,7 +391,7 @@ function restoreButtonLabels() {
         buttons[i].querySelector('.chevron').style.display = 'block';
         buttons[i].querySelector('.button-text').style.display = 'block';
         buttons[i].querySelector('.button-warning').style.display = 'none';
-        buttons[i].style.backgroundColor = "";
+        buttons[i].style.backgroundColor = '';
     }
     isConnected = true;
 }
@@ -475,13 +484,13 @@ if (window.location.pathname === '/borrow' || window.location.pathname === '/man
                 if (index !== -1) {
                     console.log(i);
                     acceptedResources[index][4] = acceptedResources[index][6] / validators[i].stake_vault.balance;
-                    if (validators[i].metadata.items[0].key === "icon_url") {
+                    /*if (validators[i].metadata.items[0].key === "icon_url") {
                         acceptedResources[index][3] = validators[i].metadata.items[0].value.typed.value;
                     }
                     else {
                         acceptedResources[index][3] = "images/radix-logo-old.png";
-                    }
-
+                    }*/
+                    //can uncomment once validators have better logos
                 }
             }
         })
@@ -490,185 +499,370 @@ if (window.location.pathname === '/borrow' || window.location.pathname === '/man
         });
 }
 
-function update() {
+function update(onlyWallet) {
     // Subscribe to updates to the user's shared wallet data
     rdt.walletApi.walletData$.subscribe((walletData) => {
         console.log("subscription wallet data: ", walletData)
         if (walletData && walletData.accounts && walletData.accounts.length > 0) {
             accountAddress = walletData.accounts[0].address;
             restoreButtonLabels();
+        } else {
+            isConnected = false;
         }
 
-        async function getFungibleResources(accountAddress) {
-            const response = await fetch('https://stokenet.radixdlt.com/state/entity/details', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    addresses: [accountAddress],
-                    aggregation_level: 'Vault',
-                    opt_ins: {
-                        ancestor_identities: true,
-                        component_royalty_vault_balance: true,
-                        package_royalty_vault_balance: true,
-                        non_fungible_include_nfids: true,
-                        explicit_metadata: []
-                    }
-                })
-            });
-
-            const data = await response.json();
-
-            // Iterate over each item in the response
-            const acceptedFungibleResources = data.items.flatMap(item => {
-                // Filter the fungible resources to only include those in the list of accepted resources
-                return item.fungible_resources.items.filter(resource => {
-                    return acceptedResources.some(acceptedResource => acceptedResource[1] === resource.resource_address);
-                }).map(resource => {
-                    // Find the corresponding accepted resource
-                    const acceptedResource = acceptedResources.find(ar => ar[1] === resource.resource_address);
-
-                    // Add the name of the accepted resource to the resource object
-                    resource.name = acceptedResource ? acceptedResource[0] : '';
-                    resource.logo = acceptedResource ? acceptedResource[3] : '';
-                    resource.multiplier = acceptedResource ? acceptedResource[4] : 1;
-                    resource.identifier = acceptedResource ? acceptedResource[5] : '';
-
-                    return resource;
+        if (onlyWallet === false) {
+            async function getFungibleResources(accountAddress) {
+                const response = await fetch('https://stokenet.radixdlt.com/state/entity/details', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        addresses: [accountAddress],
+                        aggregation_level: 'Vault',
+                        opt_ins: {
+                            ancestor_identities: true,
+                            component_royalty_vault_balance: true,
+                            package_royalty_vault_balance: true,
+                            non_fungible_include_nfids: true,
+                            explicit_metadata: []
+                        }
+                    })
                 });
-            });
 
-            // Map each object to its name, resource_address and amount properties
-            const resourceAddressesAndAmounts = acceptedFungibleResources.map(resource => {
-                let amount = 0;
-                if (resource.vaults && resource.vaults.items && resource.vaults.items.length > 0) {
-                    amount = parseFloat(resource.vaults.items[0].amount);
-                }
+                const data = await response.json();
 
-                return {
-                    name: resource.name,
-                    resourceAddress: resource.resource_address,
-                    amount: amount,
-                    logo: resource.logo,
-                    multiplier: resource.multiplier,
-                    identifier: resource.identifier
-                };
-            });
+                // Iterate over each item in the response
+                const acceptedFungibleResources = data.items.flatMap(item => {
+                    // Filter the fungible resources to only include those in the list of accepted resources
+                    return item.fungible_resources.items.filter(resource => {
+                        return acceptedResources.some(acceptedResource => acceptedResource[1] === resource.resource_address);
+                    }).map(resource => {
+                        // Find the corresponding accepted resource
+                        const acceptedResource = acceptedResources.find(ar => ar[1] === resource.resource_address);
 
-            // Sort the array by amount in descending order
-            resourceAddressesAndAmounts.sort((a, b) => b.amount - a.amount);
+                        // Add the name of the accepted resource to the resource object
+                        resource.name = acceptedResource ? acceptedResource[0] : '';
+                        resource.logo = acceptedResource ? acceptedResource[3] : '';
+                        resource.multiplier = acceptedResource ? acceptedResource[4] : 1;
+                        resource.identifier = acceptedResource ? acceptedResource[5] : '';
 
-            return resourceAddressesAndAmounts;
-        }
+                        return resource;
+                    });
+                });
 
-        // Define the request URL and parameters
-        const url_kvs = "https://stokenet.radixdlt.com/state/key-value-store/data";
-        const params_kvs = {
-            "key_value_store_address": stakesKvs,
-            "keys": [
-                { "key_hex": kvsHexes[0] },
-                { "key_hex": kvsHexes[1] },
-                { "key_json": { "kind": "Tuple", "fields": [{ "kind": "U32", "value": "1" }] } }
-            ]
-        };
+                // Map each object to its name, resource_address and amount properties
+                const resourceAddressesAndAmounts = acceptedFungibleResources.map(resource => {
+                    let amount = 0;
+                    if (resource.vaults && resource.vaults.items && resource.vaults.items.length > 0) {
+                        amount = parseFloat(resource.vaults.items[0].amount);
+                    }
 
-        const url_fetch_ids = "https://stokenet.radixdlt.com/state/entity/details";
-        const addresses = [accountAddress, componentAddress, poolComponentAddress, stakingAddress, stabAddress, poolAddress]; // Replace with your addresses
+                    return {
+                        name: resource.name,
+                        resourceAddress: resource.resource_address,
+                        amount: amount,
+                        logo: resource.logo,
+                        multiplier: resource.multiplier,
+                        identifier: resource.identifier
+                    };
+                });
 
-        const requestBody = {
-            "addresses": addresses,
-            "aggregation_level": "Vault",
-            "opt_ins": {
-                "ancestor_identities": false,
-                "component_royalty_vault_balance": false,
-                "package_royalty_vault_balance": false,
-                "non_fungible_include_nfids": true,
-                "explicit_metadata": [
-                    "name",
-                    "description"
+                // Sort the array by amount in descending order
+                resourceAddressesAndAmounts.sort((a, b) => b.amount - a.amount);
+
+                return resourceAddressesAndAmounts;
+            }
+
+            // Define the request URL and parameters
+            const url_kvs = "https://stokenet.radixdlt.com/state/key-value-store/data";
+            const params_kvs = {
+                "key_value_store_address": stakesKvs,
+                "keys": [
+                    { "key_hex": kvsHexes[0] },
+                    { "key_hex": kvsHexes[1] },
+                    { "key_json": { "kind": "Tuple", "fields": [{ "kind": "U32", "value": "1" }] } }
                 ]
+            };
+
+            const url_fetch_ids = "https://stokenet.radixdlt.com/state/entity/details";
+            const addresses = [accountAddress, componentAddress, poolComponentAddress, stakingAddress, stabAddress, poolAddress]; // Replace with your addresses
+
+            const requestBody = {
+                "addresses": addresses,
+                "aggregation_level": "Vault",
+                "opt_ins": {
+                    "ancestor_identities": false,
+                    "component_royalty_vault_balance": false,
+                    "package_royalty_vault_balance": false,
+                    "non_fungible_include_nfids": true,
+                    "explicit_metadata": [
+                        "name",
+                        "description"
+                    ]
+                }
+            };
+
+            async function fetchData() {
+                try {
+                    // Start both fetch requests
+                    /*const fetchPromise1 = fetch(url_kvs, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(params_kvs)
+                    });*/
+
+                    const fetchPromise2 = fetch(url_fetch_ids, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    // Wait for both fetch requests to complete
+                    const [/*response1,*/response2] = await Promise.all([/*fetchPromise1, */fetchPromise2]);
+
+                    // Check the status of the responses
+                    if (/*!response1.ok || */!response2.ok) {
+                        throw new Error(`HTTP error! status: ${response2.status/*change this shit to 1*/}, ${response2.status}`);
+                    }
+
+                    // Parse the responses as JSON
+                    const [/*data1, */data2] = await Promise.all([/*response1.json(), */response2.json()]);
+
+                    // Extract the reward_amount values
+                    /*const rewardAmounts = data1.entries
+                        .map(entry => entry.value.programmatic_json.fields)
+                        .flat()
+                        .filter(field => field.field_name === 'reward_amount')
+                        .map(field => field.value);
+
+                    stakeRewards = rewardAmounts[0];
+                    lpRewards = rewardAmounts[1];*/
+
+                    // Process the second response
+                    let sortedItems = [];
+                    addresses.forEach(address => {
+                        let item = data2.items.find(item => item.address === address);
+                        if (item) {
+                            sortedItems.push(item);
+                        }
+                    });
+
+                    return sortedItems;
+                } catch (error) {
+                    console.error('Error:', error);
+                }
             }
-        };
 
-        async function fetchData() {
-            try {
-                // Start both fetch requests
-                const fetchPromise1 = fetch(url_kvs, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(params_kvs)
-                });
+            function useData(data) {
+                stab_ids = []
+                cdp_ids = []
+                marker_ids = []
+                internalPrice = data[1].details.state.fields[12].value;
+                xrdPrice = data[1].details.state.fields[19].value;
+                stabXrdRatio = internalPrice / xrdPrice;
+                validatorMultiplier = 1;
+                if (window.location.pathname === '/borrow') {
+                    getFungibleResources(accountAddress).then(resourceAddressesAndAmounts => {
+                        var dropdownContent = document.querySelector('.dropdown-custom-content');
+                        dropdownContent.innerHTML = '';
 
-                const fetchPromise2 = fetch(url_fetch_ids, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestBody)
-                });
+                        // Add new options
+                        resourceAddressesAndAmounts.forEach(resource => {
+                            // Fetch the name, subtext, and logo
+                            var name = resource.name;
+                            var address = resource.resourceAddress;
+                            var logoUrl = resource.logo;
+                            var subtext = 'max. ' + resource.amount.toFixed(2);
+                            var slider = document.getElementById('slider-single');
+                            let colToUse = document.getElementById("colToUse");
 
-                // Wait for both fetch requests to complete
-                const [response1, response2] = await Promise.all([fetchPromise1, fetchPromise2]);
+                            if (address === selectedCollateral) {
+                                availableCollateral = resource.amount;
+                                document.getElementById('col-max').textContent = "max. " + availableCollateral.toFixed(2).toLocaleString('en-US');
+                            }
 
-                // Check the status of the responses
-                if (!response1.ok || !response2.ok) {
-                    throw new Error(`HTTP error! status: ${response1.status}, ${response2.status}`);
+                            // Create a new option
+                            var option = document.createElement('div');
+                            option.className = 'dropdown-custom-option';
+                            option.dataset.logoUrl = logoUrl;
+                            option.setAttribute('tabindex', '0'); // Make the option focusable
+
+                            // Add the logo image to the option
+                            var logoImage = document.createElement('img');
+                            logoImage.src = logoUrl;
+                            logoImage.alt = 'Logo';
+                            option.appendChild(logoImage);
+
+                            // Add the text to the option
+                            var optionText = document.createElement('div');
+                            optionText.className = 'option-text';
+
+                            var optionTitle = document.createElement('div');
+                            optionTitle.className = 'option-title';
+                            optionTitle.textContent = name;
+                            optionText.appendChild(optionTitle);
+
+                            var optionSubtext = document.createElement('div');
+                            optionSubtext.className = 'option-subtext';
+                            optionSubtext.textContent = subtext;
+                            optionText.appendChild(optionSubtext);
+
+                            option.appendChild(optionText);
+
+                            // Attach the click event listener
+                            option.addEventListener('click', function () {
+                                document.getElementById('col-max').textContent = "max. " + resource.amount.toLocaleString('en-US');
+                                availableCollateral = resource.amount;
+                                selectedCollateral = address;
+                                selectedText = resource.identifier;
+                                // Remove the 'selected' class from all options
+                                validatorMultiplier = resource.multiplier;
+                                var options = document.querySelectorAll('.dropdown-custom-option');
+                                options.forEach(function (otherOption) {
+                                    otherOption.classList.remove('selected');
+                                });
+
+                                // Add the 'selected' class to the clicked option
+                                option.classList.add('selected');
+
+                                // Set the button text to the option title
+                                var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                                dropdownButton.textContent = name;
+
+                                // Hide the dropdown content
+                                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                                dropdownContent.style.display = 'none';
+                                setChevron(dropdownContent);
+
+                                // Change the logo
+                                var logoImage = document.querySelector('.stab-logo');
+                                logoImage.src = logoUrl;
+
+                                if (colToUse.value !== "") {
+                                    let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
+                                    collateralAmount = colToUse.value;
+                                    document.getElementById("outputStab").innerHTML = customRound(result, 4);
+                                } else {
+                                    let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
+                                    collateralAmount = 0;
+                                    document.getElementById("outputStab").innerHTML = customRound(result, 4);
+                                }
+
+                                if (colToUse.value !== "") {
+                                    document.getElementById("ratio-suffix").innerHTML = "STAB";
+                                }
+                                else {
+                                    document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
+                                }
+                            });
+
+                            // Append the new option to the dropdown content
+                            var dropdownContent = document.querySelector('.dropdown-custom-content');
+                            dropdownContent.appendChild(option);
+                        });
+                    });
+
+                    if (!isConnected) {
+                        var dropdownContent = document.querySelector('.dropdown-custom-content');
+                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                        dropdownContent.innerHTML = '';
+                        dropdownButton.textContent = 'select collateral';
+                        var logoImage = document.querySelector('.stab-logo');
+                        logoImage.src = 'images/radix-logo.svg';
+                    }
                 }
 
-                // Parse the responses as JSON
-                const [data1, data2] = await Promise.all([response1.json(), response2.json()]);
-
-                // Extract the reward_amount values
-                const rewardAmounts = data1.entries
-                    .map(entry => entry.value.programmatic_json.fields)
-                    .flat()
-                    .filter(field => field.field_name === 'reward_amount')
-                    .map(field => field.value);
-
-                stakeRewards = rewardAmounts[0];
-                lpRewards = rewardAmounts[1];
-
-                // Process the second response
-                let sortedItems = [];
-                addresses.forEach(address => {
-                    let item = data2.items.find(item => item.address === address);
-                    if (item) {
-                        sortedItems.push(item);
+                data.forEach(item => {
+                    if (item.non_fungible_resources) {
+                        item.non_fungible_resources.items.forEach(nfrItem => {
+                            if (nfrItem.resource_address === stabIdAddress && nfrItem.vaults) {
+                                nfrItem.vaults.items.forEach(vault => {
+                                    stab_ids = stab_ids.concat(vault.items);
+                                });
+                            }
+                            if (nfrItem.resource_address === cdpAddress && nfrItem.vaults) {
+                                nfrItem.vaults.items.forEach(vault => {
+                                    cdp_ids = cdp_ids.concat(vault.items);
+                                });
+                            }
+                            if (nfrItem.resource_address === markerAddress && nfrItem.vaults) {
+                                nfrItem.vaults.items.forEach(vault => {
+                                    marker_ids = marker_ids.concat(vault.items);
+                                });
+                            }
+                        });
                     }
                 });
+                //fix for gov: currentPeriod = data[3].details.state.fields[2].value;
+                //fix for gov: let updateRewards = data[1].details.state.fields[30].value;
+                walletIlis = getResourceAmount(ilisAddress, data, 0);
+                walletXrd = getResourceAmount(xrdAddress, data, 0);
+                walletLp = getResourceAmount(lpAddress, data, 0);
+                walletStab = getResourceAmount(stabAddress, data, 0);
+                console.log(data);
+                xrdPoolAmount = getResourceAmount(xrdAddress, data, 4);
+                stabPoolAmount = getResourceAmount(stabAddress, data, 4);
+                interestRate = (100 * ((data[1].details.state.fields[14].value ** (24 * 60 * 365)) - 1)).toFixed(2);
 
-                return sortedItems;
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
+                if (window.location.pathname === '/incentives') {
+                    document.getElementById('ilis-staking-rewards').textContent = stakeRewards + " ILIS/day";
+                    document.getElementById('lpstab-staking-rewards').textContent = lpRewards + " ILIS/day";
+                    document.getElementById('update-rewards').textContent = updateRewards + " ILIS/day";
+                }
 
-        function useData(data) {
-            stab_ids = []
-            cdp_ids = []
-            marker_ids = []
-            internalPrice = data[1].details.state.fields[13].value;
-            xrdPrice = data[1].details.state.fields[21].value;
-            stabXrdRatio = internalPrice / xrdPrice;
-            validatorMultiplier = 1;
-            if (window.location.pathname === '/borrow') {
-                getFungibleResources(accountAddress).then(resourceAddressesAndAmounts => {
+                if (window.location.pathname === '/' || window.location.pathname === '/secret_index' || window.location.pathname === '/index') {
+                    document.getElementById('interest-rate').textContent = interestRate;
+                    document.getElementById('circulating-counter').textContent = (1 * data[3].details.total_supply).toFixed(0);
+                    document.getElementById('price-counter').textContent = (xrdPrice * stabXrdRatio).toFixed(2);
+                }
+
+                if (window.location.pathname === '/swap') {
+                    if (sell == true) {
+                        formattedWallet = Math.floor(walletXrd * 10) / 10;
+                        document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
+                    } else {
+                        if (walletStab >= 0.1) {
+                            formattedWallet = Math.floor((walletStab - 0.1) * 10) / 10;
+                        } else {
+                            formattedWallet = 0;
+                        }
+                        document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
+                    }
+                    document.getElementById('internal-price-xrd').innerHTML = stabXrdRatio.toFixed(2) + " XRD";
+                    document.getElementById('internal-price-usd').innerHTML = "$" + (stabXrdRatio * xrdPrice).toFixed(2);
+                    document.getElementById('market-price-xrd').innerHTML = (xrdPoolAmount / stabPoolAmount).toFixed(2) + " XRD";
+                    document.getElementById('market-price-usd').innerHTML = "$" + ((xrdPoolAmount / stabPoolAmount) * xrdPrice).toFixed(2);
+                    document.getElementById('interest-rate').innerHTML = interestRate + "%/year";
+                    if (xrdPoolAmount / stabPoolAmount < 0.995 * stabXrdRatio) {
+                        document.getElementById("recommendation").innerHTML = `<strong>Market price &lt; Internal price</strong>, sell XRD to arbitrage!`;
+                    } else if (xrdPoolAmount / stabPoolAmount > 1.005 * stabXrdRatio) {
+                        document.getElementById("recommendation").innerHTML = `<strong>Market price &gt; Internal price</strong>, sell STAB to arbitrage!`;
+                    }
+                    else {
+                        document.getElementById("recommendation").innerHTML = `Price error is within acceptable bounds. Minimal arbitrage opportunities.`;
+                    }
+                    document.getElementById('provide-xrd-amount').textContent = "max. " + (Math.floor(walletXrd * 10) / 10).toLocaleString('en-US');
+                    if (walletStab >= 0.1) {
+                        document.getElementById('provide-stab-amount').textContent = "max. " + (Math.floor((walletStab - 0.1) * 10) / 10).toLocaleString('en-US');
+                    } else {
+                        document.getElementById('provide-stab-amount').textContent = "max. " + 0;
+                    }
+                    document.getElementById('remove-lp-amount').textContent = "max. " + (Math.floor(walletLp * 10) / 10).toLocaleString('en-US');
+                }
+
+                if (window.location.pathname === '/liquidations') {
+                    selectedMarker = undefined;
                     var dropdownContent = document.querySelector('.dropdown-custom-content');
                     dropdownContent.innerHTML = '';
-
-                    // Add new options
-                    resourceAddressesAndAmounts.forEach(resource => {
-                        // Fetch the name, subtext, and logo
-                        var name = resource.name;
-                        var address = resource.resourceAddress;
-                        var logoUrl = resource.logo;
-                        var subtext = 'max. ' + resource.amount.toFixed(2);
-                        var slider = document.getElementById('slider-single');
-                        let colToUse = document.getElementById("colToUse");
-
+                    marker_ids.forEach(id => {
+                        var name = id;
+                        var logoUrl = 'images/marker-receipt.png'
+                        var subtext = "Stabilis Marker Receipt";
 
                         // Create a new option
                         var option = document.createElement('div');
@@ -680,6 +874,7 @@ function update() {
                         var logoImage = document.createElement('img');
                         logoImage.src = logoUrl;
                         logoImage.alt = 'Logo';
+                        logoImage.style.borderRadius = '0';
                         option.appendChild(logoImage);
 
                         // Add the text to the option
@@ -700,12 +895,7 @@ function update() {
 
                         // Attach the click event listener
                         option.addEventListener('click', function () {
-                            document.getElementById('col-max').textContent = "max. " + resource.amount.toLocaleString('en-US');
-                            availableCollateral = resource.amount;
-                            selectedCollateral = address;
-                            selectedText = resource.identifier;
                             // Remove the 'selected' class from all options
-                            validatorMultiplier = resource.multiplier;
                             var options = document.querySelectorAll('.dropdown-custom-option');
                             options.forEach(function (otherOption) {
                                 otherOption.classList.remove('selected');
@@ -715,398 +905,248 @@ function update() {
                             option.classList.add('selected');
 
                             // Set the button text to the option title
-                            var dropdownButton = document.querySelector('.dropdown-custom-button');
-                            dropdownButton.textContent = name;
+                            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                            dropdownButton.textContent = "Marker " + name;
 
                             // Hide the dropdown content
                             var dropdownContent = document.querySelector('.dropdown-custom-content');
                             dropdownContent.style.display = 'none';
+                            setChevron(dropdownContent);
 
-                            // Change the logo
-                            var logoImage = document.querySelector('.stab-logo');
-                            logoImage.src = logoUrl;
+                            selectedMarker = id;
 
-                            if (colToUse.value !== "") {
-                                let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
-                                collateralAmount = colToUse.value;
-                                document.getElementById("outputStab").innerHTML = customRound(result, 4);
-                            } else {
-                                let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
-                                collateralAmount = 0;
-                                document.getElementById("outputStab").innerHTML = customRound(result, 4);
-                            }
-
-                            if (colToUse.value !== "") {
-                                document.getElementById("ratio-suffix").innerHTML = "STAB";
-                            }
-                            else {
-                                document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
-                            }
+                            update_liq();
                         });
 
                         // Append the new option to the dropdown content
                         var dropdownContent = document.querySelector('.dropdown-custom-content');
                         dropdownContent.appendChild(option);
                     });
-                });
-            }
 
-            data.forEach(item => {
-                if (item.non_fungible_resources) {
-                    item.non_fungible_resources.items.forEach(nfrItem => {
-                        if (nfrItem.resource_address === stabIdAddress && nfrItem.vaults) {
-                            nfrItem.vaults.items.forEach(vault => {
-                                stab_ids = stab_ids.concat(vault.items);
-                            });
-                        }
-                        if (nfrItem.resource_address === cdpAddress && nfrItem.vaults) {
-                            nfrItem.vaults.items.forEach(vault => {
-                                cdp_ids = cdp_ids.concat(vault.items);
-                            });
-                        }
-                        if (nfrItem.resource_address === markerAddress && nfrItem.vaults) {
-                            nfrItem.vaults.items.forEach(vault => {
-                                marker_ids = marker_ids.concat(vault.items);
-                            });
-                        }
-                    });
-                }
-            });
-            currentPeriod = data[3].details.state.fields[2].value;
-            let updateRewards = data[1].details.state.fields[30].value;
-            walletIlis = getResourceAmount(ilisAddress, data, 0);
-            walletXrd = getResourceAmount(xrdAddress, data, 0);
-            walletLp = getResourceAmount(lpAddress, data, 0);
-            walletStab = getResourceAmount(stabAddress, data, 0);
-            xrdPoolAmount = getResourceAmount(xrdAddress, data, 5);
-            stabPoolAmount = getResourceAmount(stabAddress, data, 5);
-            interestRate = (100 * ((data[1].details.state.fields[15].value ** (24 * 60 * 365)) - 1)).toFixed(2);
-
-            if (window.location.pathname === '/incentives') {
-                document.getElementById('ilis-staking-rewards').textContent = stakeRewards + " ILIS/day";
-                document.getElementById('lpstab-staking-rewards').textContent = lpRewards + " ILIS/day";
-                document.getElementById('update-rewards').textContent = updateRewards + " ILIS/day";
-            }
-
-            if (window.location.pathname === '/' || window.location.pathname === '/secret_index' || window.location.pathname === '/index') {
-                document.getElementById('interest-rate').textContent = interestRate;
-                document.getElementById('circulating-counter').textContent = (1 * data[4].details.total_supply).toFixed(0);
-                document.getElementById('price-counter').textContent = (xrdPrice * stabXrdRatio).toFixed(2);
-            }
-
-            if (window.location.pathname === '/swap') {
-                if (sell == true) {
-                    formattedWallet = Math.floor(walletXrd * 10) / 10;
-                    document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
-                } else {
-                    if (walletStab >= 0.1) {
-                        formattedWallet = Math.floor((walletStab - 0.1) * 10) / 10;
-                    } else {
-                        formattedWallet = 0;
-                    }
-                    document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
-                }
-                document.getElementById('internal-price-xrd').innerHTML = stabXrdRatio.toFixed(2) + " XRD";
-                document.getElementById('internal-price-usd').innerHTML = "$" + (stabXrdRatio * xrdPrice).toFixed(2);
-                document.getElementById('market-price-xrd').innerHTML = (xrdPoolAmount / stabPoolAmount).toFixed(2) + " XRD";
-                document.getElementById('market-price-usd').innerHTML = "$" + ((xrdPoolAmount / stabPoolAmount) * xrdPrice).toFixed(2);
-                document.getElementById('interest-rate').innerHTML = interestRate + "%/year";
-                if (xrdPoolAmount / stabPoolAmount < 0.995 * stabXrdRatio) {
-                    document.getElementById("recommendation").innerHTML = `<strong>Market price &lt; Internal price</strong>, sell XRD to arbitrage!`;
-                } else if (xrdPoolAmount / stabPoolAmount > 1.005 * stabXrdRatio) {
-                    document.getElementById("recommendation").innerHTML = `<strong>Market price &gt; Internal price</strong>, sell STAB to arbitrage!`;
-                }
-                else {
-                    document.getElementById("recommendation").innerHTML = `Price error is within acceptable bounds. Minimal arbitrage opportunities.`;
-                }
-                document.getElementById('provide-xrd-amount').textContent = "max. " + (Math.floor(walletXrd * 10) / 10).toLocaleString('en-US');
-                if (walletStab >= 0.1) {
-                    document.getElementById('provide-stab-amount').textContent = "max. " + (Math.floor((walletStab - 0.1) * 10) / 10).toLocaleString('en-US');
-                } else {
-                    document.getElementById('provide-stab-amount').textContent = "max. " + 0;
-                }
-                document.getElementById('remove-lp-amount').textContent = "max. " + (Math.floor(walletLp * 10) / 10).toLocaleString('en-US');
-            }
-
-            if (window.location.pathname === '/liquidations') {
-                selectedMarker = undefined;
-                var dropdownContent = document.querySelector('.dropdown-custom-content');
-                dropdownContent.innerHTML = '';
-                marker_ids.forEach(id => {
-                    var name = id;
-                    var logoUrl = 'images/marker-receipt.png'
-                    var subtext = "Stabilis Marker Receipt";
-
-                    // Create a new option
-                    var option = document.createElement('div');
-                    option.className = 'dropdown-custom-option';
-                    option.dataset.logoUrl = logoUrl;
-                    option.setAttribute('tabindex', '0'); // Make the option focusable
-
-                    // Add the logo image to the option
-                    var logoImage = document.createElement('img');
-                    logoImage.src = logoUrl;
-                    logoImage.alt = 'Logo';
-                    logoImage.style.borderRadius = '0';
-                    option.appendChild(logoImage);
-
-                    // Add the text to the option
-                    var optionText = document.createElement('div');
-                    optionText.className = 'option-text';
-
-                    var optionTitle = document.createElement('div');
-                    optionTitle.className = 'option-title';
-                    optionTitle.textContent = name;
-                    optionText.appendChild(optionTitle);
-
-                    var optionSubtext = document.createElement('div');
-                    optionSubtext.className = 'option-subtext';
-                    optionSubtext.textContent = subtext;
-                    optionText.appendChild(optionSubtext);
-
-                    option.appendChild(optionText);
-
-                    // Attach the click event listener
-                    option.addEventListener('click', function () {
-                        // Remove the 'selected' class from all options
-                        var options = document.querySelectorAll('.dropdown-custom-option');
-                        options.forEach(function (otherOption) {
-                            otherOption.classList.remove('selected');
-                        });
-
-                        // Add the 'selected' class to the clicked option
-                        option.classList.add('selected');
-
-                        // Set the button text to the option title
-                        var dropdownButton = document.querySelector('.dropdown-custom-button');
-                        dropdownButton.textContent = "Marker " + name;
-
-                        // Hide the dropdown content
-                        var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        dropdownContent.style.display = 'none';
-
-                        selectedMarker = id;
-
+                    if (selectedId !== undefined) {
                         update_liq();
-                    });
-
-                    // Append the new option to the dropdown content
-                    var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    dropdownContent.appendChild(option);
-                });
-
-                if (selectedId !== undefined) {
-                    update_liq();
-                } else {
-                    var dropdownButton = document.querySelector('.dropdown-custom-button');
-                    dropdownButton.textContent = "Select a marker";
-                    document.getElementById('marker-time').textContent = "-";
-                    document.getElementById('marker-state').textContent = "-";
-                    document.getElementById('status').textContent = "-";
-                    document.getElementById('collateralAmount').textContent = "-";
-                    document.getElementById('debtAmount').textContent = "-";
-                    document.getElementById('cr').textContent = "-";
+                    } else {
+                        if (isConnected === false) {
+                            dropdownContent.innerHTML = '';
+                        }
+                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                        dropdownButton.textContent = "select a marker";
+                        document.getElementById('marker-time').textContent = "-";
+                        document.getElementById('marker-state').textContent = "-";
+                        document.getElementById('status').textContent = "-";
+                        document.getElementById('collateralAmount').textContent = "-";
+                        document.getElementById('debtAmount').textContent = "-";
+                        document.getElementById('cr').textContent = "-";
+                    }
                 }
-            }
 
-            if (window.location.pathname === '/incentives') {
-                selectedId = undefined;
-                var dropdownContent = document.querySelector('.dropdown-custom-content');
-                dropdownContent.innerHTML = '';
+                if (window.location.pathname === '/incentives') {
+                    selectedId = undefined;
+                    var dropdownContent = document.querySelector('.dropdown-custom-content');
+                    dropdownContent.innerHTML = '';
 
-                stab_ids.forEach(id => {
-                    var name = id;
-                    var logoUrl = 'images/staking-id.png'
-                    var subtext = "Stabilis Staking ID";
+                    stab_ids.forEach(id => {
+                        var name = id;
+                        var logoUrl = 'images/staking-id.png'
+                        var subtext = "Stabilis Staking ID";
 
-                    // Create a new option
-                    var option = document.createElement('div');
-                    option.className = 'dropdown-custom-option';
-                    option.dataset.logoUrl = logoUrl;
-                    option.setAttribute('tabindex', '0'); // Make the option focusable
+                        // Create a new option
+                        var option = document.createElement('div');
+                        option.className = 'dropdown-custom-option';
+                        option.dataset.logoUrl = logoUrl;
+                        option.setAttribute('tabindex', '0'); // Make the option focusable
 
-                    // Add the logo image to the option
-                    var logoImage = document.createElement('img');
-                    logoImage.src = logoUrl;
-                    logoImage.alt = 'Logo';
-                    logoImage.style.borderRadius = '0';
-                    option.appendChild(logoImage);
+                        // Add the logo image to the option
+                        var logoImage = document.createElement('img');
+                        logoImage.src = logoUrl;
+                        logoImage.alt = 'Logo';
+                        logoImage.style.borderRadius = '0';
+                        option.appendChild(logoImage);
 
-                    // Add the text to the option
-                    var optionText = document.createElement('div');
-                    optionText.className = 'option-text';
+                        // Add the text to the option
+                        var optionText = document.createElement('div');
+                        optionText.className = 'option-text';
 
-                    var optionTitle = document.createElement('div');
-                    optionTitle.className = 'option-title';
-                    optionTitle.textContent = name;
-                    optionText.appendChild(optionTitle);
+                        var optionTitle = document.createElement('div');
+                        optionTitle.className = 'option-title';
+                        optionTitle.textContent = name;
+                        optionText.appendChild(optionTitle);
 
-                    var optionSubtext = document.createElement('div');
-                    optionSubtext.className = 'option-subtext';
-                    optionSubtext.textContent = subtext;
-                    optionText.appendChild(optionSubtext);
+                        var optionSubtext = document.createElement('div');
+                        optionSubtext.className = 'option-subtext';
+                        optionSubtext.textContent = subtext;
+                        optionText.appendChild(optionSubtext);
 
-                    option.appendChild(optionText);
+                        option.appendChild(optionText);
 
-                    // Attach the click event listener
-                    option.addEventListener('click', function () {
-                        // Remove the 'selected' class from all options
-                        var options = document.querySelectorAll('.dropdown-custom-option');
-                        options.forEach(function (otherOption) {
-                            otherOption.classList.remove('selected');
+                        // Attach the click event listener
+                        option.addEventListener('click', function () {
+                            // Remove the 'selected' class from all options
+                            var options = document.querySelectorAll('.dropdown-custom-option');
+                            options.forEach(function (otherOption) {
+                                otherOption.classList.remove('selected');
+                            });
+
+                            // Add the 'selected' class to the clicked option
+                            option.classList.add('selected');
+
+                            // Set the button text to the option title
+                            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                            dropdownButton.textContent = "ID " + name;
+
+                            // Hide the dropdown content
+                            var dropdownContent = document.querySelector('.dropdown-custom-content');
+                            dropdownContent.style.display = 'none';
+                            setChevron(dropdownContent);
+
+                            selectedId = id;
+
+                            update_id();
                         });
 
-                        // Add the 'selected' class to the clicked option
-                        option.classList.add('selected');
-
-                        // Set the button text to the option title
-                        var dropdownButton = document.querySelector('.dropdown-custom-button');
-                        dropdownButton.textContent = "ID " + name;
-
-                        // Hide the dropdown content
+                        // Append the new option to the dropdown content
                         var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        dropdownContent.style.display = 'none';
+                        dropdownContent.appendChild(option);
+                    });
 
-                        selectedId = id;
-
+                    if (selectedId !== undefined) {
                         update_id();
-                    });
+                    } else {
+                        if (isConnected === false) {
+                            dropdownContent.innerHTML = '';
+                        }
+                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                        dropdownButton.textContent = "Select ID";
+                        document.getElementById('ilisAmountId').textContent = "-";
+                        document.getElementById('lpAmountId').textContent = "-";
+                        document.getElementById('nextClaim').textContent = "-";
+                        let stakeIlisMax = document.getElementById('stake-ilis-amount');
+                        stakeIlisMax.textContent = "max. -";
+                        var cloneIlis = stakeIlisMax.cloneNode(true);
+                        stakeIlisMax.parentNode.replaceChild(cloneIlis, stakeIlisMax);
 
-                    // Append the new option to the dropdown content
-                    var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    dropdownContent.appendChild(option);
-                });
+                        let stakeLpMax = document.getElementById('stake-lp-amount');
+                        stakeLpMax.textContent = "max. -";
+                        var cloneLp = stakeLpMax.cloneNode(true);
+                        stakeLpMax.parentNode.replaceChild(cloneLp, stakeLpMax);
 
-                if (selectedId !== undefined) {
-                    update_id();
-                } else {
-                    var dropdownButton = document.querySelector('.dropdown-custom-button');
-                    dropdownButton.textContent = "Select ID";
-                    document.getElementById('ilisAmountId').textContent = "-";
-                    document.getElementById('lpAmountId').textContent = "-";
-                    document.getElementById('nextClaim').textContent = "-";
-                    let stakeIlisMax = document.getElementById('stake-ilis-amount');
-                    stakeIlisMax.textContent = "max. -";
-                    var cloneIlis = stakeIlisMax.cloneNode(true);
-                    stakeIlisMax.parentNode.replaceChild(cloneIlis, stakeIlisMax);
+                        let unstakeIlisMax = document.getElementById('unstake-ilis-amount');
+                        unstakeIlisMax.textContent = "max. -";
+                        var cloneUnstakeIlis = unstakeIlisMax.cloneNode(true);
+                        unstakeIlisMax.parentNode.replaceChild(cloneUnstakeIlis, unstakeIlisMax);
 
-                    let stakeLpMax = document.getElementById('stake-lp-amount');
-                    stakeLpMax.textContent = "max. -";
-                    var cloneLp = stakeLpMax.cloneNode(true);
-                    stakeLpMax.parentNode.replaceChild(cloneLp, stakeLpMax);
-
-                    let unstakeIlisMax = document.getElementById('unstake-ilis-amount');
-                    unstakeIlisMax.textContent = "max. -";
-                    var cloneUnstakeIlis = unstakeIlisMax.cloneNode(true);
-                    unstakeIlisMax.parentNode.replaceChild(cloneUnstakeIlis, unstakeIlisMax);
-
-                    let unstakeLpMax = document.getElementById('unstake-lp-amount');
-                    unstakeLpMax.textContent = "max. -";
-                    var cloneUnstakeLp = unstakeLpMax.cloneNode(true);
-                    unstakeLpMax.parentNode.replaceChild(cloneUnstakeLp, unstakeLpMax);
+                        let unstakeLpMax = document.getElementById('unstake-lp-amount');
+                        unstakeLpMax.textContent = "max. -";
+                        var cloneUnstakeLp = unstakeLpMax.cloneNode(true);
+                        unstakeLpMax.parentNode.replaceChild(cloneUnstakeLp, unstakeLpMax);
+                    }
                 }
-            }
 
-            if (window.location.pathname === '/borrow' || window.location.pathname === '/manage-loans') {
-                document.getElementById('interest-rate').textContent = interestRate + "%";
-                document.getElementById('circulating-stab').textContent = (1 * data[4].details.total_supply).toFixed(0);
-                document.getElementById('stab-internal-price').textContent = "$" + (xrdPrice * stabXrdRatio).toFixed(2);
-                document.getElementById('stab-market-price').textContent = "$" + (xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(2);
-            }
+                if (window.location.pathname === '/borrow' || window.location.pathname === '/manage-loans') {
+                    document.getElementById('interest-rate').textContent = interestRate + "%";
+                    document.getElementById('circulating-stab').textContent = (1 * data[3].details.total_supply).toFixed(0);
+                    document.getElementById('stab-internal-price').textContent = "$" + (xrdPrice * stabXrdRatio).toFixed(2);
+                    document.getElementById('stab-market-price').textContent = "$" + (xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(2);
+                }
 
-            if (window.location.pathname === '/manage-loans') {
-                selectedCdp = undefined;
-                var dropdownContent = document.querySelector('.dropdown-custom-content');
-                dropdownContent.innerHTML = '';
+                if (window.location.pathname === '/manage-loans') {
+                    selectedCdp = undefined;
+                    var dropdownContent = document.querySelector('.dropdown-custom-content');
+                    dropdownContent.innerHTML = '';
 
-                // Get the dropdown element
-                cdp_ids.forEach(id => {
-                    var name = id;
-                    var logoUrl = 'images/receipt.png'
-                    var subtext = "Stabilis Loan Receipt";
+                    // Get the dropdown element
+                    cdp_ids.forEach(id => {
+                        var name = id;
+                        var logoUrl = 'images/receipt.png'
+                        var subtext = "Stabilis Loan Receipt";
 
-                    // Create a new option
-                    var option = document.createElement('div');
-                    option.className = 'dropdown-custom-option';
-                    option.dataset.logoUrl = logoUrl;
-                    option.setAttribute('tabindex', '0'); // Make the option focusable
+                        // Create a new option
+                        var option = document.createElement('div');
+                        option.className = 'dropdown-custom-option';
+                        option.dataset.logoUrl = logoUrl;
+                        option.setAttribute('tabindex', '0'); // Make the option focusable
 
-                    // Add the logo image to the option
-                    var logoImage = document.createElement('img');
-                    logoImage.src = logoUrl;
-                    logoImage.alt = 'Logo';
-                    logoImage.style.borderRadius = '0';
-                    option.appendChild(logoImage);
+                        // Add the logo image to the option
+                        var logoImage = document.createElement('img');
+                        logoImage.src = logoUrl;
+                        logoImage.alt = 'Logo';
+                        logoImage.style.borderRadius = '0';
+                        option.appendChild(logoImage);
 
-                    // Add the text to the option
-                    var optionText = document.createElement('div');
-                    optionText.className = 'option-text';
+                        // Add the text to the option
+                        var optionText = document.createElement('div');
+                        optionText.className = 'option-text';
 
-                    var optionTitle = document.createElement('div');
-                    optionTitle.className = 'option-title';
-                    optionTitle.textContent = name;
-                    optionText.appendChild(optionTitle);
+                        var optionTitle = document.createElement('div');
+                        optionTitle.className = 'option-title';
+                        optionTitle.textContent = name;
+                        optionText.appendChild(optionTitle);
 
-                    var optionSubtext = document.createElement('div');
-                    optionSubtext.className = 'option-subtext';
-                    optionSubtext.textContent = subtext;
-                    optionText.appendChild(optionSubtext);
+                        var optionSubtext = document.createElement('div');
+                        optionSubtext.className = 'option-subtext';
+                        optionSubtext.textContent = subtext;
+                        optionText.appendChild(optionSubtext);
 
-                    option.appendChild(optionText);
+                        option.appendChild(optionText);
 
-                    // Attach the click event listener
-                    option.addEventListener('click', function () {
-                        // Remove the 'selected' class from all options
-                        var options = document.querySelectorAll('.dropdown-custom-option');
-                        options.forEach(function (otherOption) {
-                            otherOption.classList.remove('selected');
+                        // Attach the click event listener
+                        option.addEventListener('click', function () {
+                            // Remove the 'selected' class from all options
+                            var options = document.querySelectorAll('.dropdown-custom-option');
+                            options.forEach(function (otherOption) {
+                                otherOption.classList.remove('selected');
+                            });
+
+                            // Add the 'selected' class to the clicked option
+                            option.classList.add('selected');
+
+                            // Set the button text to the option title
+                            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                            dropdownButton.textContent = "Receipt " + name;
+
+                            // Hide the dropdown content
+                            var dropdownContent = document.querySelector('.dropdown-custom-content');
+                            dropdownContent.style.display = 'none';
+                            setChevron(dropdownContent);
+                            selectedCdp = id;
+
+
+                            update_cdp();
                         });
 
-                        // Add the 'selected' class to the clicked option
-                        option.classList.add('selected');
-
-                        // Set the button text to the option title
-                        var dropdownButton = document.querySelector('.dropdown-custom-button');
-                        dropdownButton.textContent = "Receipt " + name;
-
-                        // Hide the dropdown content
+                        // Append the new option to the dropdown content
                         var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        dropdownContent.style.display = 'none';
-
-                        selectedCdp = id;
-
-                        update_cdp();
+                        dropdownContent.appendChild(option);
                     });
-
-                    // Append the new option to the dropdown content
-                    var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    dropdownContent.appendChild(option);
-                });
-                if (selectedCdp !== undefined) {
-                    update_cdp();
-                } else {
-                    var dropdownButton = document.querySelector('.dropdown-custom-button');
-                    dropdownButton.textContent = "Select a receipt";
-                    var logoImage = document.querySelector('.stab-logo');
-                    logoImage.src = 'images/radix-logo.svg';
-                    document.getElementById('status').textContent = "-";
-                    document.getElementById('collateral').textContent = "-";
-                    document.getElementById('collateralAmount').textContent = "-";
-                    document.getElementById('debtAmount').textContent = "-";
-                    document.getElementById('cr').textContent = "-";
+                    if (selectedCdp !== undefined) {
+                        update_cdp();
+                    } else {
+                        if (isConnected === false) {
+                            dropdownContent.innerHTML = '';
+                        }
+                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                        dropdownButton.textContent = "select loan receipt";
+                        var logoImage = document.querySelector('.stab-logo');
+                        logoImage.src = 'images/radix-logo.svg';
+                        document.getElementById('status').textContent = "-";
+                        document.getElementById('collateral').textContent = "-";
+                        document.getElementById('collateralAmount').textContent = "-";
+                        document.getElementById('debtAmount').textContent = "-";
+                        document.getElementById('cr').textContent = "-";
+                    }
                 }
             }
-        }
 
-        fetchData().then(data => {
-            useData(data);
-        }).catch(e => {
-            console.error('Error:', e);
-        });
+            fetchData().then(data => {
+                useData(data);
+            }).catch(e => {
+                console.error('Error:', e);
+            });
+        }
     })
 }
 
-update();
+update(false);
 
 if (window.location.pathname === '/swap') {
     // Get all buttons with the class 'stake-button'
@@ -1225,6 +1265,7 @@ if (window.location.pathname === '/swap') {
 
     // *********** Swap ***********
     document.getElementById('sell').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -1286,6 +1327,7 @@ if (window.location.pathname === '/swap') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
+                update(false);
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -1299,53 +1341,11 @@ if (window.location.pathname === '/swap') {
                 // Handle the error
                 console.error(error);
             });
-
-        let requestBody = {
-            "addresses": [poolComponentAddress],
-            "aggregation_level": "Vault",
-            "opt_ins": {
-                "ancestor_identities": true,
-                "component_royalty_vault_balance": true,
-                "package_royalty_vault_balance": true,
-                "non_fungible_include_nfids": true,
-                "explicit_metadata": []
-            }
-        };
-
-        fetch('https://stokenet.radixdlt.com/state/entity/details', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        })
-            .then(response => response.json())
-            .then(data => {
-                stabPoolAmount = getResourceAmount(stabAddress, data.items, 0);
-                xrdPoolAmount = getResourceAmount(xrdAddress, data.items, 0);
-                document.getElementById('internal-price-xrd').innerHTML = stabXrdRatio.toFixed(2) + " XRD";
-                document.getElementById('internal-price-usd').innerHTML = "$" + (stabXrdRatio * xrdPrice).toFixed(2);
-                document.getElementById('market-price-xrd').innerHTML = (xrdPoolAmount / stabPoolAmount).toFixed(2) + " XRD";
-                document.getElementById('market-price-usd').innerHTML = "$" + ((xrdPoolAmount / stabPoolAmount) * xrdPrice).toFixed(2);
-                document.getElementById('interest-rate').innerHTML = interestRate + "%/year";
-                if (xrdPoolAmount / stabPoolAmount < 0.99 * stabXrdRatio) {
-                    document.getElementById("recommendation").innerHTML = `<strong>Market price &lt; Internal price</strong>, sell XRD to arbitrage!`;
-                } else if (xrdPoolAmount / stabPoolAmount > 1.01 * stabXrdRatio) {
-                    document.getElementById("recommendation").innerHTML = `<strong>Market price &gt; Internal price</strong>, sell STAB to arbitrage!`;
-                }
-                else {
-                    document.getElementById("recommendation").innerHTML = `Price error is within acceptable bounds. Minimal arbitrage opportunities.`;
-                }
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
-
-        update();
     }
 
     // *********** Add liq ***********
     document.getElementById('provide').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -1414,6 +1414,7 @@ if (window.location.pathname === '/swap') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
+                update(false);
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -1427,13 +1428,11 @@ if (window.location.pathname === '/swap') {
                 // Handle the error
                 console.error(error);
             });
-
-        console.log("add liq sendTransaction Result: ", result.value);
-        update();
     }
 
     // *********** Remove liq. ***********
     document.getElementById('remove').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -1488,6 +1487,7 @@ if (window.location.pathname === '/swap') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
+                update(false);
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -1502,8 +1502,6 @@ if (window.location.pathname === '/swap') {
                 console.error(error);
             });
 
-        console.log("remove liq sendTransaction Result: ", result.value);
-        update();
     }
 }
 
@@ -1525,6 +1523,7 @@ if (window.location.pathname === '/liquidations') {
         if (dropdownContent !== undefined) {
             var display = dropdownContent.style.display;
             dropdownContent.style.display = display === 'block' ? 'none' : 'block';
+            setChevron(dropdownContent);
         }
         var options = document.querySelectorAll('.dropdown-custom-option');
 
@@ -1532,10 +1531,6 @@ if (window.location.pathname === '/liquidations') {
         if (options.length === 0) {
             // If not, display a message
             alert('No marker receipts available in wallet.');
-        } else {
-            // If there are options, show the dropdown content
-            var dropdownContent = document.querySelector('.dropdown-custom-content');
-            dropdownContent.style.display = 'block';
         }
     });
 
@@ -1549,10 +1544,12 @@ if (window.location.pathname === '/liquidations') {
         // If the clicked element is not the dropdown button or one of the dropdown options, hide the dropdown content
         if (!isDropdownButton && !isDropdownOption) {
             dropdownContent.style.display = 'none';
+            setChevron(dropdownContent);
         }
     });
     // *********** mark ***********
     document.getElementById('mark').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -1595,7 +1592,8 @@ if (window.location.pathname === '/liquidations') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value)
+                console.log("Mint Result: ", result.value);
+                update(false);
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -1609,11 +1607,11 @@ if (window.location.pathname === '/liquidations') {
                 // Handle the error
                 console.error(error);
             });
-        update();
     }
 
     // *********** LiquidateWithMarker ***********
     document.getElementById('liqwithmark').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -1648,7 +1646,7 @@ if (window.location.pathname === '/liquidations') {
       Address("${accountAddress}")
       "withdraw"
       Address("${stabAddress}")
-      Decimal("${stabAmount}");
+      Decimal("${debtAmount}");
     TAKE_ALL_FROM_WORKTOP
       Address("${stabAddress}")
       Bucket("stab");
@@ -1702,7 +1700,8 @@ if (window.location.pathname === '/liquidations') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value)
+                console.log("Mint Result: ", result.value);
+                update_liq();
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -1716,12 +1715,11 @@ if (window.location.pathname === '/liquidations') {
                 // Handle the error
                 console.error(error);
             });
-
-        update_liq();
     }
 
     // *********** LiquidateWithoutMarker next***********
     document.getElementById('liqnext').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -1777,7 +1775,8 @@ if (window.location.pathname === '/liquidations') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value)
+                console.log("Mint Result: ", result.value);
+                update_liq();
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -1791,11 +1790,11 @@ if (window.location.pathname === '/liquidations') {
                 // Handle the error
                 console.error(error);
             });
-        update_liq();
     }
 
     // *********** LiquidateWithoutMarker next***********
     document.getElementById('liqnextskip').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -1860,7 +1859,8 @@ if (window.location.pathname === '/liquidations') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value)
+                console.log("Mint Result: ", result.value);
+                update_liq();
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -1874,17 +1874,30 @@ if (window.location.pathname === '/liquidations') {
                 // Handle the error
                 console.error(error);
             });
-
-        update_liq();
     }
 }
 
 if (window.location.pathname === '/incentives') {
-    var button = document.querySelector('.dropdown-custom-button');
-    var button2 = document.getElementById('new-id');
-    var initialWidth = window.getComputedStyle(button).width;
-    button.style.minWidth = initialWidth;
-    button2.style.minWidth = initialWidth;
+    // Get all buttons with the class 'stake-button'
+    const buttons = document.querySelectorAll('.stake-button');
+
+    // Add an event listener to each button
+    buttons.forEach(button => {
+        button.addEventListener('click', function () {
+            // Perform different actions depending on the id of the clicked button
+            buttons.forEach(button => button.classList.remove('selected'));
+            this.classList.add('selected');
+            if (this.id === 'stake-selector') {
+                console.log("showing stake section");
+                document.getElementById('stake-section').style.display = '';
+                document.getElementById('unstake-section').style.display = 'none';
+            } else {
+                console.log("showing unstake section");
+                document.getElementById('stake-section').style.display = 'none';
+                document.getElementById('unstake-section').style.display = '';
+            }
+        });
+    });
 
     // Get the dropdown button and content
     var dropdownButton = document.querySelector('.dropdown-custom-button');
@@ -1898,6 +1911,7 @@ if (window.location.pathname === '/incentives') {
         if (dropdownContent !== undefined) {
             var display = dropdownContent.style.display;
             dropdownContent.style.display = display === 'block' ? 'none' : 'block';
+            setChevron(dropdownContent);
         }
         var options = document.querySelectorAll('.dropdown-custom-option');
 
@@ -1905,10 +1919,6 @@ if (window.location.pathname === '/incentives') {
         if (options.length === 0) {
             // If not, display a message
             alert('No Stabilis Staking ID in wallet. Please create one.');
-        } else {
-            // If there are options, show the dropdown content
-            var dropdownContent = document.querySelector('.dropdown-custom-content');
-            dropdownContent.style.display = 'block';
         }
     });
 
@@ -1922,10 +1932,12 @@ if (window.location.pathname === '/incentives') {
         // If the clicked element is not the dropdown button or one of the dropdown options, hide the dropdown content
         if (!isDropdownButton && !isDropdownOption) {
             dropdownContent.style.display = 'none';
+            setChevron(dropdownContent);
         }
     });
     // *********** Create ID ***********
     document.getElementById('new-id').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -1968,7 +1980,9 @@ if (window.location.pathname === '/incentives') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value)
+                console.log("Mint Result: ", result.value);
+                update(false);
+                update_id();
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -1982,12 +1996,11 @@ if (window.location.pathname === '/incentives') {
                 // Handle the error
                 console.error(error);
             });
-        update();
-        update_id();
     }
 
     // *********** update ***********
     document.getElementById('update').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -2029,7 +2042,8 @@ if (window.location.pathname === '/incentives') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value)
+                console.log("Mint Result: ", result.value);
+                update_id();
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2043,11 +2057,11 @@ if (window.location.pathname === '/incentives') {
                 // Handle the error
                 console.error(error);
             });
-        update_id();
     }
 
     // *********** Claim ***********
     document.getElementById('claim-button').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -2104,7 +2118,8 @@ if (window.location.pathname === '/incentives') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value)
+                console.log("Mint Result: ", result.value);
+                update_id();
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2118,11 +2133,11 @@ if (window.location.pathname === '/incentives') {
                 // Handle the error
                 console.error(error);
             });
-        update_id();
     }
 
     // *********** Claim with restake ***********
     document.getElementById('claim-button-restake').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -2180,7 +2195,8 @@ if (window.location.pathname === '/incentives') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value)
+                console.log("Mint Result: ", result.value);
+                update_id();
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2194,11 +2210,11 @@ if (window.location.pathname === '/incentives') {
                 // Handle the error
                 console.error(error);
             });
-        update_id();
     }
 
     // *********** Stake ***********
     document.getElementById('stake-button').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -2373,7 +2389,14 @@ if (window.location.pathname === '/incentives') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value)
+                console.log("Mint Result: ", result.value);
+                if (lpAmount !== "") {
+                    walletLp -= lpAmount;
+                }
+                if (ilisAmount !== "") {
+                    walletIlis -= ilisAmount;
+                }
+                update_id();
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2387,18 +2410,11 @@ if (window.location.pathname === '/incentives') {
                 // Handle the error
                 console.error(error);
             });
-
-        if (lpAmount !== "") {
-            walletLp -= lpAmount;
-        }
-        if (ilisAmount !== "") {
-            walletIlis -= ilisAmount;
-        }
-        update_id();
     }
 
     // *********** Unstake ***********
     document.getElementById('unstake-button').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -2537,7 +2553,8 @@ if (window.location.pathname === '/incentives') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value)
+                console.log("Mint Result: ", result.value);
+                update_id();
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2560,8 +2577,6 @@ if (window.location.pathname === '/incentives') {
             let ilisChange = Math.min(ilisAmount, ilisAmountId + ilisWaitingAmount);
             walletIlis += ilisChange;
         }
-
-        update_id();
     }
 
 }
@@ -2602,6 +2617,7 @@ if (window.location.pathname === '/manage-loans') {
         if (dropdownContent !== undefined) {
             var display = dropdownContent.style.display;
             dropdownContent.style.display = display === 'block' ? 'none' : 'block';
+            setChevron(dropdownContent);
         }
         var options = document.querySelectorAll('.dropdown-custom-option');
 
@@ -2609,10 +2625,6 @@ if (window.location.pathname === '/manage-loans') {
         if (options.length === 0) {
             // If not, display a message
             alert('No loan receipts in wallet.');
-        } else {
-            // If there are options, show the dropdown content
-            var dropdownContent = document.querySelector('.dropdown-custom-content');
-            dropdownContent.style.display = 'block';
         }
     });
 
@@ -2626,10 +2638,12 @@ if (window.location.pathname === '/manage-loans') {
         // If the clicked element is not the dropdown button or one of the dropdown options, hide the dropdown content
         if (!isDropdownButton && !isDropdownOption) {
             dropdownContent.style.display = 'none';
+            setChevron(dropdownContent);
         }
     });
     // *********** Top up CDP ***********
     document.getElementById('add-col-button').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -2695,7 +2709,8 @@ if (window.location.pathname === '/manage-loans') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value)
+                console.log("Mint Result: ", result.value);
+                update_cdp();
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2713,6 +2728,7 @@ if (window.location.pathname === '/manage-loans') {
 
     // *********** Remove collateral CDP ***********
     document.getElementById('remove-col-button').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -2770,7 +2786,8 @@ if (window.location.pathname === '/manage-loans') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value)
+                console.log("Mint Result: ", result.value);
+                update_cdp();
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2784,11 +2801,11 @@ if (window.location.pathname === '/manage-loans') {
                 // Handle the error
                 console.error(error);
             });
-        update_cdp();
     }
 
     // *********** Close CDP ***********
     document.getElementById('close-entire-button').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -2846,7 +2863,8 @@ if (window.location.pathname === '/manage-loans') {
                     buttonWaiting.style.display = 'none';
                     button.disabled = false;
                     button.style.backgroundColor = '';
-                    console.log("Mint Result: ", result.value)
+                    console.log("Mint Result: ", result.value);
+                    update_cdp();
                 })
                 .catch(error => {
                     // Hide the spinner, show the angle icon, and change the button text back
@@ -2914,7 +2932,8 @@ if (window.location.pathname === '/manage-loans') {
                     buttonWaiting.style.display = 'none';
                     button.disabled = false;
                     button.style.backgroundColor = '';
-                    console.log("Mint Result: ", result.value)
+                    console.log("Mint Result: ", result.value);
+                    update_cdp();
                 })
                 .catch(error => {
                     // Hide the spinner, show the angle icon, and change the button text back
@@ -2929,8 +2948,6 @@ if (window.location.pathname === '/manage-loans') {
                     console.error(error);
                 });
         }
-        update_cdp();
-
     }
 }
 if (window.location.pathname === '/borrow') {
@@ -2965,6 +2982,10 @@ if (window.location.pathname === '/borrow') {
         if (dropdownContent !== undefined) {
             var display = dropdownContent.style.display;
             dropdownContent.style.display = display === 'block' ? 'none' : 'block';
+            setChevron(dropdownContent);
+        }
+        if (!isConnected) {
+            alert('Connect wallet.');
         }
     });
 
@@ -2978,6 +2999,7 @@ if (window.location.pathname === '/borrow') {
         // If the clicked element is not the dropdown button or one of the dropdown options, hide the dropdown content
         if (!isDropdownButton && !isDropdownOption) {
             dropdownContent.style.display = 'none';
+            setChevron(dropdownContent);
         }
     });
 
@@ -3094,6 +3116,7 @@ if (window.location.pathname === '/borrow') {
 
     // *********** Mint safe ***********
     document.getElementById('mint-button').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -3150,6 +3173,7 @@ if (window.location.pathname === '/borrow') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
+                update(false);
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -3163,15 +3187,11 @@ if (window.location.pathname === '/borrow') {
                 // Handle the error
                 console.error(error);
             });
-
-        console.log("Mint Result: ", result.value)
-        availableCollateral -= collateralAmount;
-        document.getElementById('col-max').textContent = "max. " + availableCollateral.toFixed(2).toLocaleString('en-US');
-        update();
     }
 
     // *********** Mint unsafe *********** //
     document.getElementById('unsafe-mint-button').onclick = async function () {
+        update(true);
         if (!isConnected) {
             return;
         }
@@ -3228,7 +3248,8 @@ if (window.location.pathname === '/borrow') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value)
+                console.log("Mint Result: ", result.value);
+                update(false);
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -3242,8 +3263,6 @@ if (window.location.pathname === '/borrow') {
                 // Handle the error
                 console.error(error);
             });
-
-        update();
     }
 }
 
