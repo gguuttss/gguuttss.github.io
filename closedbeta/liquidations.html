@@ -57,17 +57,18 @@
   <section class="section">
     <div class="w-layout-blockcontainer container-7 w-container">
       <div class="div-block-7">
-        <h2 class="title-large">Open Beta ongoing!</h2>
+        <h2 class="title-large centered">Open Beta ongoing!</h2>
       </div>
       <div class="text-block-4 on-white">💰 <b>Get rewarded</b> for <a
-          href="https://docs.ilikeitstable.com/stabilis-beta-phase/feedback-reward-program" target="_blank"
+          href="https://docs.ilikeitstable.com/website/borrow" target="_blank"
           style="color: rgb(99, 99, 99); text-decoration: underline;">providing feedback</a>! 💰<br> Having
         trouble connecting?
-        Follow <a href="https://docs.ilikeitstable.com/stabilis-beta-phase/connection-guide" target="_blank"
+        Follow <a href="https://docs.ilikeitstable.com/website/borrow" target="_blank"
           style="color: rgb(99, 99, 99); text-decoration: underline;">this easy guide</a>. <br><br>
-        ❓❓ Need general help with the app? Check out the <a href="https://docs.ilikeitstable.com/" target="_blank"
+        ❓❓ Need general help with the app? Check out the <a
+          href="https://docs.ilikeitstable.com/website/typical-user-flow" target="_blank"
           style="color: rgb(99, 99, 99); text-decoration: underline;">documentation</a> or the <a
-          href="https://docs.ilikeitstable.com/website/quick-start-guide" target="_blank"
+          href="./images/quickstart-guide-p-1080.jpg" target="_blank"
           style="color: rgb(99, 99, 99); text-decoration: underline;">quick start guide</a>! ❓❓</div>
     </div>
     </div>
@@ -80,37 +81,16 @@
     <div class="column-7 w-col w-col-6">
       <div class="card-flowbase">
         <div class="form-block w-form">
-          <h2 class="title-large">Markings</h2>
+          <h2 class="title-large">Marked liquidations</h2>
           <div class="form-line-break"></div>
-          <div class="w-layout-blockcontainer container-8 w-container" style="padding-bottom:10px">
-            <div><b>TIP!</b><br>To liquidate a loan, it must first be marked. Click the button below to mark a
-              loan.
-              After receiving a Marker receipt, use it liquidate the loan. <br> <br>
-              Of course, there are not always loan available to mark.</div>
-          </div>
-          <h1 class="heading-6">Mark next for liquidation</h1>
-          <button data-wait="Please wait..." class="submit-button w-button wallet-necessary" id="mark">
+          <h1 class="heading-6">Mark next for liquidation</h1><button data-wait="Please wait..."
+            class="submit-button w-button wallet-necessary" id="mark">
             <i class="spin" data-feather="refresh-cw" style="margin-right: 5px; display: none"></i>
             <i class="chevron" data-feather="chevron-right"></i>
             <i class="warning" data-feather="alert-circle" style="margin-right: 5px; display: none"></i>
             <b class="button-text">MARK</b> <b class="button-warning" style="display:none">CONNECT WALLET</b> <b
               class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
           </button>
-          <div class="success-message w-form-done">
-            <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks
-              ;D
-            </div>
-          </div>
-          <div class="w-form-fail">
-            <div>Oops! Something went wrong while submitting the form.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="column-8 w-col w-col-6">
-      <div class="card-flowbase">
-        <div class="form-block w-form">
-          <h2 class="title-large">Liquidations</h2>
           <div class="form-line-break"></div>
           <h1 class="heading-6">Liquidate with marker</h1>
           <div class="div-block-6">
@@ -156,34 +136,52 @@
             <b class="button-text">LIQUIDATE</b> <b class="button-warning" style="display:none">CONNECT WALLET</b> <b
               class="button-waiting" style="display:none; color: black;">CONFIRM IN WALLET...</b>
           </button>
-        </div>
-        <div class="form-line-break"></div>
-        <h1 class="heading-6">Liquidate without marker</h1>
-        <div class="div-block-6"><input class="input-field w-input" maxlength="256" name="amount-3" data-name="Amount 3"
-            placeholder="amount" type="text" id="amount-to-skip" required="">
-          <div class="tooltip">liquidations to skip
-            <span class="tooltiptext">Sometimes, the first liquidatable loan isn't interesting. This box determines
-              the
-              amount of marked loans skipped before liquidating one. Leave blank to not skip.</span>
-            <sup>?</sup>
+          <div class="success-message w-form-done">
+            <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks ;D
+            </div>
           </div>
-        </div><button data-wait="Please wait..." class="submit-button w-button wallet-necessary" id="liqnextskip">
-          <i class="spin" data-feather="refresh-cw" style="margin-right: 5px; display: none"></i>
-          <i class="chevron" data-feather="chevron-right"></i>
-          <i class="warning" data-feather="alert-circle" style="margin-right: 5px; display: none"></i>
-          <b class="button-text">LIQUIDATE</b> <b class="button-warning" style="display:none">CONNECT WALLET</b> <b
-            class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
-        </button>
-        <div class="success-message w-form-done">
-          <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks ;D
+          <div class="w-form-fail">
+            <div>Oops! Something went wrong while submitting the form.</div>
           </div>
-        </div>
-        <div class="w-form-fail">
-          <div>Oops! Something went wrong while submitting the form.</div>
         </div>
       </div>
     </div>
-  </div>
+    <div class="column-8 w-col w-col-6">
+      <div class="card-flowbase">
+        <div class="form-block w-form">
+          <h2 class="title-large">Unmarked liquidations</h2>
+          <div class="form-line-break"></div>
+          <h1 class="heading-6">Liquidate next</h1>
+          <div class="div-block-6"><button data-wait="Please wait..." class="submit-button w-button wallet-necessary"
+              id="liqnext">
+              <i class="spin" data-feather="refresh-cw" style="margin-right: 5px; display: none"></i>
+              <i class="chevron" data-feather="chevron-right"></i>
+              <i class="warning" data-feather="alert-circle" style="margin-right: 5px; display: none"></i>
+              <b class="button-text">LIQUIDATE</b> <b class="button-warning" style="display:none">CONNECT WALLET</b>
+              <b class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
+            </button></div>
+          <div class="form-line-break"></div>
+          <h1 class="heading-6">Liquidate, but skip</h1>
+          <div class="div-block-6"><input class="input-field w-input" maxlength="256" name="amount-3"
+              data-name="Amount 3" placeholder="amount" type="text" id="amount-to-skip" required="">
+            <div class="text-block-3">liquidations</div>
+          </div><button data-wait="Please wait..." class="submit-button w-button wallet-necessary" id="liqnextskip">
+            <i class="spin" data-feather="refresh-cw" style="margin-right: 5px; display: none"></i>
+            <i class="chevron" data-feather="chevron-right"></i>
+            <i class="warning" data-feather="alert-circle" style="margin-right: 5px; display: none"></i>
+            <b class="button-text">LIQUIDATE</b> <b class="button-warning" style="display:none">CONNECT WALLET</b> <b
+              class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
+          </button>
+          <div class="success-message w-form-done">
+            <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks ;D
+            </div>
+          </div>
+          <div class="w-form-fail">
+            <div>Oops! Something went wrong while submitting the form.</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
   <section class="footer-dark">
     <div class="container-2">
@@ -198,8 +196,8 @@
           </div>
           <div id="w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dc9-05ccd9b6" class="footer-block">
             <div class="title-small">SOCIALS</div>
-            <a href="http://t.me/stabilislabs" target="_blank" class="footer-link">Telegram</a>
-            <a href="https://twitter.com/stabilislabs" target="_blank" class="footer-link">Twitter</a>
+            <a href="http://t.me" target="_blank" class="footer-link">Telegram</a>
+            <a href="https://twitter.com" target="_blank" class="footer-link">Twitter</a>
           </div>
           <div id="w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dd4-05ccd9b6" class="footer-block">
             <div class="title-small"><a href="https://radixdlt.com" class="footer-brand w-inline-block"><img

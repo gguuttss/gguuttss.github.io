@@ -1,12 +1,12 @@
 <!DOCTYPE html><!--  This site was created in Webflow. https://www.webflow.com  -->
 <!--  Last Published: Mon Jan 22 2024 12:01:32 GMT+0000 (Coordinated Universal Time)  -->
-<html data-wf-page="65ad9c8e9ea0112409794d0a" data-wf-site="65ad46b72f555f0605ccd9ae">
+<html data-wf-page="65ad7c27b73a50781a45467f" data-wf-site="65ad46b72f555f0605ccd9ae">
 
 <head>
   <meta charset="utf-8">
-  <title>Stabilis - Liquidations</title>
-  <meta content="Update" property="og:title">
-  <meta content="Update" property="twitter:title">
+  <title>Stabilis - My loans</title>
+  <meta content="Dashboard" property="og:title">
+  <meta content="Dashboard" property="twitter:title">
   <meta content="width=device-width, initial-scale=1" name="viewport">
   <meta content="Webflow" name="generator">
   <link href="css/normalize.css" rel="stylesheet" type="text/css">
@@ -37,8 +37,8 @@
               <li>
                 <a href="swap" class="nav-link-accent-2">Swap</a>
                 <a href="borrow" class="nav-link-accent-2">Borrow</a>
-                <a href="manage-loans" class="nav-link-accent-2">Manage loans</a>
-                <a href="liquidations" aria-current="page" class="nav-link-accent-2 w--current">Liquidations</a>
+                <a href="manage-loans" aria-current="page" class="nav-link-accent-2 w--current">Manage loans</a>
+                <a href="liquidations" class="nav-link-accent-2">Liquidations</a>
               </li>
               <li class="mobile-margin-top-11">
                 <div class="button-connect" style="--radix-connect-button-border-radius: 12px;">
@@ -60,45 +60,96 @@
         <h2 class="title-large">Open Beta ongoing!</h2>
       </div>
       <div class="text-block-4 on-white">💰 <b>Get rewarded</b> for <a
-          href="https://docs.ilikeitstable.com/stabilis-beta-phase/feedback-reward-program" target="_blank"
+          href="https://docs.ilikeitstable.com/website/borrow" target="_blank"
           style="color: rgb(99, 99, 99); text-decoration: underline;">providing feedback</a>! 💰<br> Having
         trouble connecting?
-        Follow <a href="https://docs.ilikeitstable.com/stabilis-beta-phase/connection-guide" target="_blank"
+        Follow <a href="https://docs.ilikeitstable.com/website/borrow" target="_blank"
           style="color: rgb(99, 99, 99); text-decoration: underline;">this easy guide</a>. <br><br>
-        ❓❓ Need general help with the app? Check out the <a href="https://docs.ilikeitstable.com/" target="_blank"
+        ❓❓ Need general help with the app? Check out the <a
+          href="https://docs.ilikeitstable.com/website/typical-user-flow" target="_blank"
           style="color: rgb(99, 99, 99); text-decoration: underline;">documentation</a> or the <a
-          href="https://docs.ilikeitstable.com/website/quick-start-guide" target="_blank"
+          href="./images/quickstart-guide-p-1080.jpg" target="_blank"
           style="color: rgb(99, 99, 99); text-decoration: underline;">quick start guide</a>! ❓❓</div>
     </div>
     </div>
   </section>
-  <h1 class="heading-4">Liquidations</h1>
-  <h1 class="heading-5 full" id="recommendation">Handle liquidations to receive rewards.<br>To
-    learn more about the specifics, read <a href="https://docs.ilikeitstable.com/website/liquidations" target="_blank"
-      style="color: rgb(99, 99, 99); text-decoration: underline;">the relevant docs section</a>!</h1>
+  <h1 class="heading-4">Manage loans</h1>
+  <h1 class="heading-5 full" id="recommendation">To ensure the health of your outstanding loans, manage them
+    appropriately.<br>Read up on managing your loans in the <a
+      href="https://docs.ilikeitstable.com/website/manage-loans" target="_blank"
+      style="color: rgb(99, 99, 99); text-decoration: underline;">relevant docs section</a>!</h1>
   <div class="columns-2 w-row">
     <div class="column-7 w-col w-col-6">
       <div class="card-flowbase">
         <div class="form-block w-form">
-          <h2 class="title-large">Markings</h2>
-          <div class="form-line-break"></div>
-          <div class="w-layout-blockcontainer container-8 w-container" style="padding-bottom:10px">
-            <div><b>TIP!</b><br>To liquidate a loan, it must first be marked. Click the button below to mark a
-              loan.
-              After receiving a Marker receipt, use it liquidate the loan. <br> <br>
-              Of course, there are not always loan available to mark.</div>
+          <h2 class="title-large">Manage STAB loans</h2>
+          <div class="div-block-7">
+            <div class="text-block">by providing loan receipt:</div>
+            <div class="dropdown-custom">
+              <button type="button" class="dropdown-custom-button"><b id="loan-receipt-button">select loan receipt</b><i
+                  class="chevron-down" data-feather="chevron-down"></i><i class="chevron-up" data-feather="chevron-up"
+                  style="display:none"></i></button>
+              <div class="dropdown-custom-content">
+              </div>
+            </div>
           </div>
-          <h1 class="heading-6">Mark next for liquidation</h1>
-          <button data-wait="Please wait..." class="submit-button w-button wallet-necessary" id="mark">
+          <div class="form-line-break"></div>
+          <h1 class="heading-6">Loan info</h1>
+          <div class="div-block-6">
+            <div class="text-block">Status</div>
+            <div class="text-block" id="status">-</div>
+          </div>
+          <div class="div-block-6">
+            <div class="text-block">Collateral type</div>
+            <div class="text-block" id="collateral">-</div>
+          </div>
+          <div class="div-block-6">
+            <div class="text-block">Collateral amount</div>
+            <div class="text-block" id="collateralAmount">-</div>
+          </div>
+          <div class="div-block-6">
+            <div class="text-block">Debt amount</div>
+            <div class="text-block" id="debtAmount">-</div>
+          </div>
+          <div class="div-block-6">
+            <div class="text-block">Collateralization ratio</div>
+            <div class="text-block" id="cr">-</div>
+          </div>
+          <button data-wait="Please wait..." class="submit-button w-button wallet-necessary" id="close-entire-button">
+            <i class="spin" data-feather="refresh-cw" style="margin-right: 5px; display: none; color: black;"></i>
+            <i class="chevron" data-feather="chevron-right"></i>
+            <i class="warning" data-feather="alert-circle" style="margin-right: 5px; display: none"></i>
+            <b class="button-text">CLOSE LOAN</b> <b class="button-warning" style="display:none">CONNECT WALLET</b> <b
+              class="button-waiting" style="display:none; color: black;">CONFIRM IN WALLET...</b>
+          </button>
+          <div class="form-line-break"></div>
+          <h1 class="heading-6">Manage position</h1>
+          <div class="buttons-box"><button class="stake-button selected" id="add-collateral-selector">Add
+              collateral</button>
+            <button class="stake-button" id="remove-collateral-selector">Remove collateral</button>
+          </div>
+
+          <div class="div-block-6"><img src="images/radix-logo.svg" loading="lazy" alt="radix token logo"
+              class="stab-logo"><input class="input-field full w-input decimal-only" maxlength="256" name="amount"
+              data-name="amount" placeholder="amount" type="text" required="" id="amount-to-remove">
+          </div>
+          <button data-wait="Please wait..." class="submit-button w-button wallet-necessary" id="add-col-button">
             <i class="spin" data-feather="refresh-cw" style="margin-right: 5px; display: none"></i>
             <i class="chevron" data-feather="chevron-right"></i>
             <i class="warning" data-feather="alert-circle" style="margin-right: 5px; display: none"></i>
-            <b class="button-text">MARK</b> <b class="button-warning" style="display:none">CONNECT WALLET</b> <b
+            <b class="button-text">ADD</b> <b class="button-warning" style="display:none">CONNECT WALLET</b> <b
+              class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
+          </button>
+          <button data-wait="Please wait..." class="submit-button w-button wallet-necessary" id="remove-col-button"
+            style="display:none">
+            <i class="spin" data-feather="refresh-cw" style="margin-right: 5px; display: none"></i>
+            <i class="chevron" data-feather="chevron-right"></i>
+            <i class="warning" data-feather="alert-circle" style="margin-right: 5px; display: none"></i>
+            <b class="button-text">REMOVE</b> <b class="button-warning" style="display:none">CONNECT WALLET</b> <b
               class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
           </button>
           <div class="success-message w-form-done">
-            <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks
-              ;D
+            <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks ;D
             </div>
           </div>
           <div class="w-form-fail">
@@ -110,80 +161,30 @@
     <div class="column-8 w-col w-col-6">
       <div class="card-flowbase">
         <div class="form-block w-form">
-          <h2 class="title-large">Liquidations</h2>
-          <div class="form-line-break"></div>
-          <h1 class="heading-6">Liquidate with marker</h1>
-          <div class="div-block-6">
-            <div class="text-block">by providing a marker:</div>
-            <div data-hover="false" data-delay="0" class="w-dropdown">
-              <div class="dropdown-custom">
-                <button type="button" class="dropdown-custom-button"><b>select a marker</b> <i class="chevron-down"
-                    data-feather="chevron-down"></i><i class="chevron-up" data-feather="chevron-up"
-                    style="display:none"></i></button>
-                <div class="dropdown-custom-content">
-                </div>
-              </div>
+          <form id="stab-form" name="email-form" data-name="Email Form" method="get"
+            data-wf-page-id="65ad7c27b73a50781a45467f" data-wf-element-id="497c8722-5747-bd04-b540-6e9d7be94b7a">
+            <h2 class="title-large">Protocol overview</h2>
+            <div class="form-line-break"></div>
+            <div class="div-block-6">
+              <div class="text-block">Yearly interest</div>
+              <div class="text-block" id="interest-rate">-</div>
             </div>
-          </div>
-          <div class="div-block-6">
-            <div class="text-block">Marked time</div>
-            <div class="text-block" id="marker-time">-</div>
-          </div>
-          <div class="div-block-6">
-            <div class="text-block">Marker state</div>
-            <div class="text-block" id="marker-state">-</div>
-          </div>
-          <div class="div-block-6">
-            <div class="text-block">Marked loan status</div>
-            <div class="text-block" id="status">-</div>
-          </div>
-          <div class="div-block-6">
-            <div class="text-block">Loan collateral amount</div>
-            <div class="text-block" id="collateralAmount">-</div>
-          </div>
-          <div class="div-block-6">
-            <div class="text-block">Debt amount</div>
-            <div class="text-block" id="debtAmount">-</div>
-          </div>
-          <div class="div-block-6">
-            <div class="text-block">Collateralization ratio</div>
-            <div class="text-block" id="cr">-</div>
-          </div>
-          <button data-wait="Please wait..." class="submit-button w-button wallet-necessary" id="liqwithmark">
-            <i class="spin" data-feather="refresh-cw" style="margin-right: 5px; display: none; color: black;"></i>
-            <i class="chevron" data-feather="chevron-right"></i>
-            <i class="warning" data-feather="alert-circle" style="margin-right: 5px; display: none"></i>
-            <b class="button-text">LIQUIDATE</b> <b class="button-warning" style="display:none">CONNECT WALLET</b> <b
-              class="button-waiting" style="display:none; color: black;">CONFIRM IN WALLET...</b>
-          </button>
-        </div>
-        <div class="form-line-break"></div>
-        <h1 class="heading-6">Liquidate without marker</h1>
-        <div class="div-block-6"><input class="input-field w-input" maxlength="256" name="amount-3" data-name="Amount 3"
-            placeholder="amount" type="text" id="amount-to-skip" required="">
-          <div class="tooltip">liquidations to skip
-            <span class="tooltiptext">Sometimes, the first liquidatable loan isn't interesting. This box determines
-              the
-              amount of marked loans skipped before liquidating one. Leave blank to not skip.</span>
-            <sup>?</sup>
-          </div>
-        </div><button data-wait="Please wait..." class="submit-button w-button wallet-necessary" id="liqnextskip">
-          <i class="spin" data-feather="refresh-cw" style="margin-right: 5px; display: none"></i>
-          <i class="chevron" data-feather="chevron-right"></i>
-          <i class="warning" data-feather="alert-circle" style="margin-right: 5px; display: none"></i>
-          <b class="button-text">LIQUIDATE</b> <b class="button-warning" style="display:none">CONNECT WALLET</b> <b
-            class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
-        </button>
-        <div class="success-message w-form-done">
-          <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks ;D
-          </div>
-        </div>
-        <div class="w-form-fail">
-          <div>Oops! Something went wrong while submitting the form.</div>
+            <div class="div-block-6">
+              <div class="text-block">STAB circulating</div>
+              <div class="text-block" id="circulating-stab">-</div>
+            </div>
+            <div class="div-block-6">
+              <div class="text-block">STAB internal price</div>
+              <div class="text-block" id="stab-internal-price">-</div>
+            </div>
+            <div class="div-block-6">
+              <div class="text-block">STAB market price</div>
+              <div class="text-block" id="stab-market-price">-</div>
+            </div>
+          </form>
         </div>
       </div>
     </div>
-  </div>
   </div>
   <section class="footer-dark">
     <div class="container-2">
@@ -198,8 +199,8 @@
           </div>
           <div id="w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dc9-05ccd9b6" class="footer-block">
             <div class="title-small">SOCIALS</div>
-            <a href="http://t.me/stabilislabs" target="_blank" class="footer-link">Telegram</a>
-            <a href="https://twitter.com/stabilislabs" target="_blank" class="footer-link">Twitter</a>
+            <a href="http://t.me" target="_blank" class="footer-link">Telegram</a>
+            <a href="https://twitter.com" target="_blank" class="footer-link">Twitter</a>
           </div>
           <div id="w-node-_08cc65d9-1972-7eb2-cda6-d6a9b87e3dd4-05ccd9b6" class="footer-block">
             <div class="title-small"><a href="https://radixdlt.com" class="footer-brand w-inline-block"><img

@@ -69,9 +69,6 @@ let availableCollateral;
 let selectedCdp;
 let selectedId;
 let selectedMarker;
-let weekAgoXrdPrice;
-let weekAgoStabPrice;
-let weekAgoLpPrice;
 
 let resourceAddresses = []
 let validatorAddresses = []
@@ -97,60 +94,6 @@ function setChevron(customContent) {
     } else {
         chevronDown.style.display = 'none';
         chevronUp.style.display = 'block';
-    }
-}
-
-function calculateChange() {
-    var inputAmount = parseFloat(document.getElementById('amount-sell').value);
-    var parsedStabPoolAmount = parseFloat(stabPoolAmount);
-    var parsedXrdPoolAmount = parseFloat(xrdPoolAmount);
-    var percentage = document.getElementById('percentage-change');
-
-    console.log(inputAmount);
-    if (isNaN(inputAmount)) {
-        inputAmount = 0;
-        console.log("weouthere");
-    }
-    if (sell == true) {
-        let outputAmount = (parsedStabPoolAmount * (1 - fee) * inputAmount)
-            / (parsedXrdPoolAmount + inputAmount * (1 - fee));
-        console.log(outputAmount);
-        var newparsedXrdPoolAmount = parsedXrdPoolAmount + inputAmount;
-        console.log(newparsedXrdPoolAmount);
-        console.log(newparsedStabPoolAmount);
-        var newparsedStabPoolAmount = parsedStabPoolAmount - outputAmount;
-        var percentageChange = ((((newparsedXrdPoolAmount / newparsedStabPoolAmount) - (parsedXrdPoolAmount / parsedStabPoolAmount)) / (parsedXrdPoolAmount / parsedStabPoolAmount))) * 100;
-        var idealRatio = internalPrice / xrdPrice;
-        if (parsedXrdPoolAmount / parsedStabPoolAmount > idealRatio) {
-            percentage.style.color = "red";
-        } else {
-            if (newparsedXrdPoolAmount / newparsedStabPoolAmount < idealRatio) {
-                percentage.style.color = "green";
-            } else {
-                percentage.style.color = "red";
-            }
-        }
-        document.getElementById('percentage-change').childNodes[0].nodeValue = "+" + percentageChange.toFixed(2) + "%";
-    } else {
-        let outputAmount = (parsedXrdPoolAmount * (1 - fee) * inputAmount)
-            / (parsedStabPoolAmount + inputAmount * (1 - fee));
-        console.log(outputAmount);
-        var newparsedXrdPoolAmount = parseFloat(parsedXrdPoolAmount) - outputAmount;
-        var newparsedStabPoolAmount = parseFloat(parsedStabPoolAmount) + inputAmount;
-        console.log(newparsedXrdPoolAmount);
-        console.log(newparsedStabPoolAmount);
-        var percentageChange = ((((newparsedStabPoolAmount / newparsedXrdPoolAmount) - (parsedStabPoolAmount / parsedXrdPoolAmount)) / (parsedStabPoolAmount / parsedXrdPoolAmount))) * 100;
-        var idealRatio = internalPrice / xrdPrice;
-        if (parsedXrdPoolAmount / parsedStabPoolAmount < idealRatio) {
-            percentage.style.color = "red";
-        } else {
-            if (newparsedXrdPoolAmount / newparsedStabPoolAmount > idealRatio) {
-                percentage.style.color = "green";
-            } else {
-                percentage.style.color = "red";
-            }
-        }
-        document.getElementById('percentage-change').childNodes[0].nodeValue = "+" + percentageChange.toFixed(2) + "%";
     }
 }
 
@@ -666,7 +609,7 @@ function update(onlyWallet) {
             };
 
             const url_fetch_ids = "https://stokenet.radixdlt.com/state/entity/details";
-            const addresses = [accountAddress, componentAddress, poolComponentAddress, stabAddress, poolAddress, stakingAddress]; // Replace with your addresses
+            const addresses = [accountAddress, componentAddress, poolComponentAddress, stakingAddress, stabAddress, poolAddress]; // Replace with your addresses
 
             const requestBody = {
                 "addresses": addresses,
@@ -884,10 +827,9 @@ function update(onlyWallet) {
                 walletXrd = getResourceAmount(xrdAddress, data, 0);
                 walletLp = getResourceAmount(lpAddress, data, 0);
                 walletStab = getResourceAmount(stabAddress, data, 0);
+                console.log(data);
                 xrdPoolAmount = getResourceAmount(xrdAddress, data, 4);
                 stabPoolAmount = getResourceAmount(stabAddress, data, 4);
-                console.log(xrdPoolAmount);
-                console.log(stabPoolAmount);
                 interestRate = (100 * ((data[1].details.state.fields[14].value ** (24 * 60 * 365)) - 1)).toFixed(2);
 
                 if (window.location.pathname === '/incentives') {
@@ -903,169 +845,6 @@ function update(onlyWallet) {
                 }
 
                 if (window.location.pathname === '/swap') {
-                    async function fetchData() {
-                        const now = new Date();
-                        const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-
-                        const entityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
-                        const entityPageUrl = 'https://stokenet.radixdlt.com/state/entity/page/fungibles';
-                        const customEntityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
-
-                        const entityDetailsPayload = (timestamp) => ({
-                            addresses: [
-                                "resource_tdx_2_1t58kwzu5fc0ucqfkk6vm0smr3rw4uax0mmskyzkkdsq2jj0538htv0"
-                            ],
-                            aggregation_level: "Vault",
-                            at_ledger_state: {
-                                timestamp: timestamp
-                            },
-                            opt_ins: {
-                                ancestor_identities: true,
-                                component_royalty_config: true,
-                                component_royalty_vault_balance: true,
-                                package_royalty_vault_balance: true,
-                                non_fungible_include_nfids: true,
-                                explicit_metadata: [
-                                    "name",
-                                    "description"
-                                ]
-                            }
-                        });
-
-                        const entityPagePayload = (timestamp) => ({
-                            address: "pool_tdx_2_1c5as5t4ymlpnr634eluv2s2l7tv4avgrnvu2ednmwlgmc3ytv0lukg",
-                            at_ledger_state: {
-                                timestamp: timestamp
-                            },
-                        });
-
-                        const customEntityDetailsPayload = (timestamp) => ({
-                            addresses: [
-                                "component_tdx_2_1cqeh8j4wgyezttn969kf0c7644m0cc33c0jpfsc9zf770rnpg69y4z"
-                            ],
-                            aggregation_level: "Vault",
-                            at_ledger_state: {
-                                timestamp: timestamp
-                            },
-                            opt_ins: {
-                                ancestor_identities: true,
-                                component_royalty_config: true,
-                                component_royalty_vault_balance: true,
-                                package_royalty_vault_balance: true,
-                                non_fungible_include_nfids: true,
-                                explicit_metadata: [
-                                    "name",
-                                    "description"
-                                ]
-                            }
-                        });
-
-                        try {
-                            const earliestTimestamp = new Date("2024-05-30T18:22:56.462Z");
-
-                            // Determine the timestamp to use
-                            const timestampToUse = earliestTimestamp > sevenDaysAgo ? earliestTimestamp : sevenDaysAgo;
-
-                            // Perform API calls with both the chosen timestamp and the current timestamp (now)
-                            const [detailsResponse1, pageResponse1, detailsResponse2, pageResponse2, customDetailsResponse] = await Promise.all([
-                                fetch(entityDetailsUrl, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(entityDetailsPayload(timestampToUse.toISOString()))
-                                }),
-                                fetch(entityPageUrl, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(entityPagePayload(timestampToUse.toISOString()))
-                                }),
-                                fetch(entityDetailsUrl, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(entityDetailsPayload(now.toISOString()))
-                                }),
-                                fetch(entityPageUrl, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(entityPagePayload(now.toISOString()))
-                                }),
-                                fetch(customEntityDetailsUrl, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(customEntityDetailsPayload(timestampToUse.toISOString()))
-                                })
-                            ]);
-
-                            if (!detailsResponse1.ok || !pageResponse1.ok || !detailsResponse2.ok || !pageResponse2.ok || !customDetailsResponse.ok) {
-                                throw new Error(`Failed to fetch entity data`);
-                            }
-
-                            // Parse responses as JSON
-                            const [detailsData1, pageData1, detailsData2, pageData2, customDetailsData] = await Promise.all([
-                                detailsResponse1.json(),
-                                pageResponse1.json(),
-                                detailsResponse2.json(),
-                                pageResponse2.json(),
-                                customDetailsResponse.json()
-                            ]);
-
-                            console.log(pageData1, pageData2);
-
-                            // Extract amounts and organize by resource_address
-                            const amountsMap1 = new Map(pageData1.items.map(item => [item.resource_address, item.amount]));
-                            const amountsMap2 = new Map(pageData2.items.map(item => [item.resource_address, item.amount]));
-
-                            // Synchronize the order of amounts based on resource_address
-                            const resourceAddresses = pageData1.items.map(item => item.resource_address);
-                            const amounts1 = resourceAddresses.map(address => amountsMap1.get(address));
-                            const amounts2 = resourceAddresses.map(address => amountsMap2.get(address));
-
-                            // Extract total supply from entity details responses
-                            const totalSupply1 = detailsData1.items[0]?.details?.total_supply;
-                            const totalSupply2 = detailsData2.items[0]?.details?.total_supply;
-
-                            if (totalSupply1 === undefined || totalSupply2 === undefined) {
-                                throw new Error("Total supply not found in entity details response");
-                            }
-
-                            var xrdInitial = amounts1[0];
-                            var stabInitial = amounts1[1];
-                            var xrdFinal = amounts2[0];
-                            var stabFinal = amounts2[1];
-                            var xrdPerStabInitial = xrdInitial / stabInitial;
-                            var xrdPerStabFinal = xrdFinal / stabFinal;
-                            var xrdPriceInitial = customDetailsData.items[0].details.state.fields[19].value;
-                            var stabPriceInitial = xrdPerStabInitial * xrdPriceInitial;
-                            var stabPriceFinal = xrdPerStabFinal * xrdPrice;
-
-                            var dollarPerLpInitial = (xrdInitial * xrdPriceInitial + stabInitial * stabPriceInitial) / totalSupply1;
-                            var dollarPerLpFinal = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
-
-                            var dollarPerLpInitial2 = (xrdInitial * xrdPrice + stabInitial * stabPriceFinal) / totalSupply1;
-                            var dollarPerLpFinal2 = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
-
-                            //var dollarPerLpRatio = (Math.pow((dollarPerLpFinal / dollarPerLpInitial), 365 / 7) - 1) * 100;
-                            var dollarPerLpRatio2 = (Math.pow((dollarPerLpFinal2 / dollarPerLpInitial2), 365 / 7) - 1) * 100;
-                            var apyElement = document.getElementById('apy-real')
-                            apyElement.textContent = dollarPerLpRatio2.toFixed(2) + "%";
-                            apyElement.style.color = dollarPerLpRatio2 > 0 ? 'green' : 'red';
-
-                        } catch (error) {
-                            console.error('Error fetching data:', error);
-                        }
-                    }
-
-                    fetchData();
-
                     if (sell == true) {
                         formattedWallet = Math.floor(walletXrd * 10) / 10;
                         document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
@@ -1425,14 +1204,12 @@ if (window.location.pathname === '/swap') {
             let outputAmount = (parseFloat(stabPoolAmount) * (1 - fee) * formattedWallet)
                 / (parseFloat(xrdPoolAmount) + formattedWallet * (1 - fee))
             swapReceive.value = outputAmount.toFixed(2);
-            calculateChange();
         }
         else {
             formattedWallet = this.value;
             let outputAmount = (parseFloat(xrdPoolAmount) * (1 - fee) * formattedWallet)
                 / (parseFloat(stabPoolAmount) + formattedWallet * (1 - fee))
             swapReceive.value = outputAmount.toFixed(2);
-            calculateChange();
         }
     }
 
@@ -1455,7 +1232,6 @@ if (window.location.pathname === '/swap') {
             }
             swapMax.textContent = "max. " + formattedWallet.toLocaleString('en-US');
         }
-        calculateChange();
     }
     swapMax.addEventListener('click', function () {
         if (sell == true) {
@@ -1476,7 +1252,6 @@ if (window.location.pathname === '/swap') {
             swapReceive.value = outputAmount.toFixed(2);
         }
         inputFieldSwap.value = formattedWallet;
-        calculateChange();
     });
     swapMax.style.cursor = "pointer";
 
