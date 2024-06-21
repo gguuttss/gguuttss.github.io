@@ -126,16 +126,35 @@
     <div class="column-7 w-col w-col-6 custom-column">
       <div class="card-flowbase">
         <div class="form-block w-form">
-          <h2 class="title-large">1. Marking</h2>
+          <h2 class="title-large">Mark loans</h2>
           <div class="form-line-break"></div>
-          <h1 class="heading-6">Mark next for liquidation</h1>
+          <div class="field-label">Amount of loans to mark for liquidation:</div>
+          <div class="columns-3 w-row" style="display: flex; align-items: center; justify-content: center;">
+            <div class="column-11 w-col w-col-3" style="display: flex; align-items: center; justify-content: center;">
+              <button class="submit-button mini w-button exclude" id="minus-symbol-mark"><i class="minus-symbol-mark"
+                  data-feather="minus" stroke-width="8"></i></button>
+            </div>
+            <div class="column-9 w-col w-col-6" style="display: flex; align-items: center; justify-content: center;">
+              <div style="display: flex; align-items: center;">
+                <h2 id="mark-counter" class="rendered-number" style="min-width:125px">1</h2>
+              </div>
+            </div>
+            <div class="column-10 w-col w-col-3" style="display: flex; align-items: center; justify-content: center;">
+              <button class="submit-button mini w-button exclude" id="plus-symbol-mark"><i class="plus-symbol-mark"
+                  data-feather="plus" stroke-width="5"></i></button>
+            </div>
+          </div>
           <button data-wait="Please wait..." class="submit-button w-button wallet-necessary" id="mark">
             <i class="spin" data-feather="refresh-cw" style="margin-right: 5px; display: none"></i>
             <i class="chevron" data-feather="chevron-right"></i>
             <i class="warning" data-feather="alert-circle" style="margin-right: 5px; display: none"></i>
-            <b class="button-text">MARK</b> <b class="button-warning" style="display:none">CONNECT WALLET</b> <b
-              class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
+            <b class="button-text">MARK</b> <b class="button-warning" style="display:none;">CONNECT
+              WALLET</b> <b class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
           </button>
+          <div class="w-layout-blockcontainer container-8 w-container" id="warning-mark"
+            style="display: none;  margin-bottom:-5px">
+            <p class="paragraph-2"><strong>Not enough loans to mark available!</strong></p>
+          </div>
           <div class="success-message w-form-done">
             <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks
               ;D
@@ -150,7 +169,7 @@
     <div class="column-8 w-col w-col-6 custom-column">
       <div class="card-flowbase">
         <div class="form-block w-form">
-          <h2 class="title-large">2. Liquidations</h2>
+          <h2 class="title-large">Liquidations</h2>
           <div class="form-line-break"></div>
           <h1 class="heading-6">Liquidate with marker</h1>
           <div class="div-block-6">
@@ -197,23 +216,55 @@
               class="button-waiting" style="display:none; color: black;">CONFIRM IN WALLET...</b>
           </button>
         </div>
+        <div class="w-layout-blockcontainer container-8 w-container" id="warning-message-liq"
+          style="display: none;  margin-bottom:-5px">
+          <p class="paragraph-2"><strong>Insufficient STAB to liquidate!</strong></p>
+        </div>
         <div class="form-line-break"></div>
         <h1 class="heading-6">Liquidate without marker</h1>
-        <div class="div-block-6"><input class="input-field w-input" maxlength="256" name="amount-3" data-name="Amount 3"
-            placeholder="amount" type="text" id="amount-to-skip" required="">
-          <div class="tooltip">liquidations to skip
-            <span class="tooltiptext">Sometimes, the first liquidatable loan isn't interesting. This box determines
-              the
-              amount of marked loans skipped before liquidating one. Leave blank to not skip.</span>
-            <sup>?</sup>
+        Amount of loans to <div class="tooltip">skip
+          <span class="tooltiptext">Sometimes, the first liquidatable loan isn't interesting. To see what the next one
+            offers, skip a liquidation.</span><sup>?</sup> before
+          liquidating:
+        </div>
+        <div class="columns-3 w-row" style="display: flex; align-items: center; justify-content: center;">
+          <div class="column-11 w-col w-col-3" style="display: flex; align-items: center; justify-content: center;">
+            <button class="submit-button mini w-button exclude" id="minus-symbol-liq"><i class="minus-symbol-liq"
+                data-feather="minus" stroke-width="8"></i></button>
           </div>
-        </div><button data-wait="Please wait..." class="submit-button w-button wallet-necessary" id="liqnextskip">
+          <div class="column-9 w-col w-col-6" style="display: flex; align-items: center; justify-content: center;">
+            <div style="display: flex; align-items: center;">
+              <h2 id="liq-counter" class="rendered-number" style="min-width:125px">0</h2>
+            </div>
+          </div>
+          <div class="column-10 w-col w-col-3" style="display: flex; align-items: center; justify-content: center;">
+            <button class="submit-button mini w-button exclude" id="plus-symbol-liq"><i class="plus-symbol-liq"
+                data-feather="plus" stroke-width="5"></i></button>
+          </div>
+        </div>
+        <div class="div-block-6">
+          <div class="text-block">Debt to pay off</div>
+          <div class="text-block" id="stab-debt">-</div>
+        </div>
+        <div class="div-block-6">
+          <div class="text-block">Collateral reward</div>
+          <div class="text-block" id="col-reward">-</div>
+        </div>
+        <button data-wait="Please wait..." class="submit-button w-button wallet-necessary" id="liqnextskip">
           <i class="spin" data-feather="refresh-cw" style="margin-right: 5px; display: none"></i>
           <i class="chevron" data-feather="chevron-right"></i>
           <i class="warning" data-feather="alert-circle" style="margin-right: 5px; display: none"></i>
           <b class="button-text">LIQUIDATE</b> <b class="button-warning" style="display:none">CONNECT WALLET</b> <b
             class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
         </button>
+        <div class="w-layout-blockcontainer container-8 w-container" id="warning-liq-not-enough-stab"
+          style="display: none;  margin-bottom:-5px">
+          <p class="paragraph-2"><strong>Insufficient STAB to liquidate!</strong></p>
+        </div>
+        <div class="w-layout-blockcontainer container-8 w-container" id="warning-liq"
+          style="display: none;  margin-bottom:-5px">
+          <p class="paragraph-2"><strong>No loans to liquidate!</strong></p>
+        </div>
         <div class="success-message w-form-done">
           <div>Thanks for the numbers, they could be going to your emails. But they&#x27;re going to mine... Thanks ;D
           </div>

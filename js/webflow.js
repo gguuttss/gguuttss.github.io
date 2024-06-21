@@ -79,6 +79,9 @@ let maxCr;
 let bigData;
 let addingCollateral = true;
 let newCr;
+let liqNextStab;
+let liqRewardAddress;
+let bigFail;
 
 let resourceAddresses = []
 let validatorAddresses = []
@@ -329,6 +332,62 @@ function setRemoveColButton() {
     }
 }
 
+function setMarkLiqButton() {
+    var button = document.getElementById('liqwithmark');
+    var enable = true;
+    var message = "";
+    console.log(debtAmount);
+    if (isConnected == false) {
+        enable = false;
+    } else if (parseFloat(debtAmount) > walletStab) {
+        enable = false;
+        message = "Insufficient STAB to liquidate loan.";
+    } else if (selectedMarker == undefined) {
+        enable = false;
+    }
+
+    if (enable) {
+        button.style.backgroundColor = "";
+        button.disabled = false;
+        document.getElementById('warning-message-liq').style.display = 'none';
+    } else {
+        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.disabled = true;
+        document.getElementById('warning-message-liq').style.display = 'none';
+        if (message != "") {
+            document.getElementById('warning-message-liq').style.display = 'block';
+        }
+    }
+}
+
+function setNoMarkLiqButton() {
+    if (bigFail == true) {
+        return;
+    }
+    var button = document.getElementById('liqnextskip');
+    var enable = true;
+    var message = "";
+    console.log(debtAmount);
+    if (isConnected == false) {
+        enable = false;
+    } else if (parseFloat(liqNextStab) > walletStab) {
+        enable = false;
+        message = "Insufficient STAB to liquidate loan.";
+    }
+
+    if (enable) {
+        button.style.backgroundColor = "";
+        button.disabled = false;
+        document.getElementById('warning-liq-not-enough-stab').style.display = 'none';
+    } else {
+        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.disabled = true;
+        if (message != "") {
+            document.getElementById('warning-liq-not-enough-stab').style.display = 'block';
+        }
+    }
+}
+
 function calculateChange() {
     setSwapButton();
     var inputAmount = parseFloat(document.getElementById('amount-sell').value);
@@ -373,6 +432,256 @@ function calculateChange() {
             }
         }
         document.getElementById('percentage-change').childNodes[0].nodeValue = "+" + percentageChange.toFixed(2) + "%";
+    }
+}
+
+async function checkMarking(amount) {
+    // URL to get the gateway status
+    const statusUrl = "https://stokenet.radixdlt.com/status/gateway-status";
+
+    const headers = {
+        "Content-Type": "application/json"
+    };
+
+    try {
+        // Fetch the gateway status to get the current epoch
+        const statusResponse = await fetch(statusUrl, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({}) // Sending an empty body
+        });
+        const statusData = await statusResponse.json();
+
+        // Extract the current epoch
+        const currentEpoch = statusData.ledger_state.epoch;
+        const startEpochInclusive = currentEpoch;
+        const endEpochExclusive = currentEpoch + 2;
+
+        // URL to send the POST request to
+        const url = "https://stokenet.radixdlt.com/transaction/preview";
+
+        // Base manifest string
+        let manifestString = '';
+
+        // Repeat the specified part of the manifest
+        const repeatManifest = `
+            CALL_METHOD
+                Address("component_tdx_2_1cpv6ach7wxjp79g09c0dcc9c8qy7hw9wxsfpmnr56tgd6a0pk0zk9d")
+                "mark_for_liquidation"
+                Address("resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc")
+                ;
+            `;
+
+        for (let i = 0; i < amount; i++) {
+            manifestString += repeatManifest;
+        }
+
+        // Add the remaining part of the manifest
+        manifestString += `
+            CALL_METHOD
+                Address("account_tdx_2_168z9kn6xeg7s0m7qsgdf5wmvsh0v656ndkh295d8p4j5lu47ta5rnv")
+                "deposit_batch"
+                Expression("ENTIRE_WORKTOP");
+            `;
+
+        // JSON payload
+        const payload = {
+            "manifest": manifestString,
+            "start_epoch_inclusive": startEpochInclusive,
+            "end_epoch_exclusive": endEpochExclusive,
+            "tip_percentage": 0,
+            "nonce": 1,
+            "signer_public_keys": [
+                {
+                    "key_type": "EcdsaSecp256k1",
+                    "key_hex": "0305684de356f5126befda977935827f6f74ca3b7865cd8516ca72ef7afc8c0e06"
+                }
+            ],
+            "flags": {
+                "use_free_credit": true,
+                "assume_all_signature_proofs": true,
+                "skip_epoch_check": true,
+                "disable_auth_checks": true
+            }
+        };
+
+        // Send the POST request
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload)
+        });
+
+        // Parse and save the response to a variable
+        const responseData = await response.json();
+
+        // Log the response data
+        console.log("Response Data:", responseData.receipt.status);
+        if (responseData.receipt.status === 'Succeeded') {
+            document.getElementById('warning-mark').style.display = 'none';
+            document.getElementById('mark').style.backgroundColor = "";
+            document.getElementById('mark').disabled = false;
+            bigFail = false;
+        } else {
+            document.getElementById('warning-mark').style.display = 'block';
+            document.getElementById('mark').style.backgroundColor = "hsl(0, 0%, 78%)";
+            document.getElementById('mark').disabled = true;
+            bigFail = true;
+        }
+
+        return responseData;
+    } catch (error) {
+        console.error("Error:", error);
+        throw error;
+    }
+}
+
+async function checkLiquidation(toSkip) {
+    // URL to get the gateway status
+    const statusUrl = "https://stokenet.radixdlt.com/status/gateway-status";
+
+    const headers = {
+        "Content-Type": "application/json"
+    };
+
+    try {
+        // Fetch the gateway status to get the current epoch
+        const statusResponse = await fetch(statusUrl, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({}) // Sending an empty body
+        });
+        const statusData = await statusResponse.json();
+
+        // Extract the current epoch
+        const currentEpoch = statusData.ledger_state.epoch;
+        const startEpochInclusive = currentEpoch;
+        const endEpochExclusive = currentEpoch + 2;
+
+        // URL to send the POST request to
+        const url = "https://stokenet.radixdlt.com/transaction/preview";
+
+        // Repeat the specified part of the manifest
+        let manifest = `CALL_METHOD
+            Address("account_tdx_2_168z9kn6xeg7s0m7qsgdf5wmvsh0v656ndkh295d8p4j5lu47ta5rnv")
+            "create_proof_of_amount"
+            Address("resource_tdx_2_1t5x3rwvs9p5e8l46j8q943xaa9yhxcqaa564zraf82eqffr9urrad9")
+            Decimal("0.75");
+
+
+        CALL_METHOD
+            Address("component_tdx_2_1cp4j27fcr4e74g59euhje8wk4u4q0jq358jf8u4j4z7znfqnj6jx0q")
+            "free_stab"
+            Decimal("100000000");
+
+        TAKE_ALL_FROM_WORKTOP
+            Address("resource_tdx_2_1t57r3zezvsx0gud4p2ed3seteqaahnyzg5ahavamqyxqltkmjqpdxf")
+            Bucket("stab");
+
+        CALL_METHOD
+            Address("component_tdx_2_1cpv6ach7wxjp79g09c0dcc9c8qy7hw9wxsfpmnr56tgd6a0pk0zk9d")
+            "liquidate_position_without_marker"
+            Bucket("stab")
+            true
+            ${toSkip + 1}i64
+            NonFungibleLocalId("#0#");
+
+        CALL_METHOD
+            Address("account_tdx_2_168z9kn6xeg7s0m7qsgdf5wmvsh0v656ndkh295d8p4j5lu47ta5rnv")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP");
+            `;
+
+        // JSON payload
+        const payload = {
+            "manifest": manifest,
+            "start_epoch_inclusive": startEpochInclusive,
+            "end_epoch_exclusive": endEpochExclusive,
+            "tip_percentage": 0,
+            "nonce": 1,
+            "signer_public_keys": [
+                {
+                    "key_type": "EcdsaSecp256k1",
+                    "key_hex": "0305684de356f5126befda977935827f6f74ca3b7865cd8516ca72ef7afc8c0e06"
+                }
+            ],
+            "flags": {
+                "use_free_credit": true,
+                "assume_all_signature_proofs": true,
+                "skip_epoch_check": true,
+                "disable_auth_checks": true
+            }
+        };
+
+        // Send the POST request
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload)
+        });
+
+        // Parse and save the response to a variable
+        const responseData = await response.json();
+
+        // Log the response data
+        console.log("Response Data:", responseData);
+        if (responseData.receipt.status === 'Succeeded') {
+            document.getElementById('warning-liq').style.display = 'none';
+            document.getElementById('liqnextskip').style.backgroundColor = "";
+            document.getElementById('liqnextskip').disabled = false;
+
+            const resourceChanges = responseData.resource_changes;
+
+            // Helper function to find amounts by resource address within the same parent
+            const findAmountsAndThirdResource = (resource1, resource2) => {
+                for (const change of resourceChanges) {
+                    const amounts = { [resource1]: null, [resource2]: null, thirdResource: { address: null, amount: null } };
+                    for (const resourceChange of change.resource_changes) {
+                        if (resourceChange.resource_address === resource1) {
+                            amounts[resource1] = resourceChange.amount;
+                        } else if (resourceChange.resource_address === resource2) {
+                            amounts[resource2] = resourceChange.amount;
+                        } else {
+                            amounts.thirdResource.address = resourceChange.resource_address;
+                            amounts.thirdResource.amount = resourceChange.amount;
+                        }
+                    }
+                    if (amounts[resource1] && amounts[resource2] && amounts.thirdResource.address) {
+                        return amounts;
+                    }
+                }
+                return null;
+            };
+
+            // Resource addresses to look for
+            const resource1 = stabAddress;
+            const resource2 = liqAddress;
+
+            // Find amounts for specified resources within the same parent
+            const amounts = findAmountsAndThirdResource(resource1, resource2);
+
+            if (amounts) {
+                liqNextStab = 100000000 - amounts[resource1];
+                liqRewardAddress = amounts.thirdResource.address;
+                document.getElementById("stab-debt").textContent = (1 * liqNextStab).toFixed(2) + " STAB";
+                document.getElementById("col-reward").textContent = (1 * amounts.thirdResource.amount).toFixed(2) + " " + getResourceName(amounts.thirdResource.address);
+            } else {
+                console.log('Could not find all specified resources within the same parent.');
+            }
+        } else {
+            document.getElementById('warning-liq').style.display = 'block';
+            document.getElementById('liqnextskip').style.backgroundColor = "hsl(0, 0%, 78%)";
+            document.getElementById('liqnextskip').disabled = true;
+            document.getElementById("stab-debt").textContent = "-";
+            document.getElementById("col-reward").textContent = "-";
+        }
+
+        setNoMarkLiqButton();
+
+        return responseData;
+    } catch (error) {
+        console.error("Error:", error);
+        throw error;
     }
 }
 
@@ -444,6 +753,7 @@ async function update_id() {
 
 async function update_liq() {
     if (window.location.pathname === '/liquidations') {
+        setNoMarkLiqButton();
         if (selectedMarker === undefined) {
             return;
         }
@@ -507,20 +817,14 @@ async function update_liq() {
                     document.getElementById('marker-state').style.color = 'red';
                     document.getElementById('marker-state').textContent = "Expired";
                     document.getElementById('liqwithmark').querySelector('.button-text').textContent = "BURN MARKER";
-                    document.getElementById('liqwithmark').style.backgroundColor = "black";
-                    document.getElementById('liqwithmark').style.color = "white";
                     markerUsable = true;
                 } else if (timeDiffMin > 5) {
                     document.getElementById('liqwithmark').querySelector('.button-text').textContent = "LIQUIDATE";
-                    document.getElementById('liqwithmark').style.backgroundColor = "#999999";
-                    document.getElementById('liqwithmark').style.color = "black";
                     document.getElementById('marker-state').style.color = 'green';
                     document.getElementById('marker-state').textContent = "Useable";
                     markerUsable = true;
                 } else {
                     document.getElementById('liqwithmark').querySelector('.button-text').textContent = "LIQUIDATE";
-                    document.getElementById('liqwithmark').style.backgroundColor = "#999999";
-                    document.getElementById('liqwithmark').style.color = "black";
                     document.getElementById('marker-state').style.color = 'orange';
                     document.getElementById('marker-state').textContent = "Pending";
                     markerUsable = false;
@@ -538,11 +842,13 @@ async function update_liq() {
                 else if (status == "Closed" || status == "Healthy") {
                     document.getElementById('status').style.color = 'black';
                 }
+                setNoMarkLiqButton();
             } catch (error) {
                 console.error('Error:', error);
             }
         })(); // Immediately invoke the async function
     }
+    setNoMarkLiqButton();
 }
 
 async function update_cdp() {
@@ -1514,6 +1820,8 @@ function update(onlyWallet) {
                         selectedMarker = id;
 
                         update_liq();
+                        setMarkLiqButton();
+                        setNoMarkLiqButton();
                     });
 
                     // Append the new option to the dropdown content
@@ -1539,7 +1847,6 @@ function update(onlyWallet) {
                     var dropdownButton = document.querySelector('.dropdown-custom-button b');
                     dropdownButton.textContent = "select a marker";
                     document.getElementById('liqwithmark').querySelector('.button-text').textContent = "LIQUIDATE";
-                    document.getElementById('liqwithmark').style.backgroundColor = "";
                     document.getElementById('liqwithmark').style.color = "black";
                     document.getElementById('marker-time').textContent = "-";
                     document.getElementById('status').style.color = "black";
@@ -1779,6 +2086,12 @@ function update(onlyWallet) {
             update_cdp();
             update_liq();
             update_id();
+            if (window.location.pathname === '/liquidations') {
+                setMarkLiqButton();
+                document.getElementById("plus-symbol-liq").click();
+                document.getElementById("minus-symbol-liq").click();
+                setNoMarkLiqButton();
+            }
         }).catch(e => {
             console.error('Error:', e);
         });
@@ -2180,6 +2493,55 @@ if (window.location.pathname === '/swap') {
 }
 
 if (window.location.pathname === '/liquidations') {
+    var plusSymbolMark = document.getElementById('plus-symbol-mark');
+    var minusSymbolMark = document.getElementById('minus-symbol-mark');
+    var markCounter = document.getElementById('mark-counter');
+    minusSymbolMark.style.backgroundColor = "hsl(0, 0%, 78%)";
+    checkMarking(1);
+    setNoMarkLiqButton();
+
+    plusSymbolMark.onclick = function () {
+        markCounter.textContent = parseInt(markCounter.textContent) + 1;
+        minusSymbolMark.disabled = false;
+        minusSymbolMark.style.backgroundColor = "";
+        checkMarking(parseInt(markCounter.textContent));
+    }
+    minusSymbolMark.onclick = function () {
+        if (parseInt(markCounter.textContent) > 1) {
+            markCounter.textContent = parseInt(markCounter.textContent) - 1;
+        }
+        if (parseInt(markCounter.textContent) == 1) {
+            minusSymbolMark.disabled = true;
+            minusSymbolMark.style.backgroundColor = "hsl(0, 0%, 78%)";
+        }
+        checkMarking(parseInt(markCounter.textContent));
+    }
+
+    var plusSymbolLiq = document.getElementById('plus-symbol-liq');
+    var minusSymbolLiq = document.getElementById('minus-symbol-liq');
+    var liqCounter = document.getElementById('liq-counter');
+    minusSymbolLiq.style.backgroundColor = "hsl(0, 0%, 78%)";
+    checkLiquidation(0);
+
+    plusSymbolLiq.onclick = function () {
+        liqCounter.textContent = parseInt(liqCounter.textContent) + 1;
+        minusSymbolLiq.disabled = false;
+        minusSymbolLiq.style.backgroundColor = "";
+        checkLiquidation(parseInt(liqCounter.textContent));
+        setNoMarkLiqButton();
+    }
+    minusSymbolLiq.onclick = function () {
+        if (parseInt(liqCounter.textContent) > 0) {
+            liqCounter.textContent = parseInt(liqCounter.textContent) - 1;
+        }
+        if (parseInt(liqCounter.textContent) == 0) {
+            minusSymbolLiq.disabled = true;
+            minusSymbolLiq.style.backgroundColor = "hsl(0, 0%, 78%)";
+        }
+        checkLiquidation(parseInt(liqCounter.textContent));
+        setNoMarkLiqButton();
+    }
+
     document.getElementById('liq-helper-button').addEventListener('click', function () {
         if (document.getElementById('liq-helper').style.display === '') {
             document.getElementById('liq-helper').style.display = 'none';
@@ -2254,17 +2616,31 @@ if (window.location.pathname === '/liquidations') {
         buttonWaiting.style.display = 'inline-block';
         button.disabled = true;
         button.style.backgroundColor = '#c6c6c6';
+        var amount = parseInt(document.getElementById('mark-counter').textContent);
 
-        let manifest = `
-    CALL_METHOD
-      Address("${componentAddress}")
-      "mark_for_liquidation"
-      Address("${xrdAddress}");
-    CALL_METHOD
-      Address("${accountAddress}")
-      "deposit_batch"
-      Expression("ENTIRE_WORKTOP");
-      `
+        let manifest = '';
+
+        // Repeat the specified part of the manifest
+        const repeatManifest = `
+            CALL_METHOD
+                Address("${componentAddress}")
+                "mark_for_liquidation"
+                Address("${xrdAddress}")
+                ;
+            `;
+
+        for (let i = 0; i < amount; i++) {
+            manifest += repeatManifest;
+        }
+
+        // Add the remaining part of the manifest
+        manifest += `
+            CALL_METHOD
+                Address("${accountAddress}")
+                "deposit_batch"
+                Expression("ENTIRE_WORKTOP");
+            `;
+
         console.log('mark manifest: ', manifest)
 
         // Send manifest to extension for signing
@@ -2419,7 +2795,6 @@ if (window.location.pathname === '/liquidations') {
 
     // *********** LiquidateWithoutMarker next***********
     document.getElementById('liqnextskip').onclick = async function () {
-        update(true);
         if (!isConnected) {
             return;
         }
@@ -2436,17 +2811,8 @@ if (window.location.pathname === '/liquidations') {
         button.disabled = true;
         button.style.backgroundColor = '#c6c6c6';
 
-        let skipAmount;
-
-        if (document.getElementById("amount-to-skip").value == "0" || document.getElementById("amount-to-skip").value == "") {
-            skipAmount = 0;
-            console.log("wedontskipbaby");
-        }
-        else {
-            skipAmount = document.getElementById("amount-to-skip").value;
-        }
-
-        let stabAmount = walletStab;
+        let skipAmount = 1 + parseFloat(document.getElementById("liq-counter").textContent);
+        let stabAmount = liqNextStab + 0.000001;
 
         let manifest = `
     CALL_METHOD
