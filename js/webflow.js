@@ -4,16 +4,16 @@ import { RadixDappToolkit, DataRequestBuilder, RadixNetwork } from '@radixdlt/ra
 
 const dAppId = 'account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd'
 let stabIdAddress = "resource_tdx_2_1ngnptx4ly75dwcv2knf6cp957qfjjprsz90kc8qmqh4ttamj4a2as3" //still need
-let componentAddress = "component_tdx_2_1cqeh8j4wgyezttn969kf0c7644m0cc33c0jpfsc9zf770rnpg69y4z"
-let poolComponentAddress = "component_tdx_2_1cp6hegmzx90e6ndhruq6kaucqkk39y045jm2xhd00cu0hgh2ategk2"
-let poolAddress = "pool_tdx_2_1c5as5t4ymlpnr634eluv2s2l7tv4avgrnvu2ednmwlgmc3ytv0lukg"
-let stabAddress = "resource_tdx_2_1t5fksgjt4cf7ru2jfarlvtk3lz33yp48jwqw0u3vxlc70m20nlrxfs"
-let cdpAddress = "resource_tdx_2_1ng08wj8qq35zl74uxgxpl9yu2fr3mrqxxr7x3nyrvptffds6tekerh"
+let componentAddress = "component_tdx_2_1cpv6ach7wxjp79g09c0dcc9c8qy7hw9wxsfpmnr56tgd6a0pk0zk9d"
+let poolComponentAddress = "component_tdx_2_1czk8kr3cfrx3ddyqy8awqrcpv2pj9m0upjymjn37s2e93glddhj0pz"
+let poolAddress = "pool_tdx_2_1chr6m2qzag0tcurwarq3zzt0r2lzfa7vzfxeys5c5hllradgzjep78"
+let stabAddress = "resource_tdx_2_1t57r3zezvsx0gud4p2ed3seteqaahnyzg5ahavamqyxqltkmjqpdxf"
+let cdpAddress = "resource_tdx_2_1ntvkljzg26r09l6calap5c2rphxz7a8c2kfydla6geswlfpfcty3pv"
 let xrdAddress = "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc"
 let ilisAddress = "resource_tdx_2_1t4tsw7n2d0yfs27myw7x5khx00an2lwnvdsj9tyhkv3l8xvgn7mxdc" //still need
-let lpAddress = "resource_tdx_2_1t58kwzu5fc0ucqfkk6vm0smr3rw4uax0mmskyzkkdsq2jj0538htv0"
-let liqAddress = "resource_tdx_2_1ngtmz07wp3mkzt4f7m2fjm0fwqvzzhe9ha39ysdlrw5qqwu2v7us0f"
-let markerAddress = "resource_tdx_2_1nt8dz29mh8pjgte9gx5992qczsykj27cvckrlycv3pj66ykyxhg2we"
+let lpAddress = "resource_tdx_2_1thtr3aeywrk5yms9hl504yzdc08j5gsqzgy7anmwmwcc04tqrpel4r"
+let liqAddress = "resource_tdx_2_1nfz5cjf7z3nqvcvdelp55msk7n68ercsejhgvfwz352ngqq3gj46vy"
+let markerAddress = "resource_tdx_2_1ntja8kdzw9u86mwqjky46rz5gv6aysp3hffxfka9s46khefpwskql3"
 let stakingAddress = "component_tdx_2_1cp3k6zm5xqgx0wcf0qtcndjzlxvpusdfpm4eq4838wuswn5h66j8px" // still need
 let accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec"
 let stakesKvs = "internal_keyvaluestore_tdx_2_1kzphr34g06wgtygn5eppvtavyt4qptp4xn9y0uzwgdesh324zrl7yu" // still need
@@ -72,6 +72,13 @@ let selectedMarker;
 let weekAgoXrdPrice;
 let weekAgoStabPrice;
 let weekAgoLpPrice;
+let mintAmount;
+let markerUsable = false;
+let upToDateCr;
+let maxCr;
+let bigData;
+let addingCollateral = true;
+let newCr;
 
 let resourceAddresses = []
 let validatorAddresses = []
@@ -84,6 +91,18 @@ inputs.forEach(function (input) {
             evt.preventDefault();
     });
 });
+
+function getUpToDateCr(currentCollateralAmount, currentDebtAmount, validatorMultiplier) {
+    return (currentCollateralAmount * validatorMultiplier * xrdPrice) / (currentDebtAmount * internalPrice);
+}
+
+function getNecessaryCollateral(debtAmount, cr, validatorMultiplier) {
+    return (debtAmount * internalPrice * cr) / (validatorMultiplier * xrdPrice);
+}
+
+function getNecessaryStab(collateralAmount, cr, validatorMultiplier) {
+    return (collateralAmount * validatorMultiplier * xrdPrice) / (cr * internalPrice);
+}
 
 function setChevron(customContent) {
     var dropdownCustom = customContent.parentElement;
@@ -100,24 +119,230 @@ function setChevron(customContent) {
     }
 }
 
+function setSwapButton() {
+    var swapButton = document.getElementById('sell');
+    var enable = true;
+    if (isConnected == false) {
+        enable = false;
+    } else if (sell == true && parseFloat(document.getElementById('amount-sell').value) > walletXrd) {
+        enable = false;
+    } else if (sell == false && parseFloat(document.getElementById('amount-sell').value) > walletStab) {
+        enable = false;
+    } else if (document.getElementById('amount-sell').value == '') {
+        enable = false;
+    } else if (parseFloat(document.getElementById('amount-sell').value) == 0) {
+        enable = false;
+    }
+
+    if (enable) {
+        document.getElementById('swap-warning').style.display = 'none';
+        swapButton.style.backgroundColor = "";
+        swapButton.disabled = false;
+    } else {
+        swapButton.style.backgroundColor = "hsl(0, 0%, 78%)";
+        swapButton.disabled = true;
+    }
+}
+
+function setProvideButton() {
+    var provideButton = document.getElementById('provide');
+    var enable = true;
+    if (isConnected == false) {
+        enable = false;
+    } else if (parseFloat(document.getElementById('amount-stab-provide-lp').value) > walletStab) {
+        enable = false;
+    } else if (parseFloat(document.getElementById('amount-xrd-provide-lp').value) > walletXrd) {
+        enable = false;
+    } else if (document.getElementById('amount-xrd-provide-lp').value == '' || document.getElementById('amount-stab-provide-lp').value == '') {
+        enable = false;
+    } else if (parseFloat(document.getElementById('amount-xrd-provide-lp').value) == 0 || parseFloat(document.getElementById('amount-stab-provide-lp').value) == 0) {
+        enable = false;
+    }
+
+    if (enable) {
+        provideButton.style.backgroundColor = "";
+        provideButton.disabled = false;
+    } else {
+        provideButton.style.backgroundColor = "hsl(0, 0%, 78%)";
+        provideButton.disabled = true;
+    }
+}
+
+function setRemoveLpButton() {
+    var button = document.getElementById('remove');
+    var enable = true;
+    if (isConnected == false) {
+        enable = false;
+    } else if (parseFloat(document.getElementById('amount-remove-lp').value) > walletLp) {
+        enable = false;
+    } else if (document.getElementById('amount-remove-lp').value == '') {
+        enable = false;
+    } else if (parseFloat(document.getElementById('amount-remove-lp').value) == 0) {
+        enable = false;
+    }
+
+    if (enable) {
+        button.style.backgroundColor = "";
+        button.disabled = false;
+    } else {
+        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.disabled = true;
+    }
+}
+
+function setBorrowButton() {
+    var button = document.getElementById('mint-button');
+    var enable = true;
+    if (isConnected == false) {
+        enable = false;
+    } else if (parseFloat(document.getElementById('colToUse').value) > availableCollateral) {
+        enable = false;
+    } else if (document.getElementById('colToUse').value == '') {
+        enable = false;
+    } else if (parseFloat(document.getElementById('colToUse').value) == 0) {
+        enable = false;
+    }
+
+    if (enable) {
+        button.style.backgroundColor = "";
+        button.disabled = false;
+    } else {
+        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.disabled = true;
+    }
+}
+
+function setCloseLoanButton() {
+    var button = document.getElementById('close-entire-button');
+    var enable = true;
+    var message = "";
+    if (isConnected == false) {
+        enable = false;
+    } else if (parseFloat(debtAmount) > walletStab) {
+        enable = false;
+        message = "Insufficient STAB to close loan.";
+    } else if (selectedCdp == undefined) {
+        enable = false;
+    } else if (status == "Marked") {
+        enable = false;
+        message = "Cannot close marked loans.";
+    }
+
+    if (enable) {
+        button.style.backgroundColor = "";
+        button.disabled = false;
+        document.getElementById('warning-message-close').style.display = 'none';
+    } else {
+        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.disabled = true;
+        if (message != "") {
+            document.getElementById('message-close').textContent = message;
+            document.getElementById('warning-message-close').style.display = 'block';
+        }
+    }
+}
+
+function setAddColButton() {
+    var button = document.getElementById('add-col-button');
+    var enable = true;
+    var onlyButton = false;
+    if (isConnected == false) {
+        enable = false;
+    } else if (selectedCdp == undefined) {
+        enable = false;
+    } else if (status == "Liquidated" || status == "ForceLiquidated" || status == "Closed") {
+        enable = false;
+    } else if (parseFloat(document.getElementById('amount-to-remove').value) > availableCollateral) {
+        enable = false;
+        onlyButton = true;
+    } else if (newCr < 150) {
+        enable = false;
+        onlyButton = true;
+    }
+
+    if (enable) {
+        button.style.backgroundColor = "";
+        button.disabled = false;
+        document.getElementById('slider-col').disabled = false;
+        document.getElementById('amount-to-remove').disabled = false;
+        document.getElementById('max-new-cr').disabled = false;
+        document.getElementById('new-cr').style.color = "";
+        document.getElementById('max-new-cr').style.cursor = "pointer";
+        document.getElementById('max-new-cr').style.fontWeight = "";
+    } else {
+        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.disabled = true;
+        if (onlyButton == false) {
+            document.getElementById('new-cr').style.color = "";
+            document.getElementById('slider-col').disabled = true;
+            document.getElementById('amount-to-remove').disabled = true;
+            document.getElementById('max-new-cr').disabled = true;
+            document.getElementById('max-new-cr').style.cursor = "default";
+            document.getElementById('new-cr').textContent = "New CR: -";
+            document.getElementById('max-new-cr').textContent = "Max CR: -";
+            document.getElementById('max-new-cr').style.fontWeight = "normal";
+        }
+        if (onlyButton == true) {
+            document.getElementById('new-cr').style.color = "red";
+            document.getElementById('max-new-cr').style.cursor = "pointer";
+            document.getElementById('max-new-cr').style.fontWeight = "";
+            document.getElementById('slider-col').disabled = false;
+            document.getElementById('amount-to-remove').disabled = false;
+            document.getElementById('max-new-cr').disabled = false;
+        }
+    }
+}
+
+function setRemoveColButton() {
+    document.getElementById('new-cr').style.color = "";
+    var button = document.getElementById('remove-col-button');
+    var enable = true;
+    var message = "";
+    if (isConnected == false) {
+        enable = false;
+    } else if (selectedCdp == undefined) {
+        enable = false;
+    } else if (status == "Liquidated" || status == "ForceLiquidated" || status == "Closed") {
+        enable = false;
+    } else if (newCr < 150) {
+        enable = false;
+    }
+
+    if (enable) {
+        button.style.backgroundColor = "";
+        button.disabled = false;
+        document.getElementById('slider-col').disabled = false;
+        document.getElementById('amount-to-remove').disabled = false;
+        document.getElementById('max-new-cr').disabled = false;
+        document.getElementById('max-new-cr').style.cursor = "pointer";
+        document.getElementById('max-new-cr').style.fontWeight = "";
+    } else {
+        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.disabled = true;
+        document.getElementById('slider-col').disabled = true;
+        document.getElementById('amount-to-remove').disabled = true;
+        document.getElementById('max-new-cr').disabled = true;
+        document.getElementById('max-new-cr').style.cursor = "default";
+        document.getElementById('new-cr').textContent = "New CR: -";
+        document.getElementById('max-new-cr').textContent = "Max CR: -";
+        document.getElementById('max-new-cr').style.fontWeight = "normal";
+    }
+}
+
 function calculateChange() {
+    setSwapButton();
     var inputAmount = parseFloat(document.getElementById('amount-sell').value);
     var parsedStabPoolAmount = parseFloat(stabPoolAmount);
     var parsedXrdPoolAmount = parseFloat(xrdPoolAmount);
     var percentage = document.getElementById('percentage-change');
-
-    console.log(inputAmount);
+    console.log("weouthere");
     if (isNaN(inputAmount)) {
         inputAmount = 0;
-        console.log("weouthere");
     }
     if (sell == true) {
         let outputAmount = (parsedStabPoolAmount * (1 - fee) * inputAmount)
             / (parsedXrdPoolAmount + inputAmount * (1 - fee));
-        console.log(outputAmount);
         var newparsedXrdPoolAmount = parsedXrdPoolAmount + inputAmount;
-        console.log(newparsedXrdPoolAmount);
-        console.log(newparsedStabPoolAmount);
         var newparsedStabPoolAmount = parsedStabPoolAmount - outputAmount;
         var percentageChange = ((((newparsedXrdPoolAmount / newparsedStabPoolAmount) - (parsedXrdPoolAmount / parsedStabPoolAmount)) / (parsedXrdPoolAmount / parsedStabPoolAmount))) * 100;
         var idealRatio = internalPrice / xrdPrice;
@@ -134,11 +359,8 @@ function calculateChange() {
     } else {
         let outputAmount = (parsedXrdPoolAmount * (1 - fee) * inputAmount)
             / (parsedStabPoolAmount + inputAmount * (1 - fee));
-        console.log(outputAmount);
         var newparsedXrdPoolAmount = parseFloat(parsedXrdPoolAmount) - outputAmount;
         var newparsedStabPoolAmount = parseFloat(parsedStabPoolAmount) + inputAmount;
-        console.log(newparsedXrdPoolAmount);
-        console.log(newparsedStabPoolAmount);
         var percentageChange = ((((newparsedStabPoolAmount / newparsedXrdPoolAmount) - (parsedStabPoolAmount / parsedXrdPoolAmount)) / (parsedStabPoolAmount / parsedXrdPoolAmount))) * 100;
         var idealRatio = internalPrice / xrdPrice;
         if (parsedXrdPoolAmount / parsedStabPoolAmount < idealRatio) {
@@ -222,6 +444,9 @@ async function update_id() {
 
 async function update_liq() {
     if (window.location.pathname === '/liquidations') {
+        if (selectedMarker === undefined) {
+            return;
+        }
         (async () => { // Wrap your code in an async function
             let request2 = {
                 "resource_address": markerAddress,
@@ -244,6 +469,8 @@ async function update_liq() {
 
                 let timestamp = parseInt(markedTime) * 1000; // Your timestamp
                 markerDate = new Date(timestamp).toLocaleString();
+                let now = Date.now();
+                let timeDiffMin = (now - new Date(timestamp)) / 1000 / 60;
 
                 // Use markedId here
                 let request = {
@@ -282,12 +509,21 @@ async function update_liq() {
                     document.getElementById('liqwithmark').querySelector('.button-text').textContent = "BURN MARKER";
                     document.getElementById('liqwithmark').style.backgroundColor = "black";
                     document.getElementById('liqwithmark').style.color = "white";
-                } else {
+                    markerUsable = true;
+                } else if (timeDiffMin > 5) {
                     document.getElementById('liqwithmark').querySelector('.button-text').textContent = "LIQUIDATE";
                     document.getElementById('liqwithmark').style.backgroundColor = "#999999";
                     document.getElementById('liqwithmark').style.color = "black";
                     document.getElementById('marker-state').style.color = 'green';
                     document.getElementById('marker-state').textContent = "Useable";
+                    markerUsable = true;
+                } else {
+                    document.getElementById('liqwithmark').querySelector('.button-text').textContent = "LIQUIDATE";
+                    document.getElementById('liqwithmark').style.backgroundColor = "#999999";
+                    document.getElementById('liqwithmark').style.color = "black";
+                    document.getElementById('marker-state').style.color = 'orange';
+                    document.getElementById('marker-state').textContent = "Pending";
+                    markerUsable = false;
                 }
                 document.getElementById('marker-time').textContent = markerDate;
                 document.getElementById('cr').textContent = (cr * xrdPrice * 100).toFixed(2) + "%";
@@ -312,6 +548,9 @@ async function update_liq() {
 async function update_cdp() {
 
     if (window.location.pathname === '/manage-loans') {
+        if (selectedCdp === undefined) {
+            return;
+        }
         let request = {
             "resource_address": cdpAddress,
             "non_fungible_ids": [selectedCdp],
@@ -332,6 +571,28 @@ async function update_cdp() {
                 debtAmount = data.non_fungible_ids[0].data.programmatic_json.fields[4].value;
                 cr = data.non_fungible_ids[0].data.programmatic_json.fields[5].value;
                 status = data.non_fungible_ids[0].data.programmatic_json.fields[6].variant_name;
+                upToDateCr = getUpToDateCr(collateralAmount, debtAmount, validatorMultiplier);
+                availableCollateral = getResourceAmount(resourceAddress, bigData, 0);
+                if (addingCollateral) {
+                    maxCr = getUpToDateCr(parseFloat(availableCollateral) + parseFloat(collateralAmount), debtAmount, validatorMultiplier) * 100;
+                    newCr = (upToDateCr * 100).toFixed(2);
+                    var slider = document.getElementById('slider-col');
+                    slider.min = newCr;
+                    slider.max = maxCr > 1000 ? 1000 : maxCr;
+                    slider.value = Math.round(newCr * 100) / 100;
+                } else {
+                    newCr = (upToDateCr * 100).toFixed(2);
+                    maxCr = (upToDateCr * 100).toFixed(2);
+                    var slider = document.getElementById('slider-col');
+                    slider.min = 0;
+                    slider.max = maxCr - 150;
+                    slider.value = slider.min; // Set the value to the min value
+
+                }
+                document.getElementById('amount-to-remove').value = "";
+
+                // Round minValue to two decimal places before setting the value
+
 
                 acceptedResources.forEach(acceptedResource => {
                     if (acceptedResource[1] === resourceAddress) {
@@ -354,7 +615,7 @@ async function update_cdp() {
             document.getElementById('collateralAmount').textContent = (1 * collateralAmount).toFixed(2) + " LSUs";
         }
         document.getElementById('debtAmount').textContent = (1 * debtAmount).toFixed(2) + " STAB";
-        document.getElementById('cr').textContent = (cr * xrdPrice * 100).toFixed(2) + "%";
+        document.getElementById('cr').textContent = (cr * xrdPrice * 100).toFixed(2) + "% (" + (upToDateCr * 100).toFixed(2) + "%)";
 
         if (status == "Liquidated" || status == "ForceLiquidated") {
             buttonText.textContent = "RETRIEVE COLLATERAL";
@@ -364,6 +625,12 @@ async function update_cdp() {
             document.getElementById('debtAmount').textContent = "-";
             document.getElementById('cr').textContent = "-";
         } else if (status == "Marked") {
+            document.getElementById('new-cr').textContent = "New CR: " + (upToDateCr * 100).toFixed(2) + "%";
+            if (addingCollateral) {
+                document.getElementById('max-new-cr').textContent = "Max CR: " + (maxCr * 1).toFixed(2) + "%";
+            } else {
+                document.getElementById('max-new-cr').textContent = "Min CR: 150%";
+            }
             buttonText.textContent = "CLOSE LOAN";
             document.getElementById('status').style.color = '#ef7200';
             button.backgroundColor = '';
@@ -378,12 +645,23 @@ async function update_cdp() {
             button.backgroundColor = '';
             buttonText.color = '';
         } else if (status == "Healthy") {
+            document.getElementById('new-cr').textContent = "New CR: " + (upToDateCr * 100).toFixed(2) + "%";
+            if (addingCollateral) {
+                document.getElementById('max-new-cr').textContent = "Max CR: " + (maxCr * 1).toFixed(2) + "%";
+            } else {
+                document.getElementById('max-new-cr').textContent = "Min CR: 150%";
+            }
             buttonText.textContent = "CLOSE LOAN";
             document.getElementById('status').style.color = 'green';
             button.backgroundColor = '';
             buttonText.color = '';
         }
-
+        setCloseLoanButton();
+        if (addingCollateral) {
+            setAddColButton();
+        } else {
+            setRemoveColButton();
+        }
     }
 }
 
@@ -450,7 +728,6 @@ var buttons = document.querySelectorAll('button.wallet-necessary');
 for (var i = 0; i < buttons.length; i++) {
     buttons[i].addEventListener('click', function () {
         // Store the original text and change the button text to "Connect wallet"
-        update(true);
         if (!isConnected) {
             this.querySelector('.warning').style.display = 'block';
             this.querySelector('.chevron').style.display = 'none';
@@ -588,805 +865,923 @@ function update(onlyWallet) {
             restoreButtonLabels();
         } else {
             isConnected = false;
+            walletStab = 0;
+            walletXrd = 0;
+            walletLp = 0;
+            accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec"
         }
 
-        if (onlyWallet === false) {
-            async function getFungibleResources(accountAddress) {
-                const response = await fetch('https://stokenet.radixdlt.com/state/entity/details', {
+        async function getFungibleResources(accountAddress) {
+            const response = await fetch('https://stokenet.radixdlt.com/state/entity/details', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    addresses: [accountAddress],
+                    aggregation_level: 'Vault',
+                    opt_ins: {
+                        ancestor_identities: true,
+                        component_royalty_vault_balance: true,
+                        package_royalty_vault_balance: true,
+                        non_fungible_include_nfids: true,
+                        explicit_metadata: []
+                    }
+                })
+            });
+
+            const data = await response.json();
+
+            // Iterate over each item in the response
+            const acceptedFungibleResources = data.items.flatMap(item => {
+                // Filter the fungible resources to only include those in the list of accepted resources
+                return item.fungible_resources.items.filter(resource => {
+                    return acceptedResources.some(acceptedResource => acceptedResource[1] === resource.resource_address);
+                }).map(resource => {
+                    // Find the corresponding accepted resource
+                    const acceptedResource = acceptedResources.find(ar => ar[1] === resource.resource_address);
+
+                    // Add the name of the accepted resource to the resource object
+                    resource.name = acceptedResource ? acceptedResource[0] : '';
+                    resource.logo = acceptedResource ? acceptedResource[3] : '';
+                    resource.multiplier = acceptedResource ? acceptedResource[4] : 1;
+                    resource.identifier = acceptedResource ? acceptedResource[5] : '';
+
+                    return resource;
+                });
+            });
+
+            // Map each object to its name, resource_address and amount properties
+            const resourceAddressesAndAmounts = acceptedFungibleResources.map(resource => {
+                let amount = 0;
+                if (resource.vaults && resource.vaults.items && resource.vaults.items.length > 0) {
+                    amount = parseFloat(resource.vaults.items[0].amount);
+                }
+
+                return {
+                    name: resource.name,
+                    resourceAddress: resource.resource_address,
+                    amount: amount,
+                    logo: resource.logo,
+                    multiplier: resource.multiplier,
+                    identifier: resource.identifier
+                };
+            });
+
+            // Sort the array by amount in descending order
+            resourceAddressesAndAmounts.sort((a, b) => b.amount - a.amount);
+
+            return resourceAddressesAndAmounts;
+        }
+
+        // Define the request URL and parameters
+        const url_kvs = "https://stokenet.radixdlt.com/state/key-value-store/data";
+        const params_kvs = {
+            "key_value_store_address": stakesKvs,
+            "keys": [
+                { "key_hex": kvsHexes[0] },
+                { "key_hex": kvsHexes[1] },
+                { "key_json": { "kind": "Tuple", "fields": [{ "kind": "U32", "value": "1" }] } }
+            ]
+        };
+
+        const url_fetch_ids = "https://stokenet.radixdlt.com/state/entity/details";
+        const addresses = [accountAddress, componentAddress, poolComponentAddress, stabAddress, poolAddress, stakingAddress]; // Replace with your addresses
+
+        const requestBody = {
+            "addresses": addresses,
+            "aggregation_level": "Vault",
+            "opt_ins": {
+                "ancestor_identities": false,
+                "component_royalty_vault_balance": false,
+                "package_royalty_vault_balance": false,
+                "non_fungible_include_nfids": true,
+                "explicit_metadata": [
+                    "name",
+                    "description"
+                ]
+            }
+        };
+
+        async function fetchData() {
+            try {
+                // Start both fetch requests
+                /*const fetchPromise1 = fetch(url_kvs, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        addresses: [accountAddress],
-                        aggregation_level: 'Vault',
+                    body: JSON.stringify(params_kvs)
+                });*/
+
+                const fetchPromise2 = fetch(url_fetch_ids, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                // Wait for both fetch requests to complete
+                const [/*response1,*/response2] = await Promise.all([/*fetchPromise1, */fetchPromise2]);
+
+                // Check the status of the responses
+                if (/*!response1.ok || */!response2.ok) {
+                    throw new Error(`HTTP error! status: ${response2.status/*change this shit to 1*/}, ${response2.status}`);
+                }
+
+                // Parse the responses as JSON
+                const [/*data1, */data2] = await Promise.all([/*response1.json(), */response2.json()]);
+
+                // Extract the reward_amount values
+                /*const rewardAmounts = data1.entries
+                    .map(entry => entry.value.programmatic_json.fields)
+                    .flat()
+                    .filter(field => field.field_name === 'reward_amount')
+                    .map(field => field.value);
+
+                stakeRewards = rewardAmounts[0];
+                lpRewards = rewardAmounts[1];*/
+
+                // Process the second response
+                let sortedItems = [];
+                addresses.forEach(address => {
+                    let item = data2.items.find(item => item.address === address);
+                    if (item) {
+                        sortedItems.push(item);
+                    }
+                });
+
+                return sortedItems;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function useData(data) {
+            stab_ids = []
+            cdp_ids = []
+            marker_ids = []
+            internalPrice = data[1].details.state.fields[12].value;
+            xrdPrice = data[1].details.state.fields[19].value;
+            stabXrdRatio = internalPrice / xrdPrice;
+            validatorMultiplier = 1;
+            if (window.location.pathname === '/borrow') {
+                let firstOption = true;
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.innerHTML = '';
+                var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                var clickableButton = document.querySelector('.dropdown-custom-button');
+                getFungibleResources(accountAddress).then(resourceAddressesAndAmounts => {
+                    // Add new options
+                    resourceAddressesAndAmounts.forEach(resource => {
+                        clickableButton.disabled = false;
+                        clickableButton.style.backgroundColor = "";
+                        // Fetch the name, subtext, and logo
+                        var name = resource.name;
+                        var address = resource.resourceAddress;
+                        var logoUrl = resource.logo;
+                        var subtext = 'max. ' + resource.amount.toFixed(2);
+                        var slider = document.getElementById('slider-single');
+                        let colToUse = document.getElementById("colToUse");
+
+                        if (address === selectedCollateral) {
+                            availableCollateral = resource.amount;
+                            document.getElementById('col-max').textContent = "max. " + availableCollateral.toFixed(2).toLocaleString('en-US');
+                        }
+
+                        // Create a new option
+                        var option = document.createElement('div');
+                        option.className = 'dropdown-custom-option';
+                        option.dataset.logoUrl = logoUrl;
+                        option.setAttribute('tabindex', '0'); // Make the option focusable
+
+                        // Add the logo image to the option
+                        var logoImage = document.createElement('img');
+                        logoImage.src = logoUrl;
+                        logoImage.alt = 'Logo';
+                        option.appendChild(logoImage);
+
+                        // Add the text to the option
+                        var optionText = document.createElement('div');
+                        optionText.className = 'option-text';
+
+                        var optionTitle = document.createElement('div');
+                        optionTitle.className = 'option-title';
+                        optionTitle.textContent = name;
+                        optionText.appendChild(optionTitle);
+
+                        var optionSubtext = document.createElement('div');
+                        optionSubtext.className = 'option-subtext';
+                        optionSubtext.textContent = subtext;
+                        optionText.appendChild(optionSubtext);
+
+                        option.appendChild(optionText);
+
+                        // Attach the click event listener
+                        option.addEventListener('click', function () {
+                            document.getElementById('col-max').textContent = "max. " + resource.amount.toLocaleString('en-US');
+                            availableCollateral = resource.amount;
+                            selectedCollateral = address;
+                            selectedText = resource.identifier;
+                            // Remove the 'selected' class from all options
+                            validatorMultiplier = resource.multiplier;
+                            var options = document.querySelectorAll('.dropdown-custom-option');
+                            options.forEach(function (otherOption) {
+                                otherOption.classList.remove('selected');
+                            });
+
+                            // Add the 'selected' class to the clicked option
+                            option.classList.add('selected');
+
+                            // Set the button text to the option title
+                            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                            dropdownButton.textContent = name;
+
+                            // Hide the dropdown content
+                            var dropdownContent = document.querySelector('.dropdown-custom-content');
+                            dropdownContent.style.display = 'none';
+                            setChevron(dropdownContent);
+
+                            // Change the logo
+                            var logoImage = document.querySelector('.stab-logo');
+                            logoImage.src = logoUrl;
+
+                            if (colToUse.value !== "") {
+                                let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
+                                mintAmount = result;
+                                collateralAmount = colToUse.value;
+                                document.getElementById("outputStab").innerHTML = customRound(result, 4);
+                            } else {
+                                let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
+                                mintAmount = result;
+                                collateralAmount = 0;
+                                document.getElementById("outputStab").innerHTML = customRound(result, 4);
+                            }
+
+                            if (colToUse.value !== "") {
+                                document.getElementById("ratio-suffix").innerHTML = "STAB";
+                            }
+                            else {
+                                document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
+                            }
+                            setBorrowButton();
+                        });
+
+                        if (firstOption) {
+                            option.click();
+                            firstOption = false;
+                        }
+
+                        // Append the new option to the dropdown content
+                        var dropdownContent = document.querySelector('.dropdown-custom-content');
+                        dropdownContent.appendChild(option);
+                    });
+                });
+
+                if (firstOption) {
+                    console.log("getting there baby");
+                    // Fetch the name, subtext, and logo
+                    var name = "XRD";
+                    var logoUrl = "images/radix-logo.svg";
+                    var slider = document.getElementById('slider-single');
+                    let colToUse = document.getElementById("colToUse");
+                    document.getElementById('col-max').textContent = "max. 0";
+                    availableCollateral = 0;
+                    selectedCollateral = xrdAddress;
+                    selectedText = "XRD";
+                    var logoImage = document.querySelector('.stab-logo');
+                    logoImage.src = logoUrl;
+                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                    dropdownButton.textContent = name;
+                    clickableButton.disabled = true;
+                    clickableButton.style.backgroundColor = "hsl(0, 0%, 78%)";
+
+                    if (colToUse.value !== "") {
+                        let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
+                        mintAmount = result;
+                        collateralAmount = colToUse.value;
+                        document.getElementById("outputStab").innerHTML = customRound(result, 4);
+                    } else {
+                        let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
+                        mintAmount = result;
+                        collateralAmount = 0;
+                        document.getElementById("outputStab").innerHTML = customRound(result, 4);
+                    }
+
+                    if (colToUse.value !== "") {
+                        document.getElementById("ratio-suffix").innerHTML = "STAB";
+                    }
+                    else {
+                        document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
+                    }
+                }
+
+                if (!isConnected) {
+                    var dropdownContent = document.querySelector('.dropdown-custom-content');
+                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                    dropdownContent.innerHTML = '';
+                    dropdownButton.textContent = 'XRD';
+                    var logoImage = document.querySelector('.stab-logo');
+                    logoImage.src = 'images/radix-logo.svg';
+                    clickableButton.disabled = true;
+                    clickableButton.style.backgroundColor = "hsl(0, 0%, 78%)";
+                }
+
+                setBorrowButton();
+            }
+
+            data.forEach(item => {
+                if (item.non_fungible_resources) {
+                    item.non_fungible_resources.items.forEach(nfrItem => {
+                        if (nfrItem.resource_address === stabIdAddress && nfrItem.vaults) {
+                            nfrItem.vaults.items.forEach(vault => {
+                                stab_ids = stab_ids.concat(vault.items);
+                            });
+                        }
+                        if (nfrItem.resource_address === cdpAddress && nfrItem.vaults) {
+                            nfrItem.vaults.items.forEach(vault => {
+                                cdp_ids = cdp_ids.concat(vault.items);
+                            });
+                        }
+                        if (nfrItem.resource_address === markerAddress && nfrItem.vaults) {
+                            nfrItem.vaults.items.forEach(vault => {
+                                marker_ids = marker_ids.concat(vault.items);
+                            });
+                        }
+                    });
+                }
+            });
+            //fix for gov: currentPeriod = data[3].details.state.fields[2].value;
+            //fix for gov: let updateRewards = data[1].details.state.fields[30].value;
+            walletIlis = getResourceAmount(ilisAddress, data, 0);
+            walletXrd = getResourceAmount(xrdAddress, data, 0);
+            walletLp = getResourceAmount(lpAddress, data, 0);
+            walletStab = getResourceAmount(stabAddress, data, 0);
+            xrdPoolAmount = getResourceAmount(xrdAddress, data, 4);
+            stabPoolAmount = getResourceAmount(stabAddress, data, 4);
+            console.log(xrdPoolAmount);
+            console.log(stabPoolAmount);
+            interestRate = (100 * ((data[1].details.state.fields[14].value ** (24 * 60 * 365)) - 1)).toFixed(2);
+
+            if (window.location.pathname === '/incentives') {
+                document.getElementById('ilis-staking-rewards').textContent = stakeRewards + " ILIS/day";
+                document.getElementById('lpstab-staking-rewards').textContent = lpRewards + " ILIS/day";
+                document.getElementById('update-rewards').textContent = updateRewards + " ILIS/day";
+            }
+
+            if (window.location.pathname === '/' || window.location.pathname === '/secret_index' || window.location.pathname === '/index') {
+                document.getElementById('interest-rate').textContent = interestRate;
+                document.getElementById('circulating-counter').textContent = (1 * data[3].details.total_supply).toFixed(0);
+                document.getElementById('price-counter').textContent = (xrdPrice * stabXrdRatio).toFixed(2);
+            }
+
+            if (window.location.pathname === '/swap') {
+                calculateChange();
+                setProvideButton();
+                setRemoveLpButton();
+                async function fetchData() {
+                    try {
+                        const response = await fetch('https://stokenet.radixdlt.com/status/gateway-status', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            // Include any necessary body data in string format
+                        });
+                        const data = await response.json();
+                        var now = new Date(data.ledger_state.proposer_round_timestamp);
+                    } catch (error) {
+                        console.error('Error:', error);
+                    }
+                    const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+
+                    const entityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
+                    const entityPageUrl = 'https://stokenet.radixdlt.com/state/entity/page/fungibles';
+                    const customEntityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
+
+                    const entityDetailsPayload = (timestamp) => ({
+                        addresses: [
+                            lpAddress,
+                        ],
+                        aggregation_level: "Vault",
+                        at_ledger_state: {
+                            timestamp: timestamp
+                        },
                         opt_ins: {
                             ancestor_identities: true,
+                            component_royalty_config: true,
                             component_royalty_vault_balance: true,
                             package_royalty_vault_balance: true,
                             non_fungible_include_nfids: true,
-                            explicit_metadata: []
+                            explicit_metadata: [
+                                "name",
+                                "description"
+                            ]
                         }
-                    })
-                });
-
-                const data = await response.json();
-
-                // Iterate over each item in the response
-                const acceptedFungibleResources = data.items.flatMap(item => {
-                    // Filter the fungible resources to only include those in the list of accepted resources
-                    return item.fungible_resources.items.filter(resource => {
-                        return acceptedResources.some(acceptedResource => acceptedResource[1] === resource.resource_address);
-                    }).map(resource => {
-                        // Find the corresponding accepted resource
-                        const acceptedResource = acceptedResources.find(ar => ar[1] === resource.resource_address);
-
-                        // Add the name of the accepted resource to the resource object
-                        resource.name = acceptedResource ? acceptedResource[0] : '';
-                        resource.logo = acceptedResource ? acceptedResource[3] : '';
-                        resource.multiplier = acceptedResource ? acceptedResource[4] : 1;
-                        resource.identifier = acceptedResource ? acceptedResource[5] : '';
-
-                        return resource;
                     });
-                });
 
-                // Map each object to its name, resource_address and amount properties
-                const resourceAddressesAndAmounts = acceptedFungibleResources.map(resource => {
-                    let amount = 0;
-                    if (resource.vaults && resource.vaults.items && resource.vaults.items.length > 0) {
-                        amount = parseFloat(resource.vaults.items[0].amount);
-                    }
-
-                    return {
-                        name: resource.name,
-                        resourceAddress: resource.resource_address,
-                        amount: amount,
-                        logo: resource.logo,
-                        multiplier: resource.multiplier,
-                        identifier: resource.identifier
-                    };
-                });
-
-                // Sort the array by amount in descending order
-                resourceAddressesAndAmounts.sort((a, b) => b.amount - a.amount);
-
-                return resourceAddressesAndAmounts;
-            }
-
-            // Define the request URL and parameters
-            const url_kvs = "https://stokenet.radixdlt.com/state/key-value-store/data";
-            const params_kvs = {
-                "key_value_store_address": stakesKvs,
-                "keys": [
-                    { "key_hex": kvsHexes[0] },
-                    { "key_hex": kvsHexes[1] },
-                    { "key_json": { "kind": "Tuple", "fields": [{ "kind": "U32", "value": "1" }] } }
-                ]
-            };
-
-            const url_fetch_ids = "https://stokenet.radixdlt.com/state/entity/details";
-            const addresses = [accountAddress, componentAddress, poolComponentAddress, stabAddress, poolAddress, stakingAddress]; // Replace with your addresses
-
-            const requestBody = {
-                "addresses": addresses,
-                "aggregation_level": "Vault",
-                "opt_ins": {
-                    "ancestor_identities": false,
-                    "component_royalty_vault_balance": false,
-                    "package_royalty_vault_balance": false,
-                    "non_fungible_include_nfids": true,
-                    "explicit_metadata": [
-                        "name",
-                        "description"
-                    ]
-                }
-            };
-
-            async function fetchData() {
-                try {
-                    // Start both fetch requests
-                    /*const fetchPromise1 = fetch(url_kvs, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
+                    const entityPagePayload = (timestamp) => ({
+                        address: poolAddress,
+                        at_ledger_state: {
+                            timestamp: timestamp
                         },
-                        body: JSON.stringify(params_kvs)
-                    });*/
+                    });
 
-                    const fetchPromise2 = fetch(url_fetch_ids, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
+                    const customEntityDetailsPayload = (timestamp) => ({
+                        addresses: [
+                            componentAddress
+                        ],
+                        aggregation_level: "Vault",
+                        at_ledger_state: {
+                            timestamp: timestamp
                         },
-                        body: JSON.stringify(requestBody)
-                    });
-
-                    // Wait for both fetch requests to complete
-                    const [/*response1,*/response2] = await Promise.all([/*fetchPromise1, */fetchPromise2]);
-
-                    // Check the status of the responses
-                    if (/*!response1.ok || */!response2.ok) {
-                        throw new Error(`HTTP error! status: ${response2.status/*change this shit to 1*/}, ${response2.status}`);
-                    }
-
-                    // Parse the responses as JSON
-                    const [/*data1, */data2] = await Promise.all([/*response1.json(), */response2.json()]);
-
-                    // Extract the reward_amount values
-                    /*const rewardAmounts = data1.entries
-                        .map(entry => entry.value.programmatic_json.fields)
-                        .flat()
-                        .filter(field => field.field_name === 'reward_amount')
-                        .map(field => field.value);
-
-                    stakeRewards = rewardAmounts[0];
-                    lpRewards = rewardAmounts[1];*/
-
-                    // Process the second response
-                    let sortedItems = [];
-                    addresses.forEach(address => {
-                        let item = data2.items.find(item => item.address === address);
-                        if (item) {
-                            sortedItems.push(item);
+                        opt_ins: {
+                            ancestor_identities: true,
+                            component_royalty_config: true,
+                            component_royalty_vault_balance: true,
+                            package_royalty_vault_balance: true,
+                            non_fungible_include_nfids: true,
+                            explicit_metadata: [
+                                "name",
+                                "description"
+                            ]
                         }
                     });
 
-                    return sortedItems;
-                } catch (error) {
-                    console.error('Error:', error);
-                }
-            }
+                    try {
+                        const earliestTimestamp = new Date("2024-06-14T03:06:59.654Z");
 
-            function useData(data) {
-                stab_ids = []
-                cdp_ids = []
-                marker_ids = []
-                internalPrice = data[1].details.state.fields[12].value;
-                xrdPrice = data[1].details.state.fields[19].value;
-                stabXrdRatio = internalPrice / xrdPrice;
-                validatorMultiplier = 1;
-                if (window.location.pathname === '/borrow') {
-                    getFungibleResources(accountAddress).then(resourceAddressesAndAmounts => {
-                        var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        dropdownContent.innerHTML = '';
+                        // Determine the timestamp to use
+                        const timestampToUse = earliestTimestamp > sevenDaysAgo ? earliestTimestamp : sevenDaysAgo;
+                        console.log(timestampToUse);
 
-                        // Add new options
-                        resourceAddressesAndAmounts.forEach(resource => {
-                            // Fetch the name, subtext, and logo
-                            var name = resource.name;
-                            var address = resource.resourceAddress;
-                            var logoUrl = resource.logo;
-                            var subtext = 'max. ' + resource.amount.toFixed(2);
-                            var slider = document.getElementById('slider-single');
-                            let colToUse = document.getElementById("colToUse");
+                        // Perform API calls with both the chosen timestamp and the current timestamp (now)
+                        const [detailsResponse1, pageResponse1, detailsResponse2, pageResponse2, customDetailsResponse] = await Promise.all([
+                            fetch(entityDetailsUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(entityDetailsPayload(timestampToUse.toISOString()))
+                            }),
+                            fetch(entityPageUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(entityPagePayload(timestampToUse.toISOString()))
+                            }),
+                            fetch(entityDetailsUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(entityDetailsPayload(now.toISOString()))
+                            }),
+                            fetch(entityPageUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(entityPagePayload(now.toISOString()))
+                            }),
+                            fetch(customEntityDetailsUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(customEntityDetailsPayload(timestampToUse.toISOString()))
+                            })
+                        ]);
 
-                            if (address === selectedCollateral) {
-                                availableCollateral = resource.amount;
-                                document.getElementById('col-max').textContent = "max. " + availableCollateral.toFixed(2).toLocaleString('en-US');
-                            }
-
-                            // Create a new option
-                            var option = document.createElement('div');
-                            option.className = 'dropdown-custom-option';
-                            option.dataset.logoUrl = logoUrl;
-                            option.setAttribute('tabindex', '0'); // Make the option focusable
-
-                            // Add the logo image to the option
-                            var logoImage = document.createElement('img');
-                            logoImage.src = logoUrl;
-                            logoImage.alt = 'Logo';
-                            option.appendChild(logoImage);
-
-                            // Add the text to the option
-                            var optionText = document.createElement('div');
-                            optionText.className = 'option-text';
-
-                            var optionTitle = document.createElement('div');
-                            optionTitle.className = 'option-title';
-                            optionTitle.textContent = name;
-                            optionText.appendChild(optionTitle);
-
-                            var optionSubtext = document.createElement('div');
-                            optionSubtext.className = 'option-subtext';
-                            optionSubtext.textContent = subtext;
-                            optionText.appendChild(optionSubtext);
-
-                            option.appendChild(optionText);
-
-                            // Attach the click event listener
-                            option.addEventListener('click', function () {
-                                document.getElementById('col-max').textContent = "max. " + resource.amount.toLocaleString('en-US');
-                                availableCollateral = resource.amount;
-                                selectedCollateral = address;
-                                selectedText = resource.identifier;
-                                // Remove the 'selected' class from all options
-                                validatorMultiplier = resource.multiplier;
-                                var options = document.querySelectorAll('.dropdown-custom-option');
-                                options.forEach(function (otherOption) {
-                                    otherOption.classList.remove('selected');
-                                });
-
-                                // Add the 'selected' class to the clicked option
-                                option.classList.add('selected');
-
-                                // Set the button text to the option title
-                                var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                                dropdownButton.textContent = name;
-
-                                // Hide the dropdown content
-                                var dropdownContent = document.querySelector('.dropdown-custom-content');
-                                dropdownContent.style.display = 'none';
-                                setChevron(dropdownContent);
-
-                                // Change the logo
-                                var logoImage = document.querySelector('.stab-logo');
-                                logoImage.src = logoUrl;
-
-                                if (colToUse.value !== "") {
-                                    let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
-                                    collateralAmount = colToUse.value;
-                                    document.getElementById("outputStab").innerHTML = customRound(result, 4);
-                                } else {
-                                    let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
-                                    collateralAmount = 0;
-                                    document.getElementById("outputStab").innerHTML = customRound(result, 4);
-                                }
-
-                                if (colToUse.value !== "") {
-                                    document.getElementById("ratio-suffix").innerHTML = "STAB";
-                                }
-                                else {
-                                    document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
-                                }
-                            });
-
-                            // Append the new option to the dropdown content
-                            var dropdownContent = document.querySelector('.dropdown-custom-content');
-                            dropdownContent.appendChild(option);
-                        });
-                    });
-
-                    if (!isConnected) {
-                        var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                        dropdownContent.innerHTML = '';
-                        dropdownButton.textContent = 'select collateral';
-                        var logoImage = document.querySelector('.stab-logo');
-                        logoImage.src = 'images/radix-logo.svg';
-                    }
-                }
-
-                data.forEach(item => {
-                    if (item.non_fungible_resources) {
-                        item.non_fungible_resources.items.forEach(nfrItem => {
-                            if (nfrItem.resource_address === stabIdAddress && nfrItem.vaults) {
-                                nfrItem.vaults.items.forEach(vault => {
-                                    stab_ids = stab_ids.concat(vault.items);
-                                });
-                            }
-                            if (nfrItem.resource_address === cdpAddress && nfrItem.vaults) {
-                                nfrItem.vaults.items.forEach(vault => {
-                                    cdp_ids = cdp_ids.concat(vault.items);
-                                });
-                            }
-                            if (nfrItem.resource_address === markerAddress && nfrItem.vaults) {
-                                nfrItem.vaults.items.forEach(vault => {
-                                    marker_ids = marker_ids.concat(vault.items);
-                                });
-                            }
-                        });
-                    }
-                });
-                //fix for gov: currentPeriod = data[3].details.state.fields[2].value;
-                //fix for gov: let updateRewards = data[1].details.state.fields[30].value;
-                walletIlis = getResourceAmount(ilisAddress, data, 0);
-                walletXrd = getResourceAmount(xrdAddress, data, 0);
-                walletLp = getResourceAmount(lpAddress, data, 0);
-                walletStab = getResourceAmount(stabAddress, data, 0);
-                xrdPoolAmount = getResourceAmount(xrdAddress, data, 4);
-                stabPoolAmount = getResourceAmount(stabAddress, data, 4);
-                console.log(xrdPoolAmount);
-                console.log(stabPoolAmount);
-                interestRate = (100 * ((data[1].details.state.fields[14].value ** (24 * 60 * 365)) - 1)).toFixed(2);
-
-                if (window.location.pathname === '/incentives') {
-                    document.getElementById('ilis-staking-rewards').textContent = stakeRewards + " ILIS/day";
-                    document.getElementById('lpstab-staking-rewards').textContent = lpRewards + " ILIS/day";
-                    document.getElementById('update-rewards').textContent = updateRewards + " ILIS/day";
-                }
-
-                if (window.location.pathname === '/' || window.location.pathname === '/secret_index' || window.location.pathname === '/index') {
-                    document.getElementById('interest-rate').textContent = interestRate;
-                    document.getElementById('circulating-counter').textContent = (1 * data[3].details.total_supply).toFixed(0);
-                    document.getElementById('price-counter').textContent = (xrdPrice * stabXrdRatio).toFixed(2);
-                }
-
-                if (window.location.pathname === '/swap') {
-                    async function fetchData() {
-                        const now = new Date();
-                        const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-
-                        const entityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
-                        const entityPageUrl = 'https://stokenet.radixdlt.com/state/entity/page/fungibles';
-                        const customEntityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
-
-                        const entityDetailsPayload = (timestamp) => ({
-                            addresses: [
-                                "resource_tdx_2_1t58kwzu5fc0ucqfkk6vm0smr3rw4uax0mmskyzkkdsq2jj0538htv0"
-                            ],
-                            aggregation_level: "Vault",
-                            at_ledger_state: {
-                                timestamp: timestamp
-                            },
-                            opt_ins: {
-                                ancestor_identities: true,
-                                component_royalty_config: true,
-                                component_royalty_vault_balance: true,
-                                package_royalty_vault_balance: true,
-                                non_fungible_include_nfids: true,
-                                explicit_metadata: [
-                                    "name",
-                                    "description"
-                                ]
-                            }
-                        });
-
-                        const entityPagePayload = (timestamp) => ({
-                            address: "pool_tdx_2_1c5as5t4ymlpnr634eluv2s2l7tv4avgrnvu2ednmwlgmc3ytv0lukg",
-                            at_ledger_state: {
-                                timestamp: timestamp
-                            },
-                        });
-
-                        const customEntityDetailsPayload = (timestamp) => ({
-                            addresses: [
-                                "component_tdx_2_1cqeh8j4wgyezttn969kf0c7644m0cc33c0jpfsc9zf770rnpg69y4z"
-                            ],
-                            aggregation_level: "Vault",
-                            at_ledger_state: {
-                                timestamp: timestamp
-                            },
-                            opt_ins: {
-                                ancestor_identities: true,
-                                component_royalty_config: true,
-                                component_royalty_vault_balance: true,
-                                package_royalty_vault_balance: true,
-                                non_fungible_include_nfids: true,
-                                explicit_metadata: [
-                                    "name",
-                                    "description"
-                                ]
-                            }
-                        });
-
-                        try {
-                            const earliestTimestamp = new Date("2024-05-30T18:22:56.462Z");
-
-                            // Determine the timestamp to use
-                            const timestampToUse = earliestTimestamp > sevenDaysAgo ? earliestTimestamp : sevenDaysAgo;
-
-                            // Perform API calls with both the chosen timestamp and the current timestamp (now)
-                            const [detailsResponse1, pageResponse1, detailsResponse2, pageResponse2, customDetailsResponse] = await Promise.all([
-                                fetch(entityDetailsUrl, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(entityDetailsPayload(timestampToUse.toISOString()))
-                                }),
-                                fetch(entityPageUrl, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(entityPagePayload(timestampToUse.toISOString()))
-                                }),
-                                fetch(entityDetailsUrl, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(entityDetailsPayload(now.toISOString()))
-                                }),
-                                fetch(entityPageUrl, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(entityPagePayload(now.toISOString()))
-                                }),
-                                fetch(customEntityDetailsUrl, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(customEntityDetailsPayload(timestampToUse.toISOString()))
-                                })
-                            ]);
-
-                            if (!detailsResponse1.ok || !pageResponse1.ok || !detailsResponse2.ok || !pageResponse2.ok || !customDetailsResponse.ok) {
-                                throw new Error(`Failed to fetch entity data`);
-                            }
-
-                            // Parse responses as JSON
-                            const [detailsData1, pageData1, detailsData2, pageData2, customDetailsData] = await Promise.all([
-                                detailsResponse1.json(),
-                                pageResponse1.json(),
-                                detailsResponse2.json(),
-                                pageResponse2.json(),
-                                customDetailsResponse.json()
-                            ]);
-
-                            console.log(pageData1, pageData2);
-
-                            // Extract amounts and organize by resource_address
-                            const amountsMap1 = new Map(pageData1.items.map(item => [item.resource_address, item.amount]));
-                            const amountsMap2 = new Map(pageData2.items.map(item => [item.resource_address, item.amount]));
-
-                            // Synchronize the order of amounts based on resource_address
-                            const resourceAddresses = pageData1.items.map(item => item.resource_address);
-                            const amounts1 = resourceAddresses.map(address => amountsMap1.get(address));
-                            const amounts2 = resourceAddresses.map(address => amountsMap2.get(address));
-
-                            // Extract total supply from entity details responses
-                            const totalSupply1 = detailsData1.items[0]?.details?.total_supply;
-                            const totalSupply2 = detailsData2.items[0]?.details?.total_supply;
-
-                            if (totalSupply1 === undefined || totalSupply2 === undefined) {
-                                throw new Error("Total supply not found in entity details response");
-                            }
-
-                            var xrdInitial = amounts1[0];
-                            var stabInitial = amounts1[1];
-                            var xrdFinal = amounts2[0];
-                            var stabFinal = amounts2[1];
-                            var xrdPerStabInitial = xrdInitial / stabInitial;
-                            var xrdPerStabFinal = xrdFinal / stabFinal;
-                            var xrdPriceInitial = customDetailsData.items[0].details.state.fields[19].value;
-                            var stabPriceInitial = xrdPerStabInitial * xrdPriceInitial;
-                            var stabPriceFinal = xrdPerStabFinal * xrdPrice;
-
-                            var dollarPerLpInitial = (xrdInitial * xrdPriceInitial + stabInitial * stabPriceInitial) / totalSupply1;
-                            var dollarPerLpFinal = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
-
-                            var dollarPerLpInitial2 = (xrdInitial * xrdPrice + stabInitial * stabPriceFinal) / totalSupply1;
-                            var dollarPerLpFinal2 = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
-
-                            //var dollarPerLpRatio = (Math.pow((dollarPerLpFinal / dollarPerLpInitial), 365 / 7) - 1) * 100;
-                            var dollarPerLpRatio2 = (Math.pow((dollarPerLpFinal2 / dollarPerLpInitial2), 365 / 7) - 1) * 100;
-                            var apyElement = document.getElementById('apy-real')
-                            apyElement.textContent = dollarPerLpRatio2.toFixed(2) + "%";
-                            apyElement.style.color = dollarPerLpRatio2 > 0 ? 'green' : 'red';
-
-                        } catch (error) {
-                            console.error('Error fetching data:', error);
+                        if (!detailsResponse1.ok || !pageResponse1.ok || !detailsResponse2.ok || !pageResponse2.ok || !customDetailsResponse.ok) {
+                            throw new Error(`Failed to fetch entity data`);
                         }
-                    }
 
-                    fetchData();
+                        // Parse responses as JSON
+                        const [detailsData1, pageData1, detailsData2, pageData2, customDetailsData] = await Promise.all([
+                            detailsResponse1.json(),
+                            pageResponse1.json(),
+                            detailsResponse2.json(),
+                            pageResponse2.json(),
+                            customDetailsResponse.json()
+                        ]);
 
-                    if (sell == true) {
-                        formattedWallet = Math.floor(walletXrd * 10) / 10;
-                        document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
-                    } else {
-                        if (walletStab >= 0.1) {
-                            formattedWallet = Math.floor((walletStab - 0.1) * 10) / 10;
-                        } else {
-                            formattedWallet = 0;
-                        }
-                        document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
+                        console.log(detailsData1);
+
+                        console.log(pageData1, pageData2);
+
+                        // Extract amounts and organize by resource_address
+                        const amountsMap1 = new Map(pageData1.items.map(item => [item.resource_address, item.amount]));
+                        const amountsMap2 = new Map(pageData2.items.map(item => [item.resource_address, item.amount]));
+
+                        // Synchronize the order of amounts based on resource_address
+                        const resourceAddresses = pageData1.items.map(item => item.resource_address);
+                        const amounts1 = resourceAddresses.map(address => amountsMap1.get(address));
+                        const amounts2 = resourceAddresses.map(address => amountsMap2.get(address));
+
+                        // Extract total supply from entity details responses
+                        const totalSupply1 = detailsData1.items[0]?.details?.total_supply;
+                        const totalSupply2 = detailsData2.items[0]?.details?.total_supply;
+
+                        var xrdInitial = amounts1[0];
+                        var stabInitial = amounts1[1];
+                        var xrdFinal = amounts2[0];
+                        var stabFinal = amounts2[1];
+                        var xrdPerStabInitial = xrdInitial / stabInitial;
+                        var xrdPerStabFinal = xrdFinal / stabFinal;
+                        var xrdPriceInitial = customDetailsData.items[0].details.state.fields[19].value;
+                        var stabPriceInitial = xrdPerStabInitial * xrdPriceInitial;
+                        var stabPriceFinal = xrdPerStabFinal * xrdPrice;
+
+                        var dollarPerLpInitial = (xrdInitial * xrdPriceInitial + stabInitial * stabPriceInitial) / totalSupply1;
+                        var dollarPerLpFinal = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
+
+                        var dollarPerLpInitial2 = (xrdInitial * xrdPrice + stabInitial * stabPriceFinal) / totalSupply1;
+                        var dollarPerLpFinal2 = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
+
+                        //var dollarPerLpRatio = (Math.pow((dollarPerLpFinal / dollarPerLpInitial), 365 / 7) - 1) * 100;
+                        console.log(totalSupply1, totalSupply2);
+                        console.log(dollarPerLpFinal2, dollarPerLpInitial2);
+                        var dollarPerLpRatio2 = (Math.pow((dollarPerLpFinal2 / dollarPerLpInitial2), 365 / 7) - 1) * 100;
+                        var apyElement = document.getElementById('apy-real')
+                        apyElement.textContent = dollarPerLpRatio2.toFixed(2) + "%";
+                        apyElement.style.color = dollarPerLpRatio2 > 0 ? 'green' : 'red';
+
+                    } catch (error) {
+                        console.error('Error fetching data:', error);
                     }
-                    document.getElementById('internal-price-xrd').innerHTML = stabXrdRatio.toFixed(2) + " XRD";
-                    document.getElementById('internal-price-usd').innerHTML = "$" + (stabXrdRatio * xrdPrice).toFixed(2);
-                    document.getElementById('market-price-xrd').innerHTML = (xrdPoolAmount / stabPoolAmount).toFixed(2) + " XRD";
-                    document.getElementById('market-price-usd').innerHTML = "$" + ((xrdPoolAmount / stabPoolAmount) * xrdPrice).toFixed(2);
-                    document.getElementById('interest-rate').innerHTML = interestRate + "%/year";
-                    if (xrdPoolAmount / stabPoolAmount < 0.995 * stabXrdRatio) {
-                        document.getElementById("recommendation").innerHTML = `<strong>Market price &lt; Internal price</strong>, sell XRD to arbitrage!`;
-                    } else if (xrdPoolAmount / stabPoolAmount > 1.005 * stabXrdRatio) {
-                        document.getElementById("recommendation").innerHTML = `<strong>Market price &gt; Internal price</strong>, sell STAB to arbitrage!`;
-                    }
-                    else {
-                        document.getElementById("recommendation").innerHTML = `Price error is within acceptable bounds. Minimal arbitrage opportunities.`;
-                    }
-                    document.getElementById('provide-xrd-amount').textContent = "max. " + (Math.floor(walletXrd * 10) / 10).toLocaleString('en-US');
+                }
+
+                fetchData();
+
+                if (sell == true) {
+                    formattedWallet = Math.floor(walletXrd * 10) / 10;
+                    document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
+                } else {
                     if (walletStab >= 0.1) {
-                        document.getElementById('provide-stab-amount').textContent = "max. " + (Math.floor((walletStab - 0.1) * 10) / 10).toLocaleString('en-US');
+                        formattedWallet = Math.floor((walletStab) * 10) / 10;
                     } else {
-                        document.getElementById('provide-stab-amount').textContent = "max. " + 0;
+                        formattedWallet = 0;
                     }
-                    document.getElementById('remove-lp-amount').textContent = "max. " + (Math.floor(walletLp * 10) / 10).toLocaleString('en-US');
+                    document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
                 }
+                document.getElementById('internal-price-xrd').innerHTML = stabXrdRatio.toFixed(2) + " XRD";
+                document.getElementById('internal-price-usd').innerHTML = "$" + (stabXrdRatio * xrdPrice).toFixed(3);
+                document.getElementById('market-price-xrd').innerHTML = (xrdPoolAmount / stabPoolAmount).toFixed(2) + " XRD";
+                document.getElementById('market-price-usd').innerHTML = "$" + ((xrdPoolAmount / stabPoolAmount) * xrdPrice).toFixed(3);
+                document.getElementById('interest-rate').innerHTML = interestRate + "% APY";
+                if (xrdPoolAmount / stabPoolAmount < 0.995 * stabXrdRatio) {
+                    document.getElementById("recommendation").innerHTML = `<strong>Market price &lt; Internal price</strong>, sell XRD to arbitrage!`;
+                } else if (xrdPoolAmount / stabPoolAmount > 1.005 * stabXrdRatio) {
+                    document.getElementById("recommendation").innerHTML = `<strong>Market price &gt; Internal price</strong>, sell STAB to arbitrage!`;
+                }
+                else {
+                    document.getElementById("recommendation").innerHTML = `Price error is within acceptable bounds. Minimal arbitrage opportunities.`;
+                }
+                document.getElementById('provide-xrd-amount').textContent = "max. " + (Math.floor(walletXrd * 10) / 10).toLocaleString('en-US');
+                if (walletStab >= 0.1) {
+                    document.getElementById('provide-stab-amount').textContent = "max. " + (Math.floor((walletStab) * 10) / 10).toLocaleString('en-US');
+                } else {
+                    document.getElementById('provide-stab-amount').textContent = "max. " + 0;
+                }
+                document.getElementById('remove-lp-amount').textContent = "max. " + (Math.floor(walletLp * 10) / 10).toLocaleString('en-US');
+            }
 
-                if (window.location.pathname === '/liquidations') {
-                    selectedMarker = undefined;
-                    var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    dropdownContent.innerHTML = '';
-                    marker_ids.forEach(id => {
-                        var name = id;
-                        var logoUrl = 'images/marker-receipt.png'
-                        var subtext = "Stabilis Marker Receipt";
+            if (window.location.pathname === '/liquidations') {
+                selectedMarker = undefined;
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.innerHTML = '';
+                var marker_exists = false;
+                marker_ids.forEach(id => {
+                    if (marker_exists == false) {
+                        marker_exists = true;
+                    }
+                    var name = id;
+                    var logoUrl = 'images/marker-receipt.png'
+                    var subtext = "Stabilis Marker Receipt";
 
-                        // Create a new option
-                        var option = document.createElement('div');
-                        option.className = 'dropdown-custom-option';
-                        option.dataset.logoUrl = logoUrl;
-                        option.setAttribute('tabindex', '0'); // Make the option focusable
+                    // Create a new option
+                    var option = document.createElement('div');
+                    option.className = 'dropdown-custom-option';
+                    option.dataset.logoUrl = logoUrl;
+                    option.setAttribute('tabindex', '0'); // Make the option focusable
 
-                        // Add the logo image to the option
-                        var logoImage = document.createElement('img');
-                        logoImage.src = logoUrl;
-                        logoImage.alt = 'Logo';
-                        logoImage.style.borderRadius = '0';
-                        option.appendChild(logoImage);
+                    // Add the logo image to the option
+                    var logoImage = document.createElement('img');
+                    logoImage.src = logoUrl;
+                    logoImage.alt = 'Logo';
+                    logoImage.style.borderRadius = '0';
+                    option.appendChild(logoImage);
 
-                        // Add the text to the option
-                        var optionText = document.createElement('div');
-                        optionText.className = 'option-text';
+                    // Add the text to the option
+                    var optionText = document.createElement('div');
+                    optionText.className = 'option-text';
 
-                        var optionTitle = document.createElement('div');
-                        optionTitle.className = 'option-title';
-                        optionTitle.textContent = name;
-                        optionText.appendChild(optionTitle);
+                    var optionTitle = document.createElement('div');
+                    optionTitle.className = 'option-title';
+                    optionTitle.textContent = name;
+                    optionText.appendChild(optionTitle);
 
-                        var optionSubtext = document.createElement('div');
-                        optionSubtext.className = 'option-subtext';
-                        optionSubtext.textContent = subtext;
-                        optionText.appendChild(optionSubtext);
+                    var optionSubtext = document.createElement('div');
+                    optionSubtext.className = 'option-subtext';
+                    optionSubtext.textContent = subtext;
+                    optionText.appendChild(optionSubtext);
 
-                        option.appendChild(optionText);
+                    option.appendChild(optionText);
 
-                        // Attach the click event listener
-                        option.addEventListener('click', function () {
-                            // Remove the 'selected' class from all options
-                            var options = document.querySelectorAll('.dropdown-custom-option');
-                            options.forEach(function (otherOption) {
-                                otherOption.classList.remove('selected');
-                            });
-
-                            // Add the 'selected' class to the clicked option
-                            option.classList.add('selected');
-
-                            // Set the button text to the option title
-                            var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                            dropdownButton.textContent = "Marker " + name;
-
-                            // Hide the dropdown content
-                            var dropdownContent = document.querySelector('.dropdown-custom-content');
-                            dropdownContent.style.display = 'none';
-                            setChevron(dropdownContent);
-
-                            selectedMarker = id;
-
-                            update_liq();
+                    // Attach the click event listener
+                    option.addEventListener('click', function () {
+                        // Remove the 'selected' class from all options
+                        var options = document.querySelectorAll('.dropdown-custom-option');
+                        options.forEach(function (otherOption) {
+                            otherOption.classList.remove('selected');
                         });
 
-                        // Append the new option to the dropdown content
-                        var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        dropdownContent.appendChild(option);
-                    });
+                        // Add the 'selected' class to the clicked option
+                        option.classList.add('selected');
 
-                    if (selectedId !== undefined) {
+                        // Set the button text to the option title
+                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                        dropdownButton.textContent = "Marker " + name;
+
+                        // Hide the dropdown content
+                        var dropdownContent = document.querySelector('.dropdown-custom-content');
+                        dropdownContent.style.display = 'none';
+                        setChevron(dropdownContent);
+
+                        selectedMarker = id;
+
                         update_liq();
-                    } else {
-                        if (isConnected === false) {
-                            dropdownContent.innerHTML = '';
-                        }
-                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                        dropdownButton.textContent = "select a marker";
-                        document.getElementById('marker-time').textContent = "-";
-                        document.getElementById('marker-state').textContent = "-";
-                        document.getElementById('status').textContent = "-";
-                        document.getElementById('collateralAmount').textContent = "-";
-                        document.getElementById('debtAmount').textContent = "-";
-                        document.getElementById('cr').textContent = "-";
-                    }
-                }
-
-                if (window.location.pathname === '/incentives') {
-                    selectedId = undefined;
-                    var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    dropdownContent.innerHTML = '';
-
-                    stab_ids.forEach(id => {
-                        var name = id;
-                        var logoUrl = 'images/staking-id.png'
-                        var subtext = "Stabilis Staking ID";
-
-                        // Create a new option
-                        var option = document.createElement('div');
-                        option.className = 'dropdown-custom-option';
-                        option.dataset.logoUrl = logoUrl;
-                        option.setAttribute('tabindex', '0'); // Make the option focusable
-
-                        // Add the logo image to the option
-                        var logoImage = document.createElement('img');
-                        logoImage.src = logoUrl;
-                        logoImage.alt = 'Logo';
-                        logoImage.style.borderRadius = '0';
-                        option.appendChild(logoImage);
-
-                        // Add the text to the option
-                        var optionText = document.createElement('div');
-                        optionText.className = 'option-text';
-
-                        var optionTitle = document.createElement('div');
-                        optionTitle.className = 'option-title';
-                        optionTitle.textContent = name;
-                        optionText.appendChild(optionTitle);
-
-                        var optionSubtext = document.createElement('div');
-                        optionSubtext.className = 'option-subtext';
-                        optionSubtext.textContent = subtext;
-                        optionText.appendChild(optionSubtext);
-
-                        option.appendChild(optionText);
-
-                        // Attach the click event listener
-                        option.addEventListener('click', function () {
-                            // Remove the 'selected' class from all options
-                            var options = document.querySelectorAll('.dropdown-custom-option');
-                            options.forEach(function (otherOption) {
-                                otherOption.classList.remove('selected');
-                            });
-
-                            // Add the 'selected' class to the clicked option
-                            option.classList.add('selected');
-
-                            // Set the button text to the option title
-                            var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                            dropdownButton.textContent = "ID " + name;
-
-                            // Hide the dropdown content
-                            var dropdownContent = document.querySelector('.dropdown-custom-content');
-                            dropdownContent.style.display = 'none';
-                            setChevron(dropdownContent);
-
-                            selectedId = id;
-
-                            update_id();
-                        });
-
-                        // Append the new option to the dropdown content
-                        var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        dropdownContent.appendChild(option);
                     });
 
-                    if (selectedId !== undefined) {
-                        update_id();
-                    } else {
-                        if (isConnected === false) {
-                            dropdownContent.innerHTML = '';
-                        }
-                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                        dropdownButton.textContent = "Select ID";
-                        document.getElementById('ilisAmountId').textContent = "-";
-                        document.getElementById('lpAmountId').textContent = "-";
-                        document.getElementById('nextClaim').textContent = "-";
-                        let stakeIlisMax = document.getElementById('stake-ilis-amount');
-                        stakeIlisMax.textContent = "max. -";
-                        var cloneIlis = stakeIlisMax.cloneNode(true);
-                        stakeIlisMax.parentNode.replaceChild(cloneIlis, stakeIlisMax);
-
-                        let stakeLpMax = document.getElementById('stake-lp-amount');
-                        stakeLpMax.textContent = "max. -";
-                        var cloneLp = stakeLpMax.cloneNode(true);
-                        stakeLpMax.parentNode.replaceChild(cloneLp, stakeLpMax);
-
-                        let unstakeIlisMax = document.getElementById('unstake-ilis-amount');
-                        unstakeIlisMax.textContent = "max. -";
-                        var cloneUnstakeIlis = unstakeIlisMax.cloneNode(true);
-                        unstakeIlisMax.parentNode.replaceChild(cloneUnstakeIlis, unstakeIlisMax);
-
-                        let unstakeLpMax = document.getElementById('unstake-lp-amount');
-                        unstakeLpMax.textContent = "max. -";
-                        var cloneUnstakeLp = unstakeLpMax.cloneNode(true);
-                        unstakeLpMax.parentNode.replaceChild(cloneUnstakeLp, unstakeLpMax);
-                    }
-                }
-
-                if (window.location.pathname === '/borrow' || window.location.pathname === '/manage-loans') {
-                    document.getElementById('interest-rate').textContent = interestRate + "%";
-                    document.getElementById('circulating-stab').textContent = (1 * data[3].details.total_supply).toFixed(0);
-                    document.getElementById('stab-internal-price').textContent = "$" + (xrdPrice * stabXrdRatio).toFixed(2);
-                    document.getElementById('stab-market-price').textContent = "$" + (xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(2);
-                }
-
-                if (window.location.pathname === '/manage-loans') {
-                    selectedCdp = undefined;
+                    // Append the new option to the dropdown content
                     var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    dropdownContent.innerHTML = '';
+                    dropdownContent.appendChild(option);
+                });
+                var dropdownButton = document.querySelector('.dropdown-custom-button');
 
-                    // Get the dropdown element
-                    cdp_ids.forEach(id => {
-                        var name = id;
-                        var logoUrl = 'images/receipt.png'
-                        var subtext = "Stabilis Loan Receipt";
+                if (marker_exists == false) {
+                    dropdownButton.style.backgroundColor = "hsl(0, 0%, 78%)";
+                    dropdownButton.disabled = true;
+                } else {
+                    dropdownButton.disabled = false;
+                    dropdownButton.style.backgroundColor = "";
+                }
 
-                        // Create a new option
-                        var option = document.createElement('div');
-                        option.className = 'dropdown-custom-option';
-                        option.dataset.logoUrl = logoUrl;
-                        option.setAttribute('tabindex', '0'); // Make the option focusable
-
-                        // Add the logo image to the option
-                        var logoImage = document.createElement('img');
-                        logoImage.src = logoUrl;
-                        logoImage.alt = 'Logo';
-                        logoImage.style.borderRadius = '0';
-                        option.appendChild(logoImage);
-
-                        // Add the text to the option
-                        var optionText = document.createElement('div');
-                        optionText.className = 'option-text';
-
-                        var optionTitle = document.createElement('div');
-                        optionTitle.className = 'option-title';
-                        optionTitle.textContent = name;
-                        optionText.appendChild(optionTitle);
-
-                        var optionSubtext = document.createElement('div');
-                        optionSubtext.className = 'option-subtext';
-                        optionSubtext.textContent = subtext;
-                        optionText.appendChild(optionSubtext);
-
-                        option.appendChild(optionText);
-
-                        // Attach the click event listener
-                        option.addEventListener('click', function () {
-                            // Remove the 'selected' class from all options
-                            var options = document.querySelectorAll('.dropdown-custom-option');
-                            options.forEach(function (otherOption) {
-                                otherOption.classList.remove('selected');
-                            });
-
-                            // Add the 'selected' class to the clicked option
-                            option.classList.add('selected');
-
-                            // Set the button text to the option title
-                            var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                            dropdownButton.textContent = "Receipt " + name;
-
-                            // Hide the dropdown content
-                            var dropdownContent = document.querySelector('.dropdown-custom-content');
-                            dropdownContent.style.display = 'none';
-                            setChevron(dropdownContent);
-                            selectedCdp = id;
-
-
-                            update_cdp();
-                        });
-
-                        // Append the new option to the dropdown content
-                        var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        dropdownContent.appendChild(option);
-                    });
-                    if (selectedCdp !== undefined) {
-                        update_cdp();
-                    } else {
-                        if (isConnected === false) {
-                            dropdownContent.innerHTML = '';
-                        }
-                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                        dropdownButton.textContent = "select loan receipt";
-                        var logoImage = document.querySelector('.stab-logo');
-                        logoImage.src = 'images/radix-logo.svg';
-                        document.getElementById('status').textContent = "-";
-                        document.getElementById('collateral').textContent = "-";
-                        document.getElementById('collateralAmount').textContent = "-";
-                        document.getElementById('debtAmount').textContent = "-";
-                        document.getElementById('cr').textContent = "-";
+                if (selectedMarker !== undefined) {
+                    update_liq();
+                } else {
+                    if (isConnected === false) {
+                        dropdownContent.innerHTML = '';
                     }
+                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                    dropdownButton.textContent = "select a marker";
+                    document.getElementById('liqwithmark').querySelector('.button-text').textContent = "LIQUIDATE";
+                    document.getElementById('liqwithmark').style.backgroundColor = "";
+                    document.getElementById('liqwithmark').style.color = "black";
+                    document.getElementById('marker-time').textContent = "-";
+                    document.getElementById('status').style.color = "black";
+                    document.getElementById('marker-state').textContent = "-";
+                    document.getElementById('marker-state').style.color = "black";
+                    document.getElementById('status').textContent = "-";
+                    document.getElementById('collateralAmount').textContent = "-";
+                    document.getElementById('debtAmount').textContent = "-";
+                    document.getElementById('cr').textContent = "-";
                 }
             }
 
-            fetchData().then(data => {
-                useData(data);
-            }).catch(e => {
-                console.error('Error:', e);
-            });
+            if (window.location.pathname === '/incentives') {
+                selectedId = undefined;
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.innerHTML = '';
+
+                stab_ids.forEach(id => {
+                    var name = id;
+                    var logoUrl = 'images/staking-id.png'
+                    var subtext = "Stabilis Staking ID";
+
+                    // Create a new option
+                    var option = document.createElement('div');
+                    option.className = 'dropdown-custom-option';
+                    option.dataset.logoUrl = logoUrl;
+                    option.setAttribute('tabindex', '0'); // Make the option focusable
+
+                    // Add the logo image to the option
+                    var logoImage = document.createElement('img');
+                    logoImage.src = logoUrl;
+                    logoImage.alt = 'Logo';
+                    logoImage.style.borderRadius = '0';
+                    option.appendChild(logoImage);
+
+                    // Add the text to the option
+                    var optionText = document.createElement('div');
+                    optionText.className = 'option-text';
+
+                    var optionTitle = document.createElement('div');
+                    optionTitle.className = 'option-title';
+                    optionTitle.textContent = name;
+                    optionText.appendChild(optionTitle);
+
+                    var optionSubtext = document.createElement('div');
+                    optionSubtext.className = 'option-subtext';
+                    optionSubtext.textContent = subtext;
+                    optionText.appendChild(optionSubtext);
+
+                    option.appendChild(optionText);
+
+                    // Attach the click event listener
+                    option.addEventListener('click', function () {
+                        // Remove the 'selected' class from all options
+                        var options = document.querySelectorAll('.dropdown-custom-option');
+                        options.forEach(function (otherOption) {
+                            otherOption.classList.remove('selected');
+                        });
+
+                        // Add the 'selected' class to the clicked option
+                        option.classList.add('selected');
+
+                        // Set the button text to the option title
+                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                        dropdownButton.textContent = "ID " + name;
+
+                        // Hide the dropdown content
+                        var dropdownContent = document.querySelector('.dropdown-custom-content');
+                        dropdownContent.style.display = 'none';
+                        setChevron(dropdownContent);
+
+                        selectedId = id;
+
+                        update_id();
+                    });
+
+                    // Append the new option to the dropdown content
+                    var dropdownContent = document.querySelector('.dropdown-custom-content');
+                    dropdownContent.appendChild(option);
+                });
+
+                if (selectedId !== undefined) {
+                    update_id();
+                } else {
+                    if (isConnected === false) {
+                        dropdownContent.innerHTML = '';
+                    }
+                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                    dropdownButton.textContent = "Select ID";
+                    document.getElementById('ilisAmountId').textContent = "-";
+                    document.getElementById('lpAmountId').textContent = "-";
+                    document.getElementById('nextClaim').textContent = "-";
+                    let stakeIlisMax = document.getElementById('stake-ilis-amount');
+                    stakeIlisMax.textContent = "max. -";
+                    var cloneIlis = stakeIlisMax.cloneNode(true);
+                    stakeIlisMax.parentNode.replaceChild(cloneIlis, stakeIlisMax);
+
+                    let stakeLpMax = document.getElementById('stake-lp-amount');
+                    stakeLpMax.textContent = "max. -";
+                    var cloneLp = stakeLpMax.cloneNode(true);
+                    stakeLpMax.parentNode.replaceChild(cloneLp, stakeLpMax);
+
+                    let unstakeIlisMax = document.getElementById('unstake-ilis-amount');
+                    unstakeIlisMax.textContent = "max. -";
+                    var cloneUnstakeIlis = unstakeIlisMax.cloneNode(true);
+                    unstakeIlisMax.parentNode.replaceChild(cloneUnstakeIlis, unstakeIlisMax);
+
+                    let unstakeLpMax = document.getElementById('unstake-lp-amount');
+                    unstakeLpMax.textContent = "max. -";
+                    var cloneUnstakeLp = unstakeLpMax.cloneNode(true);
+                    unstakeLpMax.parentNode.replaceChild(cloneUnstakeLp, unstakeLpMax);
+                }
+            }
+
+            if (window.location.pathname === '/borrow' || window.location.pathname === '/manage-loans') {
+                document.getElementById('interest-rate').textContent = interestRate + "% APY";
+                var number1 = (1 * data[3].details.total_supply).toFixed(0);
+                document.getElementById('circulating-stab').textContent = Number(number1).toLocaleString('en-US');
+                document.getElementById('stab-internal-price').textContent = "$" + (xrdPrice * stabXrdRatio).toFixed(2);
+                document.getElementById('stab-market-price').textContent = "$" + (xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(2);
+                var number2 = (data[3].details.total_supply * xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(0);
+                document.getElementById('stab-mc').textContent = "$" + Number(number2).toLocaleString('en-US');
+            }
+
+            if (window.location.pathname === '/manage-loans') {
+                selectedCdp = undefined;
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.innerHTML = '';
+                var cdpExists = false;
+                // Get the dropdown element
+                cdp_ids.forEach(id => {
+                    if (cdpExists == false) {
+                        cdpExists = true;
+                    }
+                    var name = id;
+                    var logoUrl = 'images/receipt.png'
+                    var subtext = "Stabilis Loan Receipt";
+
+                    // Create a new option
+                    var option = document.createElement('div');
+                    option.className = 'dropdown-custom-option';
+                    option.dataset.logoUrl = logoUrl;
+                    option.setAttribute('tabindex', '0'); // Make the option focusable
+
+                    // Add the logo image to the option
+                    var logoImage = document.createElement('img');
+                    logoImage.src = logoUrl;
+                    logoImage.alt = 'Logo';
+                    logoImage.style.borderRadius = '0';
+                    option.appendChild(logoImage);
+
+                    // Add the text to the option
+                    var optionText = document.createElement('div');
+                    optionText.className = 'option-text';
+
+                    var optionTitle = document.createElement('div');
+                    optionTitle.className = 'option-title';
+                    optionTitle.textContent = name;
+                    optionText.appendChild(optionTitle);
+
+                    var optionSubtext = document.createElement('div');
+                    optionSubtext.className = 'option-subtext';
+                    optionSubtext.textContent = subtext;
+                    optionText.appendChild(optionSubtext);
+
+                    option.appendChild(optionText);
+
+                    // Attach the click event listener
+                    option.addEventListener('click', function () {
+                        document.getElementById('amount-to-remove').value = "";
+                        // Remove the 'selected' class from all options
+                        var options = document.querySelectorAll('.dropdown-custom-option');
+                        options.forEach(function (otherOption) {
+                            otherOption.classList.remove('selected');
+                        });
+
+                        // Add the 'selected' class to the clicked option
+                        option.classList.add('selected');
+
+                        // Set the button text to the option title
+                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                        dropdownButton.textContent = "Receipt " + name;
+
+                        // Hide the dropdown content
+                        var dropdownContent = document.querySelector('.dropdown-custom-content');
+                        dropdownContent.style.display = 'none';
+                        setChevron(dropdownContent);
+                        selectedCdp = id;
+                        update_cdp();
+                    });
+
+                    // Append the new option to the dropdown content
+                    var dropdownContent = document.querySelector('.dropdown-custom-content');
+                    dropdownContent.appendChild(option);
+                });
+
+                var dropdownButton = document.querySelector('.dropdown-custom-button');
+
+                if (cdpExists == false) {
+                    dropdownButton.style.backgroundColor = "hsl(0, 0%, 78%)";
+                    dropdownButton.disabled = true;
+                } else {
+                    dropdownButton.disabled = false;
+                    dropdownButton.style.backgroundColor = "";
+                }
+
+                if (selectedCdp !== undefined) {
+                    update_cdp();
+                } else {
+                    if (isConnected === false) {
+                        dropdownContent.innerHTML = '';
+                    }
+                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                    dropdownButton.textContent = "select loan receipt";
+                    var logoImage = document.querySelector('.stab-logo');
+                    logoImage.src = 'images/radix-logo.svg';
+                    document.getElementById('status').textContent = "-";
+                    document.getElementById('collateral').textContent = "-";
+                    document.getElementById('collateralAmount').textContent = "-";
+                    document.getElementById('debtAmount').textContent = "-";
+                    document.getElementById('cr').textContent = "-";
+                }
+                setCloseLoanButton();
+                if (addingCollateral) {
+                    setAddColButton();
+                } else {
+                    setRemoveColButton();
+                }
+            }
         }
+
+        fetchData().then(data => {
+            bigData = data;
+            if (onlyWallet === false) {
+                useData(data);
+            }
+            update_cdp();
+            update_liq();
+            update_id();
+        }).catch(e => {
+            console.error('Error:', e);
+        });
     })
 }
 
@@ -1424,14 +1819,14 @@ if (window.location.pathname === '/swap') {
             formattedWallet = this.value;
             let outputAmount = (parseFloat(stabPoolAmount) * (1 - fee) * formattedWallet)
                 / (parseFloat(xrdPoolAmount) + formattedWallet * (1 - fee))
-            swapReceive.value = outputAmount.toFixed(2);
+            swapReceive.value = outputAmount.toFixed(5);
             calculateChange();
         }
         else {
             formattedWallet = this.value;
             let outputAmount = (parseFloat(xrdPoolAmount) * (1 - fee) * formattedWallet)
                 / (parseFloat(stabPoolAmount) + formattedWallet * (1 - fee))
-            swapReceive.value = outputAmount.toFixed(2);
+            swapReceive.value = outputAmount.toFixed(5);
             calculateChange();
         }
     }
@@ -1449,7 +1844,7 @@ if (window.location.pathname === '/swap') {
             swapMax.textContent = "max. " + formattedWallet.toLocaleString('en-US');
         } else {
             if (walletStab >= 0.1) {
-                formattedWallet = Math.floor((walletStab - 0.1) * 10) / 10;
+                formattedWallet = Math.floor((walletStab) * 10) / 10;
             } else {
                 formattedWallet = 0;
             }
@@ -1459,23 +1854,24 @@ if (window.location.pathname === '/swap') {
     }
     swapMax.addEventListener('click', function () {
         if (sell == true) {
+            inputFieldSwap.value = walletXrd;
             formattedWallet = Math.floor(walletXrd * 10) / 10;
             let outputAmount = (parseFloat(stabPoolAmount) * (1 - fee) * formattedWallet)
                 / (parseFloat(xrdPoolAmount) + formattedWallet * (1 - fee))
-            swapReceive.value = outputAmount.toFixed(2);
+            swapReceive.value = outputAmount.toFixed(5);
         }
         else {
+            inputFieldSwap.value = walletStab;
             if (walletStab >= 0.1) {
-                formattedWallet = Math.floor((walletStab - 0.1) * 10) / 10;
+                formattedWallet = Math.floor((walletStab) * 10) / 10;
             } else {
                 formattedWallet = 0;
             }
 
             let outputAmount = (parseFloat(xrdPoolAmount) * (1 - fee) * formattedWallet)
                 / (parseFloat(stabPoolAmount) + formattedWallet * (1 - fee))
-            swapReceive.value = outputAmount.toFixed(2);
+            swapReceive.value = outputAmount.toFixed(5);
         }
-        inputFieldSwap.value = formattedWallet;
         calculateChange();
     });
     swapMax.style.cursor = "pointer";
@@ -1487,28 +1883,37 @@ if (window.location.pathname === '/swap') {
     provideMaxXrd.style.cursor = "pointer";
     removeMaxLp.style.cursor = "pointer";
     provideMaxXrd.addEventListener('click', function () {
-        inputFieldProvideXrd.value = Math.floor(walletXrd * 10) / 10;
-        inputFieldProvideStab.value = (inputFieldProvideXrd.value * (stabPoolAmount / xrdPoolAmount)).toFixed(1);
+        inputFieldProvideXrd.value = walletXrd;
+        inputFieldProvideStab.value = inputFieldProvideXrd.value * (stabPoolAmount / xrdPoolAmount);
+        setProvideButton();
     });
     provideMaxStab.addEventListener('click', function () {
-        inputFieldProvideStab.value = (Math.floor((walletStab - 0.1) * 10) / 10).toLocaleString('en-US');
-        inputFieldProvideXrd.value = (inputFieldProvideStab.value * (xrdPoolAmount / stabPoolAmount)).toFixed(1);
+        inputFieldProvideStab.value = walletStab;
+        inputFieldProvideXrd.value = inputFieldProvideStab.value * (xrdPoolAmount / stabPoolAmount);
+        setProvideButton();
     });
     removeMaxLp.addEventListener('click', function () {
-        inputFieldRemoveLp.value = Math.floor(walletLp * 10) / 10;
+        inputFieldRemoveLp.value = walletLp;
+        setRemoveLpButton();
     });
 
+    inputFieldRemoveLp.oninput = function () {
+        setRemoveLpButton();
+    }
+
     inputFieldProvideStab.oninput = function () {
-        inputFieldProvideXrd.value = (inputFieldProvideStab.value * (xrdPoolAmount / stabPoolAmount)).toFixed(1);
+        inputFieldProvideXrd.value = inputFieldProvideStab.value * (xrdPoolAmount / stabPoolAmount);
         if (this.value == "") {
             inputFieldProvideXrd.value = "";
         }
+        setProvideButton();
     }
     inputFieldProvideXrd.oninput = function () {
-        inputFieldProvideStab.value = (inputFieldProvideXrd.value * (stabPoolAmount / xrdPoolAmount)).toFixed(1);
+        inputFieldProvideStab.value = inputFieldProvideXrd.value * (stabPoolAmount / xrdPoolAmount);
         if (this.value == "") {
             inputFieldProvideStab.value = "";
         }
+        setProvideButton();
     }
 
     // *********** Swap ***********
@@ -1539,11 +1944,14 @@ if (window.location.pathname === '/swap') {
 
         let sellAmount = document.getElementById("amount-sell").value;
         let sellAddress;
+        let message;
 
         if (sell == true) {
             sellAddress = xrdAddress;
+            message = "Selling XRD for STAB using the Stabilis Protocol";
         } else {
             sellAddress = stabAddress;
+            message = "Selling STAB for XRD using the Stabilis Protocol";
         }
 
         let manifest = `
@@ -1571,6 +1979,7 @@ if (window.location.pathname === '/swap') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
+                message,
             })
             .then(result => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -1663,6 +2072,7 @@ if (window.location.pathname === '/swap') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
+                message: "Adding liquidity to the Stabilis Protocol",
             })
             .then(result => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -1741,6 +2151,7 @@ if (window.location.pathname === '/swap') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
+                message: "Removing liquidity from the Stabilis Protocol",
             })
             .then(result => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -1769,6 +2180,18 @@ if (window.location.pathname === '/swap') {
 }
 
 if (window.location.pathname === '/liquidations') {
+    document.getElementById('liq-helper-button').addEventListener('click', function () {
+        if (document.getElementById('liq-helper').style.display === '') {
+            document.getElementById('liq-helper').style.display = 'none';
+            document.getElementById('chevron-down').style.display = '';
+            document.getElementById('chevron-up').style.display = 'none';
+        } else {
+            document.getElementById('liq-helper').style.display = '';
+            document.getElementById('chevron-down').style.display = 'none';
+            document.getElementById('chevron-up').style.display = '';
+        }
+    });
+
     var button = document.querySelector('.dropdown-custom-button');
     var initialWidth = window.getComputedStyle(button).width;
     button.style.minWidth = initialWidth;
@@ -1783,6 +2206,9 @@ if (window.location.pathname === '/liquidations') {
 
     // Show the dropdown content when the button is clicked
     dropdownButton.addEventListener('click', function () {
+        if (dropdownButton.disabled) {
+            return;
+        }
         if (dropdownContent !== undefined) {
             var display = dropdownContent.style.display;
             dropdownContent.style.display = display === 'block' ? 'none' : 'block';
@@ -1846,6 +2272,7 @@ if (window.location.pathname === '/liquidations') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
+                message: "Marking STAB loan for liquidation",
             })
             .then(result => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -1899,8 +2326,10 @@ if (window.location.pathname === '/liquidations') {
         buttonWaiting.style.display = 'inline-block';
         button.disabled = true;
         button.style.backgroundColor = '#c6c6c6';
+        let message;
 
         if (markerUsed == false) {
+            message = "Liquidating STAB loan with marker";
             manifest = `
     CALL_METHOD
       Address("${accountAddress}")
@@ -1931,6 +2360,7 @@ if (window.location.pathname === '/liquidations') {
       `
             console.log('liq /w mark manifest: ', manifest)
         } else {
+            message = "Burning STAB loan marker";
             manifest = `
             CALL_METHOD
       Address("${accountAddress}") #Primary account 
@@ -1960,6 +2390,7 @@ if (window.location.pathname === '/liquidations') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
+                message,
             })
             .then(result => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -1970,82 +2401,7 @@ if (window.location.pathname === '/liquidations') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
                 console.log("Mint Result: ", result.value);
-                update_liq();
-            })
-            .catch(error => {
-                // Hide the spinner, show the angle icon, and change the button text back
-                spinner.style.display = 'none';
-                angleIcon.style.display = 'inline-block';
-                buttonText.style.display = 'inline-block';
-                buttonWaiting.style.display = 'none';
-                button.disabled = false;
-                button.style.backgroundColor = '';
-
-                // Handle the error
-                console.error(error);
-            });
-    }
-
-    // *********** LiquidateWithoutMarker next***********
-    document.getElementById('liqnext').onclick = async function () {
-        update(true);
-        if (!isConnected) {
-            return;
-        }
-        let skipAmount = 1;
-        let stabAmount = walletStab;
-
-        const button = this;
-        const buttonText = button.querySelector('.button-text');
-        const buttonWaiting = button.querySelector('.button-waiting');
-        const spinner = button.querySelector('.spin');
-        const angleIcon = button.querySelector('.chevron');
-        spinner.style.display = 'inline-block';
-        angleIcon.style.display = 'none';
-        buttonText.style.display = 'none';
-        buttonWaiting.style.display = 'inline-block';
-        button.disabled = true;
-        button.style.backgroundColor = '#c6c6c6';
-
-        let manifest = `
-    CALL_METHOD
-      Address("${accountAddress}")
-      "withdraw"
-      Address("${stabAddress}")
-      Decimal("${stabAmount}");
-    TAKE_ALL_FROM_WORKTOP
-      Address("${stabAddress}")
-      Bucket("stab");
-    CALL_METHOD
-      Address("${componentAddress}")
-      "liquidate_position_without_marker"
-      Bucket("stab")
-      true
-      ${skipAmount}i64
-      NonFungibleLocalId("#0#");
-    CALL_METHOD
-      Address("${accountAddress}")
-      "deposit_batch"
-      Expression("ENTIRE_WORKTOP");
-      `
-        console.log('liq w/o mark manifest: ', manifest)
-
-        // Send manifest to extension for signing
-        rdt.walletApi
-            .sendTransaction({
-                transactionManifest: manifest,
-                version: 1,
-            })
-            .then(result => {
-                // Hide the spinner, show the angle icon, and change the button text back
-                spinner.style.display = 'none';
-                angleIcon.style.display = 'inline-block';
-                buttonText.style.display = 'inline-block';
-                buttonWaiting.style.display = 'none';
-                button.disabled = false;
-                button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value);
-                update_liq();
+                update(false);
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2082,11 +2438,12 @@ if (window.location.pathname === '/liquidations') {
 
         let skipAmount;
 
-        if (document.getElementById("amount-to-skip").value == "0") {
-            skipAmount = 1;
+        if (document.getElementById("amount-to-skip").value == "0" || document.getElementById("amount-to-skip").value == "") {
+            skipAmount = 0;
+            console.log("wedontskipbaby");
         }
         else {
-            skipAmount = document.getElementById("amount-to-skip").value + 1;
+            skipAmount = document.getElementById("amount-to-skip").value;
         }
 
         let stabAmount = walletStab;
@@ -2119,6 +2476,7 @@ if (window.location.pathname === '/liquidations') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
+                message: "Liquidating STAB loan without marker",
             })
             .then(result => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2129,7 +2487,7 @@ if (window.location.pathname === '/liquidations') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
                 console.log("Mint Result: ", result.value);
-                update_liq();
+                update(false);
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2177,6 +2535,9 @@ if (window.location.pathname === '/incentives') {
 
     // Show the dropdown content when the button is clicked
     dropdownButton.addEventListener('click', function () {
+        if (dropdownButton.disabled) {
+            return;
+        }
         if (dropdownContent !== undefined) {
             var display = dropdownContent.style.display;
             dropdownContent.style.display = display === 'block' ? 'none' : 'block';
@@ -2240,6 +2601,7 @@ if (window.location.pathname === '/incentives') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
+                message: "Creating a new Stabilis Staking ID",
             })
             .then(result => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2302,6 +2664,7 @@ if (window.location.pathname === '/incentives') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
+                message: "Updating Stabilis Protocol",
             })
             .then(result => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2378,83 +2741,7 @@ if (window.location.pathname === '/incentives') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
-            })
-            .then(result => {
-                // Hide the spinner, show the angle icon, and change the button text back
-                spinner.style.display = 'none';
-                angleIcon.style.display = 'inline-block';
-                buttonText.style.display = 'inline-block';
-                buttonWaiting.style.display = 'none';
-                button.disabled = false;
-                button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value);
-                update_id();
-            })
-            .catch(error => {
-                // Hide the spinner, show the angle icon, and change the button text back
-                spinner.style.display = 'none';
-                angleIcon.style.display = 'inline-block';
-                buttonText.style.display = 'inline-block';
-                buttonWaiting.style.display = 'none';
-                button.disabled = false;
-                button.style.backgroundColor = '';
-
-                // Handle the error
-                console.error(error);
-            });
-    }
-
-    // *********** Claim with restake ***********
-    document.getElementById('claim-button-restake').onclick = async function () {
-        update(true);
-        if (!isConnected) {
-            return;
-        }
-
-        const button = this;
-        const buttonText = button.querySelector('.button-text');
-        const buttonWaiting = button.querySelector('.button-waiting');
-        const spinner = button.querySelector('.spin');
-        const angleIcon = button.querySelector('.chevron');
-        spinner.style.display = 'inline-block';
-        angleIcon.style.display = 'none';
-        buttonText.style.display = 'none';
-        buttonWaiting.style.display = 'inline-block';
-        button.disabled = true;
-        button.style.backgroundColor = '#c6c6c6';
-
-        let stabId = selectedId;
-
-        let manifest = `
-    CALL_METHOD
-      Address("${accountAddress}")
-      "create_proof_of_non_fungibles"
-      Address("${stabIdAddress}")
-      Array<NonFungibleLocalId>(
-        NonFungibleLocalId("${stabId}")
-      );
-  
-    POP_FROM_AUTH_ZONE
-      Proof("id_proof");
-  
-    CALL_METHOD    
-      Address("${componentAddress}")
-      "update_id"
-      Proof("id_proof")
-      true;
-  
-    CALL_METHOD
-      Address("${accountAddress}") 
-      "deposit_batch"
-      Expression("ENTIRE_WORKTOP");
-      `
-        console.log('claim manifest: ', manifest)
-
-        // Send manifest to extension for signing
-        rdt.walletApi
-            .sendTransaction({
-                transactionManifest: manifest,
-                version: 1,
+                message: "Claiming staking rewards from Stabilis Staking ID",
             })
             .then(result => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2649,6 +2936,7 @@ if (window.location.pathname === '/incentives') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
+                message: "Staking to Stabilis Staking ID",
             })
             .then(result => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2813,6 +3101,7 @@ if (window.location.pathname === '/incentives') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
+                message: "Unstaking from Stabilis Staking ID",
             })
             .then(result => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2851,6 +3140,83 @@ if (window.location.pathname === '/incentives') {
 }
 
 if (window.location.pathname === '/manage-loans') {
+    setCloseLoanButton();
+    if (addingCollateral) {
+        setAddColButton();
+    } else {
+        setRemoveColButton();
+    }
+
+    var slider = document.getElementById("slider-col");
+    var inputAmount = document.getElementById("amount-to-remove");
+    var maxButton = document.getElementById("max-new-cr");
+
+    slider.oninput = function () {
+        if (addingCollateral) {
+            newCr = this.value;
+            var newCol = Math.max(0, getNecessaryCollateral(debtAmount, this.value / 100, validatorMultiplier) - collateralAmount);
+            document.getElementById("new-cr").textContent = "New CR: " + this.value + "%";
+            inputAmount.value = newCol.toFixed(2);
+            setAddColButton();
+        } else {
+            newCr = maxCr - this.value;
+            var newCol = Math.max(0, collateralAmount - getNecessaryCollateral(debtAmount, newCr / 100, validatorMultiplier));
+            document.getElementById("new-cr").textContent = "New CR: " + newCr.toFixed(2) + "%";
+            inputAmount.value = newCol.toFixed(2);
+            setRemoveColButton();
+        }
+
+    }
+
+    inputAmount.oninput = function () {
+        if (addingCollateral) {
+            newCr = getUpToDateCr(parseFloat(this.value) + parseFloat(collateralAmount), debtAmount, validatorMultiplier) * 100;
+            document.getElementById("new-cr").textContent = "New CR: " + (newCr).toFixed(2) + "%";
+            if (this.value != "") {
+                slider.value = newCr;
+            } else {
+                slider.value = slider.min;
+                document.getElementById("new-cr").textContent = "New CR: " + slider.min + "%";
+            }
+            setAddColButton();
+        } else {
+            newCr = getUpToDateCr(parseFloat(collateralAmount) - parseFloat(this.value), debtAmount, validatorMultiplier) * 100;
+            document.getElementById("new-cr").textContent = "New CR: " + (newCr).toFixed(2) + "%";
+            if (this.value != "") {
+                slider.value = maxCr - newCr;
+                newCr = slider.value;
+            } else {
+                slider.value = slider.min;
+                document.getElementById("new-cr").textContent = "New CR: " + maxCr + "%";
+            }
+            setRemoveColButton();
+        }
+
+    }
+
+    maxButton.onclick = function () {
+        if (status === "Closed" || status === "Liquidated" || status === "Marked") {
+            return;
+        }
+        if (addingCollateral) {
+            maxCr = Number(maxCr); // Convert maxCr to a number
+            newCr = maxCr;
+            document.getElementById("new-cr").textContent = "New CR: " + (maxCr * 1).toFixed(2) + "%";
+            slider.value = maxCr > 1000 ? 1000 : maxCr;
+            inputAmount.value = (availableCollateral * 1).toFixed(2);
+            setAddColButton();
+        } else {
+            newCr = 150;
+            document.getElementById("new-cr").textContent = "New CR: 150%";
+            slider.value = maxCr - 150;
+            inputAmount.value = (collateralAmount - getNecessaryCollateral(debtAmount, 1.5, validatorMultiplier));
+            setRemoveColButton();
+        }
+
+    }
+
+
+
     var button = document.querySelector('.dropdown-custom-button');
     var initialWidth = window.getComputedStyle(button).width;
     button.style.minWidth = initialWidth;
@@ -2871,10 +3237,13 @@ if (window.location.pathname === '/manage-loans') {
             if (this.id === 'add-collateral-selector') {
                 document.getElementById('add-col-button').style.display = '';
                 document.getElementById('remove-col-button').style.display = 'none';
+                addingCollateral = true;
             } else {
                 document.getElementById('add-col-button').style.display = 'none';
                 document.getElementById('remove-col-button').style.display = '';
+                addingCollateral = false;
             }
+            update_cdp();
         });
     });
 
@@ -2883,6 +3252,9 @@ if (window.location.pathname === '/manage-loans') {
 
     // Show the dropdown content when the button is clicked
     dropdownButton.addEventListener('click', function () {
+        if (dropdownButton.disabled) {
+            return;
+        }
         if (dropdownContent !== undefined) {
             var display = dropdownContent.style.display;
             dropdownContent.style.display = display === 'block' ? 'none' : 'block';
@@ -2912,7 +3284,6 @@ if (window.location.pathname === '/manage-loans') {
     });
     // *********** Top up CDP ***********
     document.getElementById('add-col-button').onclick = async function () {
-        update(true);
         if (!isConnected) {
             return;
         }
@@ -2979,6 +3350,7 @@ if (window.location.pathname === '/manage-loans') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
+                message: "Adding collateral to STAB loan",
             })
             .then(result => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2989,7 +3361,7 @@ if (window.location.pathname === '/manage-loans') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
                 console.log("Mint Result: ", result.value);
-                update_cdp();
+                update(true);
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -3066,6 +3438,7 @@ if (window.location.pathname === '/manage-loans') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
+                message: "Removing collateral from STAB loan",
             })
             .then(result => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -3158,6 +3531,7 @@ if (window.location.pathname === '/manage-loans') {
                 .sendTransaction({
                     transactionManifest: manifest,
                     version: 1,
+                    message: "Retrieving leftover collateral from STAB loan",
                 })
                 .then(result => {
                     // Hide the spinner, show the angle icon, and change the button text back
@@ -3227,6 +3601,7 @@ if (window.location.pathname === '/manage-loans') {
                 .sendTransaction({
                     transactionManifest: manifest,
                     version: 1,
+                    message: "Closing STAB loan",
                 })
                 .then(result => {
                     // Hide the spinner, show the angle icon, and change the button text back
@@ -3257,13 +3632,16 @@ if (window.location.pathname === '/manage-loans') {
 if (window.location.pathname === '/borrow') {
     let colMax = document.getElementById('col-max');
     colMax.addEventListener('click', function () {
+        collateralAmount = availableCollateral;
         if (selectedCollateral !== undefined) {
             document.getElementById("colToUse").value = Math.floor(availableCollateral * 100) / 100;
-            let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * Math.floor(availableCollateral * 100) / 100;;
-            collateralAmount = Math.floor(availableCollateral * 100) / 100;;
+            let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * Math.floor(availableCollateral * 100) / 100;
+            mintAmount = result;
+            collateralAmount = Math.floor(availableCollateral * 100) / 100;
             document.getElementById("outputStab").innerHTML = customRound(result, 4);
             document.getElementById("ratio-suffix").innerHTML = "STAB";
         }
+        setBorrowButton();
     });
     colMax.style.cursor = "pointer";
 
@@ -3283,6 +3661,9 @@ if (window.location.pathname === '/borrow') {
 
     // Show the dropdown content when the button is clicked
     dropdownButton.addEventListener('click', function () {
+        if (dropdownButton.disabled) {
+            return;
+        }
         if (dropdownContent !== undefined) {
             var display = dropdownContent.style.display;
             dropdownContent.style.display = display === 'block' ? 'none' : 'block';
@@ -3313,10 +3694,12 @@ if (window.location.pathname === '/borrow') {
         if (selectedCollateral !== undefined) {
             if (colToUse.value !== "") {
                 let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (this.value / 100)) * colToUse.value;
+                mintAmount = result;
                 collateralAmount = colToUse.value;
                 document.getElementById("outputStab").innerHTML = customRound(result, 4);
             } else {
                 let result = (1 / (stabXrdRatio * validatorMultiplier)) / (this.value / 100);
+                mintAmount = result;
                 collateralAmount = 0;
                 document.getElementById("outputStab").innerHTML = customRound(result, 4);
             }
@@ -3342,10 +3725,12 @@ if (window.location.pathname === '/borrow') {
         if (selectedCollateral !== undefined) {
             if (colToUse.value !== "") {
                 let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
+                mintAmount = result;
                 collateralAmount = colToUse.value;
                 document.getElementById("outputStab").innerHTML = customRound(result, 4);
             } else {
                 let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100) * 1;
+                mintAmount = result;
                 collateralAmount = 0;
                 document.getElementById("outputStab").innerHTML = customRound(result, 4);
             }
@@ -3372,10 +3757,12 @@ if (window.location.pathname === '/borrow') {
         if (selectedCollateral !== undefined) {
             if (colToUse.value !== "") {
                 let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
+                mintAmount = result;
                 collateralAmount = colToUse.value;
                 document.getElementById("outputStab").innerHTML = customRound(result, 4);
             } else {
                 let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100) * 1;
+                mintAmount = result;
                 collateralAmount = 0;
                 document.getElementById("outputStab").innerHTML = customRound(result, 4);
             }
@@ -3397,14 +3784,17 @@ if (window.location.pathname === '/borrow') {
     }
 
     document.getElementById("colToUse").oninput = function () {
+        setBorrowButton();
         h2.textContent = slider.value;
         if (selectedCollateral !== undefined) {
             if (this.value !== "") {
                 let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * this.value;
+                mintAmount = result;
                 collateralAmount = this.value;
                 document.getElementById("outputStab").innerHTML = customRound(result, 4);
             } else {
                 let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100) * 1;
+                mintAmount = result;
                 collateralAmount = 0;
                 document.getElementById("outputStab").innerHTML = customRound(result, 4);
             }
@@ -3447,93 +3837,6 @@ if (window.location.pathname === '/borrow') {
         button.disabled = true;
         button.style.backgroundColor = '#c6c6c6';
 
-        let mintAmount = 1;
-        mintAmount = document.getElementById("outputStab").innerHTML;
-        let manifest;
-        console.log(idSupplied);
-        manifest = `
-    CALL_METHOD
-    Address("${accountAddress}")
-    "withdraw"    
-    Address("${selectedCollateral}")
-    Decimal("${collateralAmount}");
-    TAKE_ALL_FROM_WORKTOP
-    Address("${selectedCollateral}")
-    Bucket("collateral");
-    CALL_METHOD
-    Address("${componentAddress}")
-    "open_cdp"
-    Bucket("collateral")
-    Decimal("${mintAmount}")
-    true;
-    CALL_METHOD
-    Address("${accountAddress}")
-    "deposit_batch"
-    Expression("ENTIRE_WORKTOP");
-    `
-        console.log('Mint manifest: ', manifest)
-
-        // Send manifest to extension for signing
-        rdt.walletApi
-            .sendTransaction({
-                transactionManifest: manifest,
-                version: 1,
-            })
-            .then(result => {
-                // Hide the spinner, show the angle icon, and change the button text back
-                spinner.style.display = 'none';
-                angleIcon.style.display = 'inline-block';
-                buttonText.style.display = 'inline-block';
-                buttonWaiting.style.display = 'none';
-                button.disabled = false;
-                button.style.backgroundColor = '';
-                update(false);
-            })
-            .catch(error => {
-                // Hide the spinner, show the angle icon, and change the button text back
-                spinner.style.display = 'none';
-                angleIcon.style.display = 'inline-block';
-                buttonText.style.display = 'inline-block';
-                buttonWaiting.style.display = 'none';
-                button.disabled = false;
-                button.style.backgroundColor = '';
-
-                // Handle the error
-                console.error(error);
-            });
-    }
-
-    // *********** Mint unsafe *********** //
-    document.getElementById('unsafe-mint-button').onclick = async function () {
-        update(true);
-        if (!isConnected) {
-            return;
-        }
-
-        if (selectedCollateral === undefined) {
-            alert("Please select a collateral type.");
-            return;
-        }
-
-        if (document.getElementById("colToUse").value === "") {
-            alert("Please enter the amount of collateral to use.");
-            return;
-        }
-
-        const button = this;
-        const buttonText = button.querySelector('.button-text');
-        const buttonWaiting = button.querySelector('.button-waiting');
-        const spinner = button.querySelector('.spin');
-        const angleIcon = button.querySelector('.chevron');
-        spinner.style.display = 'inline-block';
-        angleIcon.style.display = 'none';
-        buttonText.style.display = 'none';
-        buttonWaiting.style.display = 'inline-block';
-        button.disabled = true;
-        button.style.backgroundColor = '#c6c6c6';
-
-        let mintAmount = 1;
-        mintAmount = document.getElementById("outputStab").innerHTML;
         let manifest;
         console.log(idSupplied);
         manifest = `
@@ -3563,6 +3866,7 @@ if (window.location.pathname === '/borrow') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
+                message: "Borrowing STAB through a loan",
             })
             .then(result => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -3572,7 +3876,6 @@ if (window.location.pathname === '/borrow') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value);
                 update(false);
             })
             .catch(error => {
