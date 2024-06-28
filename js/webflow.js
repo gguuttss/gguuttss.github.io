@@ -4,19 +4,23 @@ import { RadixDappToolkit, DataRequestBuilder, RadixNetwork } from '@radixdlt/ra
 
 const dAppId = 'account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd'
 let stabIdAddress = "resource_tdx_2_1ngnptx4ly75dwcv2knf6cp957qfjjprsz90kc8qmqh4ttamj4a2as3" //still need
-let componentAddress = "component_tdx_2_1cpv6ach7wxjp79g09c0dcc9c8qy7hw9wxsfpmnr56tgd6a0pk0zk9d"
-let poolComponentAddress = "component_tdx_2_1czk8kr3cfrx3ddyqy8awqrcpv2pj9m0upjymjn37s2e93glddhj0pz"
-let poolAddress = "pool_tdx_2_1chr6m2qzag0tcurwarq3zzt0r2lzfa7vzfxeys5c5hllradgzjep78"
-let stabAddress = "resource_tdx_2_1t57r3zezvsx0gud4p2ed3seteqaahnyzg5ahavamqyxqltkmjqpdxf"
-let cdpAddress = "resource_tdx_2_1ntvkljzg26r09l6calap5c2rphxz7a8c2kfydla6geswlfpfcty3pv"
+let componentAddress = "component_tdx_2_1cqjzlg9w5vzs7a6ckue8flnypjjja5pfktpzjapfgv0vzwphgmt38p"
+let stabComponentAddress = "component_tdx_2_1cpktta3wywkjphzmfxe4fy5ssuedq8hpygml08c06kr8gk8rlkwm0t"
+let poolComponentAddress = "component_tdx_2_1cra5k08la9gxt46de3ljpt85g20jqsyy89cwu5typk360h7vyhn2ke"
+let poolAddress = "pool_tdx_2_1c5t7qreyk8jyg2peseqfd79k8uqmcnwqekey7hdxhvqh5x54wl9xkc"
+let stabAddress = "resource_tdx_2_1t5j9ml0u4cazp58ycs8wmgsanrs0x5shffd3ay0s32ush58l3t2a32"
+let cdpAddress = "resource_tdx_2_1ngms5ywepk69z9qgtsrmmf73w2lxgqj7e9mgpsvjuc5pw5yzdqa7eu"
+let ctrlBadgeAddress = "resource_tdx_2_1t5zap4sfxwwghv4ft7kgtx26llxt4msepqnvzr97un7aegxa2zj89x"
 let xrdAddress = "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc"
 let ilisAddress = "resource_tdx_2_1t4tsw7n2d0yfs27myw7x5khx00an2lwnvdsj9tyhkv3l8xvgn7mxdc" //still need
-let lpAddress = "resource_tdx_2_1thtr3aeywrk5yms9hl504yzdc08j5gsqzgy7anmwmwcc04tqrpel4r"
-let liqAddress = "resource_tdx_2_1nfz5cjf7z3nqvcvdelp55msk7n68ercsejhgvfwz352ngqq3gj46vy"
-let markerAddress = "resource_tdx_2_1ntja8kdzw9u86mwqjky46rz5gv6aysp3hffxfka9s46khefpwskql3"
+let lpAddress = "resource_tdx_2_1t4mjl2p89k58uxfvrxxeqjl65erdmu9zlyf6m5txt7vxnugltmxzw3"
+let liqAddress = "resource_tdx_2_1n2wy83wwhgsq5fpjx4g5uljwr0rhuen87x96zdfd2j0urtzm4tuc8l"
+let markerAddress = "resource_tdx_2_1ntyu6fsh37l98vecwwsw47rgt2lxakfaqp0c9n24q555k5kapvc6gw"
 let stakingAddress = "component_tdx_2_1cp3k6zm5xqgx0wcf0qtcndjzlxvpusdfpm4eq4838wuswn5h66j8px" // still need
 let accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec"
 let stakesKvs = "internal_keyvaluestore_tdx_2_1kzphr34g06wgtygn5eppvtavyt4qptp4xn9y0uzwgdesh324zrl7yu" // still need
+let collateralsKvs = "internal_keyvaluestore_tdx_2_1krnw9ezkq0s88ulru4auanycfad3xnk4qhqfdcdaxjf3jtusv2wp4w"
+let xrdKeyHex = "5c805da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6"
 let kvsHexes = ["5c805d78ab93fb11d006a1df76c2f432fc9e7db5f1c5d3931900a25ac8298ce3", "5c805d57077a6a6bc8982bdb23bc6a5ae67bfb357dd3636122ac97b323f39988"]
 const acceptedResources = [["XRD", "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc", "", "images/radix-logo.svg", 1, 'XRD', 0],
 ["Hermes LSU", "resource_tdx_2_1th9k30slgu9uekfu42llstgcq80dx8d59hxgexe5hdaqzyp8etc2dv", "validator_tdx_2_1s0l6946a2kx33vjmuuh3qrax3ueauznd2fc3d69md2exx29rcnjmnj", "https://hermesprotocol.io/assets/images/icon.svg", 1, 'LSU', 0],
@@ -76,12 +80,17 @@ let mintAmount;
 let markerUsable = false;
 let upToDateCr;
 let maxCr;
+let maxCrDebt;
+let newCrDebt;
 let bigData;
 let addingCollateral = true;
 let newCr;
 let liqNextStab;
 let liqRewardAddress;
 let bigFail;
+let addingDebt = false;
+let realInputDebt;
+let realInputCol;
 
 let resourceAddresses = []
 let validatorAddresses = []
@@ -90,21 +99,77 @@ var inputs = document.querySelectorAll('.decimal-only');
 inputs.forEach(function (input) {
     input.addEventListener('keypress', function (evt) {
         var charCode = (evt.which) ? evt.which : event.keyCode;
-        if ((charCode != 46 || this.value.indexOf('.') != -1) && (charCode < 48 || charCode > 57))
+        var decimalPos = this.value.indexOf('.');
+        var cursorPos = this.selectionStart;
+        if (charCode != 46 && (charCode < 48 || charCode > 57)) {
             evt.preventDefault();
+        } else if (decimalPos != -1 && cursorPos > decimalPos && this.value.split('.')[1].length >= 18 && charCode != 46) {
+            evt.preventDefault();
+        } else if (charCode == 46) {
+            if (decimalPos != -1 || this.value.length - cursorPos > 18) {
+                evt.preventDefault();
+            }
+        }
     });
 });
 
+function toastMe(txId, action, kind) {
+    if (kind === 1) {
+        Toastify({
+            text: `${action} submitted successfully!`,
+            duration: 5000,
+            close: true,
+            gravity: "top", // `top` or `bottom`
+            position: "right", // `left`, `center` or `right`
+            stopOnFocus: true, // Prevents dismissing of toast on hover
+            style: {
+                background: "linear-gradient(90deg, rgba(65,58,179,1) 0%, rgba(90,90,172,1) 41%, rgba(118,133,180,1) 100%)",
+            },
+            onClick: function () { } // Callback after click
+        }).showToast();
+    } else if (kind === 2) {
+        Toastify({
+            text: `${action} successful! Click for more info.`,
+            duration: 5000,
+            destination: `https://stokenet-dashboard.radixdlt.com/transaction/${txId}`,
+            newWindow: true,
+            close: true,
+            gravity: "top", // `top` or `bottom`
+            position: "right", // `left`, `center` or `right`
+            stopOnFocus: true, // Prevents dismissing of toast on hover
+            style: {
+                background: "linear-gradient(90deg, rgba(86,130,80,1) 0%, rgba(94,172,90,1) 41%, rgba(124,180,118,1) 100%)",
+            },
+            onClick: function () { } // Callback after click
+        }).showToast();
+    } else if (kind === 3) {
+        Toastify({
+            text: "Transaction failed.",
+            duration: 5000,
+            newWindow: true,
+            close: true,
+            gravity: "top", // `top` or `bottom`
+            position: "right", // `left`, `center` or `right`
+            stopOnFocus: true, // Prevents dismissing of toast on hover
+            style: {
+                background: "linear-gradient(90deg, rgba(152,67,67,1) 0%, rgba(177,72,72,1) 41%, rgba(227,90,90,1) 100%)",
+            },
+            onClick: function () { } // Callback after click
+        }).showToast();
+    }
+
+}
+
 function getUpToDateCr(currentCollateralAmount, currentDebtAmount, validatorMultiplier) {
-    return (currentCollateralAmount * validatorMultiplier * xrdPrice) / (currentDebtAmount * internalPrice);
+    return (xrdPrice * (currentCollateralAmount / currentDebtAmount)) / (validatorMultiplier * internalPrice);
 }
 
 function getNecessaryCollateral(debtAmount, cr, validatorMultiplier) {
-    return (debtAmount * internalPrice * cr) / (validatorMultiplier * xrdPrice);
+    return (debtAmount * internalPrice * cr * validatorMultiplier) / (xrdPrice);
 }
 
 function getNecessaryStab(collateralAmount, cr, validatorMultiplier) {
-    return (collateralAmount * validatorMultiplier * xrdPrice) / (cr * internalPrice);
+    return (collateralAmount * xrdPrice) / (cr * internalPrice * validatorMultiplier);
 }
 
 function setChevron(customContent) {
@@ -204,6 +269,8 @@ function setBorrowButton() {
         enable = false;
     } else if (parseFloat(document.getElementById('colToUse').value) == 0) {
         enable = false;
+    } else if (mintAmount < 1) {
+        enable = false;
     }
 
     if (enable) {
@@ -249,6 +316,7 @@ function setAddColButton() {
     var button = document.getElementById('add-col-button');
     var enable = true;
     var onlyButton = false;
+    var zeroInput = false;
     if (isConnected == false) {
         enable = false;
     } else if (selectedCdp == undefined) {
@@ -261,6 +329,10 @@ function setAddColButton() {
     } else if (newCr < 150) {
         enable = false;
         onlyButton = true;
+    } else if (document.getElementById('amount-to-remove').value == '' || parseFloat(document.getElementById('amount-to-remove').value) == 0) {
+        enable = false;
+        onlyButton = true;
+        zeroInput = true;
     }
 
     if (enable) {
@@ -286,7 +358,11 @@ function setAddColButton() {
             document.getElementById('max-new-cr').style.fontWeight = "normal";
         }
         if (onlyButton == true) {
-            document.getElementById('new-cr').style.color = "red";
+            if (zeroInput == true) {
+                document.getElementById('new-cr').style.color = "";
+            } else {
+                document.getElementById('new-cr').style.color = "red";
+            }
             document.getElementById('max-new-cr').style.cursor = "pointer";
             document.getElementById('max-new-cr').style.fontWeight = "";
             document.getElementById('slider-col').disabled = false;
@@ -301,14 +377,21 @@ function setRemoveColButton() {
     var button = document.getElementById('remove-col-button');
     var enable = true;
     var message = "";
+    var onlyButton = false;
+    var zeroInput = false;
     if (isConnected == false) {
         enable = false;
     } else if (selectedCdp == undefined) {
         enable = false;
     } else if (status == "Liquidated" || status == "ForceLiquidated" || status == "Closed") {
         enable = false;
-    } else if (newCr < 150) {
+    } else if (realInputCol < 150) {
         enable = false;
+        onlyButton = true;
+    } else if (document.getElementById('amount-to-remove').value == '' || parseFloat(document.getElementById('amount-to-remove').value) == 0) {
+        enable = false;
+        onlyButton = true;
+        zeroInput = true;
     }
 
     if (enable) {
@@ -322,13 +405,135 @@ function setRemoveColButton() {
     } else {
         button.style.backgroundColor = "hsl(0, 0%, 78%)";
         button.disabled = true;
-        document.getElementById('slider-col').disabled = true;
-        document.getElementById('amount-to-remove').disabled = true;
-        document.getElementById('max-new-cr').disabled = true;
-        document.getElementById('max-new-cr').style.cursor = "default";
-        document.getElementById('new-cr').textContent = "New CR: -";
-        document.getElementById('max-new-cr').textContent = "Max CR: -";
-        document.getElementById('max-new-cr').style.fontWeight = "normal";
+        if (onlyButton == false) {
+            document.getElementById('new-cr').style.color = "";
+            document.getElementById('slider-col').disabled = true;
+            document.getElementById('amount-to-remove').disabled = true;
+            document.getElementById('max-new-cr').disabled = true;
+            document.getElementById('max-new-cr').style.cursor = "default";
+            document.getElementById('new-cr').textContent = "New CR: -";
+            document.getElementById('max-new-cr').textContent = "Max CR: -";
+            document.getElementById('max-new-cr').style.fontWeight = "normal";
+        }
+        if (onlyButton == true) {
+            if (zeroInput == true) {
+                document.getElementById('new-cr').style.color = "";
+            } else {
+                document.getElementById('new-cr').style.color = "red";
+            }
+            document.getElementById('max-new-cr').style.cursor = "pointer";
+            document.getElementById('max-new-cr').style.fontWeight = "";
+            document.getElementById('slider-col').disabled = false;
+            document.getElementById('amount-to-remove').disabled = false;
+            document.getElementById('max-new-cr').disabled = false;
+        }
+    }
+}
+
+function setRemoveDebtButton() {
+    var button = document.getElementById('add-debt-button');
+    var enable = true;
+    var onlyButton = false;
+    var zeroInput = false;
+    if (isConnected == false) {
+        enable = false;
+    } else if (selectedCdp == undefined) {
+        enable = false;
+    } else if (status == "Liquidated" || status == "ForceLiquidated" || status == "Closed") {
+        enable = false;
+    } else if (parseFloat(document.getElementById('amount-to-remove-debt').value) > walletStab) {
+        enable = false;
+        onlyButton = true;
+    } else if (newCrDebt < 150) {
+        enable = false;
+        onlyButton = true;
+    } else if (document.getElementById('amount-to-remove-debt').value == '' || parseFloat(document.getElementById('amount-to-remove-debt').value) == 0) {
+        enable = false;
+        onlyButton = true;
+        zeroInput = true;
+    }
+
+    if (enable) {
+        button.style.backgroundColor = "";
+        button.disabled = false;
+        document.getElementById('slider-debt').disabled = false;
+        document.getElementById('amount-to-remove-debt').disabled = false;
+        document.getElementById('max-new-cr-debt').disabled = false;
+        document.getElementById('new-cr-debt').style.color = "";
+        document.getElementById('max-new-cr-debt').style.cursor = "pointer";
+        document.getElementById('max-new-cr-debt').style.fontWeight = "";
+    } else {
+        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.disabled = true;
+        if (onlyButton == false) {
+            document.getElementById('slider-debt').disabled = true;
+            document.getElementById('amount-to-remove-debt').disabled = true;
+            document.getElementById('max-new-cr-debt').disabled = true;
+            document.getElementById('max-new-cr-debt').style.cursor = "default";
+            document.getElementById('new-cr-debt').textContent = "New CR: -";
+            document.getElementById('max-new-cr-debt').textContent = "Max CR: -";
+            document.getElementById('max-new-cr-debt').style.fontWeight = "normal";
+        }
+        if (onlyButton == true) {
+            document.getElementById('max-new-cr-debt').style.cursor = "pointer";
+            document.getElementById('max-new-cr-debt').style.fontWeight = "";
+            document.getElementById('slider-debt').disabled = false;
+            document.getElementById('amount-to-remove-debt').disabled = false;
+            document.getElementById('max-new-cr-debt').disabled = false;
+        }
+    }
+}
+
+function setAddDebtButton() {
+    var button = document.getElementById('remove-debt-button');
+    var enable = true;
+    var onlyButton = false;
+    document.getElementById('new-cr-debt').style.color = "black";
+    if (isConnected == false) {
+        enable = false;
+    } else if (selectedCdp == undefined) {
+        enable = false;
+    } else if (status == "Liquidated" || status == "ForceLiquidated" || status == "Closed") {
+        enable = false;
+    } else if (parseFloat(document.getElementById('amount-to-remove-debt').value) > walletStab) {
+        enable = false;
+        onlyButton = true;
+    } else if (parseFloat(realInputDebt) < 150) {
+        enable = false;
+        onlyButton = true;
+        document.getElementById('new-cr-debt').style.color = "red";
+    } else if (document.getElementById('amount-to-remove-debt').value == '' || parseFloat(document.getElementById('amount-to-remove-debt').value) == 0) {
+        enable = false;
+        onlyButton = true;
+    }
+
+    if (enable) {
+        button.style.backgroundColor = "";
+        button.disabled = false;
+        document.getElementById('slider-debt').disabled = false;
+        document.getElementById('amount-to-remove-debt').disabled = false;
+        document.getElementById('max-new-cr-debt').disabled = false;
+        document.getElementById('max-new-cr-debt').style.cursor = "pointer";
+        document.getElementById('max-new-cr-debt').style.fontWeight = "";
+    } else {
+        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.disabled = true;
+        if (onlyButton == false) {
+            document.getElementById('slider-debt').disabled = true;
+            document.getElementById('amount-to-remove-debt').disabled = true;
+            document.getElementById('max-new-cr-debt').disabled = true;
+            document.getElementById('max-new-cr-debt').style.cursor = "default";
+            document.getElementById('new-cr-debt').textContent = "New CR: -";
+            document.getElementById('max-new-cr-debt').textContent = "Max CR: -";
+            document.getElementById('max-new-cr-debt').style.fontWeight = "normal";
+        }
+        if (onlyButton == true) {
+            document.getElementById('max-new-cr-debt').style.cursor = "pointer";
+            document.getElementById('max-new-cr-debt').style.fontWeight = "";
+            document.getElementById('slider-debt').disabled = false;
+            document.getElementById('amount-to-remove-debt').disabled = false;
+            document.getElementById('max-new-cr-debt').disabled = false;
+        }
     }
 }
 
@@ -336,13 +541,14 @@ function setMarkLiqButton() {
     var button = document.getElementById('liqwithmark');
     var enable = true;
     var message = "";
-    console.log(debtAmount);
     if (isConnected == false) {
         enable = false;
     } else if (parseFloat(debtAmount) > walletStab) {
         enable = false;
         message = "Insufficient STAB to liquidate loan.";
     } else if (selectedMarker == undefined) {
+        enable = false;
+    } else if (document.getElementById('marker-state').textContent == "Pending") {
         enable = false;
     }
 
@@ -367,7 +573,6 @@ function setNoMarkLiqButton() {
     var button = document.getElementById('liqnextskip');
     var enable = true;
     var message = "";
-    console.log(debtAmount);
     if (isConnected == false) {
         enable = false;
     } else if (parseFloat(liqNextStab) > walletStab) {
@@ -394,7 +599,6 @@ function calculateChange() {
     var parsedStabPoolAmount = parseFloat(stabPoolAmount);
     var parsedXrdPoolAmount = parseFloat(xrdPoolAmount);
     var percentage = document.getElementById('percentage-change');
-    console.log("weouthere");
     if (isNaN(inputAmount)) {
         inputAmount = 0;
     }
@@ -435,6 +639,15 @@ function calculateChange() {
     }
 }
 
+window.addEventListener('scroll', function () {
+    var navbar = document.querySelector('.navbar-logo-left-container');
+    if (window.pageYOffset > 100) { // Change this to the scroll position you want
+        navbar.classList.add('translucent');
+    } else {
+        navbar.classList.remove('translucent');
+    }
+});
+
 async function checkMarking(amount) {
     // URL to get the gateway status
     const statusUrl = "https://stokenet.radixdlt.com/status/gateway-status";
@@ -466,7 +679,7 @@ async function checkMarking(amount) {
         // Repeat the specified part of the manifest
         const repeatManifest = `
             CALL_METHOD
-                Address("component_tdx_2_1cpv6ach7wxjp79g09c0dcc9c8qy7hw9wxsfpmnr56tgd6a0pk0zk9d")
+                Address("${componentAddress}")
                 "mark_for_liquidation"
                 Address("resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc")
                 ;
@@ -514,9 +727,9 @@ async function checkMarking(amount) {
 
         // Parse and save the response to a variable
         const responseData = await response.json();
+        console.log(responseData);
 
         // Log the response data
-        console.log("Response Data:", responseData.receipt.status);
         if (responseData.receipt.status === 'Succeeded') {
             document.getElementById('warning-mark').style.display = 'none';
             document.getElementById('mark').style.backgroundColor = "";
@@ -565,25 +778,25 @@ async function checkLiquidation(toSkip) {
         let manifest = `CALL_METHOD
             Address("account_tdx_2_168z9kn6xeg7s0m7qsgdf5wmvsh0v656ndkh295d8p4j5lu47ta5rnv")
             "create_proof_of_amount"
-            Address("resource_tdx_2_1t5x3rwvs9p5e8l46j8q943xaa9yhxcqaa564zraf82eqffr9urrad9")
+            Address("${ctrlBadgeAddress}")
             Decimal("0.75");
 
 
         CALL_METHOD
-            Address("component_tdx_2_1cp4j27fcr4e74g59euhje8wk4u4q0jq358jf8u4j4z7znfqnj6jx0q")
+            Address("${stabComponentAddress}")
             "free_stab"
             Decimal("100000000");
 
         TAKE_ALL_FROM_WORKTOP
-            Address("resource_tdx_2_1t57r3zezvsx0gud4p2ed3seteqaahnyzg5ahavamqyxqltkmjqpdxf")
+            Address("${stabAddress}")
             Bucket("stab");
 
         CALL_METHOD
-            Address("component_tdx_2_1cpv6ach7wxjp79g09c0dcc9c8qy7hw9wxsfpmnr56tgd6a0pk0zk9d")
+            Address("${componentAddress}")
             "liquidate_position_without_marker"
             Bucket("stab")
             true
-            ${toSkip + 1}i64
+            ${toSkip}i64
             NonFungibleLocalId("#0#");
 
         CALL_METHOD
@@ -624,11 +837,8 @@ async function checkLiquidation(toSkip) {
         const responseData = await response.json();
 
         // Log the response data
-        console.log("Response Data:", responseData);
         if (responseData.receipt.status === 'Succeeded') {
             document.getElementById('warning-liq').style.display = 'none';
-            document.getElementById('liqnextskip').style.backgroundColor = "";
-            document.getElementById('liqnextskip').disabled = false;
 
             const resourceChanges = responseData.resource_changes;
 
@@ -662,6 +872,23 @@ async function checkLiquidation(toSkip) {
 
             if (amounts) {
                 liqNextStab = 100000000 - amounts[resource1];
+                if (liqNextStab <= walletStab) {
+                    if (isConnected == true) {
+                        console.log(liqNextStab, walletStab);
+                        document.getElementById('liqnextskip').style.backgroundColor = "";
+                        document.getElementById('liqnextskip').disabled = false;
+                    }
+                } else if (liqNextStab > walletStab && isConnected == true) {
+                    document.getElementById('warning-liq-not-enough-stab').style.display = 'block';
+                    document.getElementById('warning-liq').style.display = 'none';
+                    document.getElementById('liqnextskip').style.backgroundColor = "hsl(0, 0%, 78%)";
+                    document.getElementById('liqnextskip').disabled = true;
+                } else if (isConnected == false) {
+                    document.getElementById('warning-liq').style.display = 'none';
+                    document.getElementById('warning-liq-not-enough-stab').style.display = 'none';
+                    document.getElementById('liqnextskip').style.backgroundColor = "hsl(0, 0%, 78%)";
+                    document.getElementById('liqnextskip').disabled = true;
+                }
                 liqRewardAddress = amounts.thirdResource.address;
                 document.getElementById("stab-debt").textContent = (1 * liqNextStab).toFixed(2) + " STAB";
                 document.getElementById("col-reward").textContent = (1 * amounts.thirdResource.amount).toFixed(2) + " " + getResourceName(amounts.thirdResource.address);
@@ -670,6 +897,7 @@ async function checkLiquidation(toSkip) {
             }
         } else {
             document.getElementById('warning-liq').style.display = 'block';
+            document.getElementById('warning-liq-not-enough-stab').style.display = 'none';
             document.getElementById('liqnextskip').style.backgroundColor = "hsl(0, 0%, 78%)";
             document.getElementById('liqnextskip').disabled = true;
             document.getElementById("stab-debt").textContent = "-";
@@ -753,8 +981,9 @@ async function update_id() {
 
 async function update_liq() {
     if (window.location.pathname === '/liquidations') {
-        setNoMarkLiqButton();
         if (selectedMarker === undefined) {
+            setNoMarkLiqButton();
+            setMarkLiqButton();
             return;
         }
         (async () => { // Wrap your code in an async function
@@ -798,21 +1027,42 @@ async function update_liq() {
 
                 let data2 = await response.json();
 
-                resourceAddress = data2.non_fungible_ids[0].data.programmatic_json.fields[0].value;
-                parentAddress = data2.non_fungible_ids[0].data.programmatic_json.fields[1].value;
-                collateralAmount = data2.non_fungible_ids[0].data.programmatic_json.fields[3].value;
-                debtAmount = data2.non_fungible_ids[0].data.programmatic_json.fields[4].value;
-                cr = data2.non_fungible_ids[0].data.programmatic_json.fields[5].value;
-                status = data2.non_fungible_ids[0].data.programmatic_json.fields[6].variant_name;
+                let collateralName;
 
-                let collateralName = getResourceName(resourceAddress);
+                if (data2.non_fungible_ids[0].is_burned == false) {
+                    resourceAddress = data2.non_fungible_ids[0].data.programmatic_json.fields[0].value;
+                    const resource = acceptedResources.find(ar => ar[1] === resourceAddress);
+                    validatorMultiplier = resource[4];
+                    parentAddress = data2.non_fungible_ids[0].data.programmatic_json.fields[1].value;
+                    collateralAmount = data2.non_fungible_ids[0].data.programmatic_json.fields[3].value;
+                    debtAmount = data2.non_fungible_ids[0].data.programmatic_json.fields[4].value;
+                    cr = data2.non_fungible_ids[0].data.programmatic_json.fields[5].value;
+                    status = data2.non_fungible_ids[0].data.programmatic_json.fields[6].variant_name;
+                    collateralName = getResourceName(resourceAddress);
+                } else {
+                    parentAddress = "-";
+                    collateralAmount = "-";
+                    debtAmount = "-";
+                    cr = "-";
+                    status = "Receipt burned";
+                    collateralName = "-";
+                }
+
                 document.getElementById('status').textContent = status;
                 if (collateralName == "XRD") {
                     document.getElementById('collateralAmount').textContent = (1 * collateralAmount).toFixed(2) + " XRD";
+                    document.getElementById('debtAmount').textContent = (1 * debtAmount).toFixed(2) + " STAB";
+                    document.getElementById('cr').textContent = (cr * xrdPrice * 100).toFixed(2) + "%";
+                } else if (collateralName == "-") {
+                    document.getElementById('collateralAmount').textContent = "-";
+                    document.getElementById('debtAmount').textContent = "-";
+                    document.getElementById('cr').textContent = "-";
+                    document.getElementById('status').style.color = 'red';
                 } else {
                     document.getElementById('collateralAmount').textContent = (1 * collateralAmount).toFixed(2) + " LSUs";
+                    document.getElementById('debtAmount').textContent = (1 * debtAmount).toFixed(2) + " STAB";
+                    document.getElementById('cr').textContent = (cr * xrdPrice * 100).toFixed(2) + "%";
                 }
-                document.getElementById('debtAmount').textContent = (1 * debtAmount).toFixed(2) + " STAB";
                 if (markerUsed == true) {
                     document.getElementById('marker-state').style.color = 'red';
                     document.getElementById('marker-state').textContent = "Expired";
@@ -830,7 +1080,6 @@ async function update_liq() {
                     markerUsable = false;
                 }
                 document.getElementById('marker-time').textContent = markerDate;
-                document.getElementById('cr').textContent = (cr * xrdPrice * 100).toFixed(2) + "%";
 
                 if (status == "Liquidated") {
                     document.getElementById('status').style.color = 'red';
@@ -843,18 +1092,32 @@ async function update_liq() {
                     document.getElementById('status').style.color = 'black';
                 }
                 setNoMarkLiqButton();
+                setMarkLiqButton();
             } catch (error) {
                 console.error('Error:', error);
             }
-        })(); // Immediately invoke the async function
+        })();
+
+        //setNoMarkLiqButton();
+        //setMarkLiqButton();
     }
-    setNoMarkLiqButton();
 }
 
 async function update_cdp() {
 
     if (window.location.pathname === '/manage-loans') {
         if (selectedCdp === undefined) {
+            if (addingCollateral) {
+                setAddColButton();
+            } else {
+                setRemoveColButton();
+            }
+            if (addingDebt) {
+                setAddDebtButton();
+            }
+            else {
+                setRemoveDebtButton();
+            }
             return;
         }
         let request = {
@@ -873,11 +1136,13 @@ async function update_cdp() {
             .then(response => response.json())
             .then(data => {
                 resourceAddress = data.non_fungible_ids[0].data.programmatic_json.fields[0].value;
+                const resource = acceptedResources.find(ar => ar[1] === resourceAddress);
+                validatorMultiplier = resource[4];
                 collateralAmount = data.non_fungible_ids[0].data.programmatic_json.fields[3].value;
                 debtAmount = data.non_fungible_ids[0].data.programmatic_json.fields[4].value;
-                cr = data.non_fungible_ids[0].data.programmatic_json.fields[5].value;
                 status = data.non_fungible_ids[0].data.programmatic_json.fields[6].variant_name;
                 upToDateCr = getUpToDateCr(collateralAmount, debtAmount, validatorMultiplier);
+                cr = upToDateCr;
                 availableCollateral = getResourceAmount(resourceAddress, bigData, 0);
                 if (addingCollateral) {
                     maxCr = getUpToDateCr(parseFloat(availableCollateral) + parseFloat(collateralAmount), debtAmount, validatorMultiplier) * 100;
@@ -893,9 +1158,28 @@ async function update_cdp() {
                     slider.min = 0;
                     slider.max = maxCr - 150;
                     slider.value = slider.min; // Set the value to the min value
+                }
+
+                if (addingDebt == false) {
+                    var minDebtAmount = Math.max(debtAmount - walletStab, 1);
+                    maxCrDebt = getUpToDateCr(parseFloat(collateralAmount), minDebtAmount, validatorMultiplier) * 100;
+                    newCrDebt = (upToDateCr * 100).toFixed(2);
+                    var slider = document.getElementById('slider-debt');
+                    slider.min = newCrDebt;
+                    slider.max = maxCrDebt > 1000 ? 1000 : maxCrDebt;
+                    slider.value = Math.round(newCrDebt * 100) / 100;
+                } else {
+                    newCrDebt = (upToDateCr * 100).toFixed(2);
+                    maxCrDebt = (upToDateCr * 100).toFixed(2);
+                    var slider = document.getElementById('slider-debt');
+                    slider.min = 0;
+                    slider.max = maxCrDebt - 150;
+                    slider.value = slider.min; // Set the value to the min value
 
                 }
+
                 document.getElementById('amount-to-remove').value = "";
+                document.getElementById('amount-to-remove-debt').value = "";
 
                 // Round minValue to two decimal places before setting the value
 
@@ -921,9 +1205,10 @@ async function update_cdp() {
             document.getElementById('collateralAmount').textContent = (1 * collateralAmount).toFixed(2) + " LSUs";
         }
         document.getElementById('debtAmount').textContent = (1 * debtAmount).toFixed(2) + " STAB";
-        document.getElementById('cr').textContent = (cr * xrdPrice * 100).toFixed(2) + "% (" + (upToDateCr * 100).toFixed(2) + "%)";
+        document.getElementById('cr').textContent = (upToDateCr * 100).toFixed(2) + "%";
+        buttonText.textContent = "CLOSE LOAN";
 
-        if (status == "Liquidated" || status == "ForceLiquidated") {
+        if ((status == "Liquidated" || status == "ForceLiquidated") && collateralAmount > 0) {
             buttonText.textContent = "RETRIEVE COLLATERAL";
             buttonText.color = 'white';
             button.backgroundColor = 'black';
@@ -937,28 +1222,49 @@ async function update_cdp() {
             } else {
                 document.getElementById('max-new-cr').textContent = "Min CR: 150%";
             }
+            document.getElementById('new-cr-debt').textContent = "New CR: " + (upToDateCr * 100).toFixed(2) + "%";
+            if (addingDebt == false) {
+                document.getElementById('max-new-cr-debt').textContent = "Max CR: " + (maxCrDebt * 1).toFixed(2) + "%";
+            } else {
+                document.getElementById('max-new-cr-debt').textContent = "Min CR: 150%";
+            }
             buttonText.textContent = "CLOSE LOAN";
             document.getElementById('status').style.color = '#ef7200';
             button.backgroundColor = '';
             buttonText.color = '';
         }
-        else if (status == "Closed") {
-            buttonText.textContent = "CLOSE LOAN";
-            document.getElementById('status').style.color = 'black';
+        else if (status == "Closed" || (collateralAmount == 0 && (status == "Liquidated" || status == "ForceLiquidated"))) {
+            buttonText.textContent = "BURN LOAN RECEIPT";
+            if (status == "Closed") {
+                document.getElementById('status').style.color = 'black';
+            } else {
+                document.getElementById('status').style.color = 'red';
+            }
             document.getElementById('debtAmount').textContent = "-";
             document.getElementById('cr').textContent = "-";
             document.getElementById('collateralAmount').textContent = "-";
             button.backgroundColor = '';
             buttonText.color = '';
         } else if (status == "Healthy") {
+            if (upToDateCr * 100 < 150) {
+                document.getElementById('status').textContent = "In Danger";
+                document.getElementById('status').style.color = 'orange';
+            } else {
+                document.getElementById('status').style.color = 'green';
+            }
             document.getElementById('new-cr').textContent = "New CR: " + (upToDateCr * 100).toFixed(2) + "%";
             if (addingCollateral) {
                 document.getElementById('max-new-cr').textContent = "Max CR: " + (maxCr * 1).toFixed(2) + "%";
             } else {
                 document.getElementById('max-new-cr').textContent = "Min CR: 150%";
             }
+            document.getElementById('new-cr-debt').textContent = "New CR: " + (upToDateCr * 100).toFixed(2) + "%";
+            if (addingDebt == false) {
+                document.getElementById('max-new-cr-debt').textContent = "Max CR: " + (maxCrDebt * 1).toFixed(2) + "%";
+            } else {
+                document.getElementById('max-new-cr-debt').textContent = "Min CR: 150%";
+            }
             buttonText.textContent = "CLOSE LOAN";
-            document.getElementById('status').style.color = 'green';
             button.backgroundColor = '';
             buttonText.color = '';
         }
@@ -967,6 +1273,12 @@ async function update_cdp() {
             setAddColButton();
         } else {
             setRemoveColButton();
+        }
+        if (addingDebt) {
+            setAddDebtButton();
+        }
+        else {
+            setRemoveDebtButton();
         }
     }
 }
@@ -1106,30 +1418,27 @@ if (window.location.pathname === '/borrow' || window.location.pathname === '/man
         "at_ledger_state": null
     };
 
-    if (window.location.pathname === '/borrow') {
-
-        await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
+    await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+        .then(response => response.json())
+        .then(data => {
+            for (let supply of data.items) {
+                acceptedResources.forEach(acceptedResource => {
+                    if (acceptedResource[1] === supply.address) {
+                        acceptedResource[6] = supply.details.total_supply;
+                    }
+                });
+            }
         })
-            .then(response => response.json())
-            .then(data => {
-                for (let supply of data.items) {
-                    acceptedResources.forEach(acceptedResource => {
-                        if (acceptedResource[1] === supply.address) {
-                            acceptedResource[6] = supply.details.total_supply;
-                        }
-                    });
-                }
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
+        .catch((error) => {
+            console.error('Error:', error);
+        });
 
-    }
 
     await fetch(url_2, {
         method: 'POST',
@@ -1141,11 +1450,9 @@ if (window.location.pathname === '/borrow' || window.location.pathname === '/man
         .then(response => response.json())
         .then(data => {
             let validators = data.validators.items;
-            console.log(validators);
             for (let i = 0; i < validators.length; i++) {
                 let index = validatorAddresses.indexOf(validators[i].address);
                 if (index !== -1) {
-                    console.log(i);
                     acceptedResources[index][4] = acceptedResources[index][6] / validators[i].stake_vault.balance;
                     /*if (validators[i].metadata.items[0].key === "icon_url") {
                         acceptedResources[index][3] = validators[i].metadata.items[0].value.typed.value;
@@ -1156,6 +1463,7 @@ if (window.location.pathname === '/borrow' || window.location.pathname === '/man
                     //can uncomment once validators have better logos
                 }
             }
+            console.log(acceptedResources);
         })
         .catch((error) => {
             console.error('Error:', error);
@@ -1174,6 +1482,9 @@ function update(onlyWallet) {
             walletStab = 0;
             walletXrd = 0;
             walletLp = 0;
+            selectedCdp = undefined;
+            selectedMarker = undefined;
+            selectedId = undefined;
             accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec"
         }
 
@@ -1318,6 +1629,57 @@ function update(onlyWallet) {
                     }
                 });
 
+                sortedItems.forEach(item => {
+                    if (item.non_fungible_resources) {
+                        item.non_fungible_resources.items.forEach(nfrItem => {
+                            if (nfrItem.resource_address === stabIdAddress && nfrItem.vaults) {
+                                nfrItem.vaults.items.forEach(vault => {
+                                    stab_ids = stab_ids.concat(vault.items);
+                                });
+                            }
+                            if (nfrItem.resource_address === cdpAddress && nfrItem.vaults) {
+                                nfrItem.vaults.items.forEach(vault => {
+                                    cdp_ids = cdp_ids.concat(vault.items);
+                                });
+                            }
+                            if (nfrItem.resource_address === markerAddress && nfrItem.vaults) {
+                                nfrItem.vaults.items.forEach(vault => {
+                                    marker_ids = marker_ids.concat(vault.items);
+                                });
+                            }
+                        });
+                    }
+                });
+
+                if (cdp_ids.length > 0) {
+                    // Define the data for the request
+                    const requestDataCdp = {
+                        "resource_address": cdpAddress,
+                        "non_fungible_ids": cdp_ids
+                    };
+
+                    // Make the API request
+                    await fetch('https://stokenet.radixdlt.com/state/non-fungible/data', {
+                        method: 'POST', // Specify the HTTP method
+                        headers: {
+                            'Content-Type': 'application/json', // Set the content type to JSON
+                        },
+                        body: JSON.stringify(requestDataCdp), // Convert the data to JSON string
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok ' + response.statusText);
+                            }
+                            return response.json(); // Parse the JSON from the response
+                        })
+                        .then(data => {
+                            sortedItems.push(data.non_fungible_ids); // Write the response data to the console
+                        })
+                        .catch(error => {
+                            console.error('There was a problem with the fetch operation:', error); // Handle any errors
+                        });
+                }
+
                 return sortedItems;
             } catch (error) {
                 console.error('Error:', error);
@@ -1446,7 +1808,6 @@ function update(onlyWallet) {
                 });
 
                 if (firstOption) {
-                    console.log("getting there baby");
                     // Fetch the name, subtext, and logo
                     var name = "XRD";
                     var logoUrl = "images/radix-logo.svg";
@@ -1526,8 +1887,6 @@ function update(onlyWallet) {
             walletStab = getResourceAmount(stabAddress, data, 0);
             xrdPoolAmount = getResourceAmount(xrdAddress, data, 4);
             stabPoolAmount = getResourceAmount(stabAddress, data, 4);
-            console.log(xrdPoolAmount);
-            console.log(stabPoolAmount);
             interestRate = (100 * ((data[1].details.state.fields[14].value ** (24 * 60 * 365)) - 1)).toFixed(2);
 
             if (window.location.pathname === '/incentives') {
@@ -1616,11 +1975,10 @@ function update(onlyWallet) {
                     });
 
                     try {
-                        const earliestTimestamp = new Date("2024-06-14T03:06:59.654Z");
+                        const earliestTimestamp = new Date("2024-06-23T22:58:31.273Z");
 
                         // Determine the timestamp to use
                         const timestampToUse = earliestTimestamp > sevenDaysAgo ? earliestTimestamp : sevenDaysAgo;
-                        console.log(timestampToUse);
 
                         // Perform API calls with both the chosen timestamp and the current timestamp (now)
                         const [detailsResponse1, pageResponse1, detailsResponse2, pageResponse2, customDetailsResponse] = await Promise.all([
@@ -1674,10 +2032,6 @@ function update(onlyWallet) {
                             customDetailsResponse.json()
                         ]);
 
-                        console.log(detailsData1);
-
-                        console.log(pageData1, pageData2);
-
                         // Extract amounts and organize by resource_address
                         const amountsMap1 = new Map(pageData1.items.map(item => [item.resource_address, item.amount]));
                         const amountsMap2 = new Map(pageData2.items.map(item => [item.resource_address, item.amount]));
@@ -1708,10 +2062,11 @@ function update(onlyWallet) {
                         var dollarPerLpFinal2 = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
 
                         //var dollarPerLpRatio = (Math.pow((dollarPerLpFinal / dollarPerLpInitial), 365 / 7) - 1) * 100;
-                        console.log(totalSupply1, totalSupply2);
-                        console.log(dollarPerLpFinal2, dollarPerLpInitial2);
                         var dollarPerLpRatio2 = (Math.pow((dollarPerLpFinal2 / dollarPerLpInitial2), 365 / 7) - 1) * 100;
-                        var apyElement = document.getElementById('apy-real')
+                        var apyElement = document.getElementById('apy-real');
+                        var liqElement = document.getElementById('pool-liq');
+                        xrdPoolAmount = getResourceAmount(xrdAddress, bigData, 4);
+                        liqElement.textContent = "$" + Number((xrdPoolAmount * 2 * xrdPrice).toFixed(2)).toLocaleString('en-US');
                         apyElement.textContent = dollarPerLpRatio2.toFixed(2) + "%";
                         apyElement.style.color = dollarPerLpRatio2 > 0 ? 'green' : 'red';
 
@@ -1756,7 +2111,6 @@ function update(onlyWallet) {
             }
 
             if (window.location.pathname === '/liquidations') {
-                selectedMarker = undefined;
                 var dropdownContent = document.querySelector('.dropdown-custom-content');
                 dropdownContent.innerHTML = '';
                 var marker_exists = false;
@@ -1857,6 +2211,9 @@ function update(onlyWallet) {
                     document.getElementById('debtAmount').textContent = "-";
                     document.getElementById('cr').textContent = "-";
                 }
+
+                checkLiquidation(parseInt(document.getElementById('liq-counter').textContent));
+                setNoMarkLiqButton();
             }
 
             if (window.location.pathname === '/incentives') {
@@ -1969,25 +2326,100 @@ function update(onlyWallet) {
                 document.getElementById('stab-market-price').textContent = "$" + (xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(2);
                 var number2 = (data[3].details.total_supply * xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(0);
                 document.getElementById('stab-mc').textContent = "$" + Number(number2).toLocaleString('en-US');
+
+                // Define the request payload
+                const requestPayload = {
+                    key_value_store_address: collateralsKvs,
+                    keys: [
+                        {
+                            key_hex: xrdKeyHex,
+                        },
+                        {
+                            key_json: {
+                                kind: "Tuple",
+                                fields: [
+                                    {
+                                        kind: "U32",
+                                        value: "1"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                };
+
+                // Make the API request
+                fetch('https://stokenet.radixdlt.com/state/key-value-store/data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestPayload)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Extract minted_stab and collateral_amount from the response
+                        const entries = data.entries;
+                        let mintedStab, collateralAmount;
+
+                        entries.forEach(entry => {
+                            const fields = entry.value.programmatic_json.fields;
+
+                            fields.forEach(field => {
+                                if (field.field_name === "minted_stab") {
+                                    mintedStab = field.value;
+                                } else if (field.field_name === "collateral_amount") {
+                                    collateralAmount = field.value;
+                                }
+                            });
+                        });
+
+                        document.getElementById('stab-cr').textContent = (((collateralAmount * xrdPrice) / (mintedStab * internalPrice)) * 100).toFixed(2) + "%";
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+
             }
 
             if (window.location.pathname === '/manage-loans') {
-                selectedCdp = undefined;
                 var dropdownContent = document.querySelector('.dropdown-custom-content');
                 dropdownContent.innerHTML = '';
                 var cdpExists = false;
+                var counter;
+                if (data.length > 5) {
+                    counter = data[5].length - 1;
+                }
                 // Get the dropdown element
                 cdp_ids.forEach(id => {
                     if (cdpExists == false) {
                         cdpExists = true;
                     }
-                    var name = id;
+                    var name = "Receipt " + id;
                     var logoUrl = 'images/receipt.png'
-                    var subtext = "Stabilis Loan Receipt";
+                    while (data[5][counter].is_burned == true && counter > 0) {
+                        counter -= 1;
+                    }
+                    const resource = acceptedResources.find(ar => ar[1] === data[5][counter].data.programmatic_json.fields[0].value);
+                    validatorMultiplier = resource[4];
+                    var cr = ((data[5][counter].data.programmatic_json.fields[3].value / data[5][counter].data.programmatic_json.fields[4].value) * xrdPrice * 100 / internalPrice / validatorMultiplier);
+                    var status = data[5][counter].data.programmatic_json.fields[6].variant_name;
+
+                    if (status != "Liquidated" && status != "ForceLiquidated") {
+                        var subtext = status + ", CR: " + (cr * 1).toFixed(2) + "%";
+                    } else {
+                        var subtext = status;
+                    }
+
 
                     // Create a new option
                     var option = document.createElement('div');
                     option.className = 'dropdown-custom-option';
+                    if (cr < 150 || status === "Marked") {
+                        option.classList.add("extrawarning");
+                    } else if (cr < 200) {
+                        option.classList.add("littlewarning");
+                    }
                     option.dataset.logoUrl = logoUrl;
                     option.setAttribute('tabindex', '0'); // Make the option focusable
 
@@ -2028,7 +2460,7 @@ function update(onlyWallet) {
 
                         // Set the button text to the option title
                         var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                        dropdownButton.textContent = "Receipt " + name;
+                        dropdownButton.textContent = name;
 
                         // Hide the dropdown content
                         var dropdownContent = document.querySelector('.dropdown-custom-content');
@@ -2041,6 +2473,7 @@ function update(onlyWallet) {
                     // Append the new option to the dropdown content
                     var dropdownContent = document.querySelector('.dropdown-custom-content');
                     dropdownContent.appendChild(option);
+                    counter -= 1;
                 });
 
                 var dropdownButton = document.querySelector('.dropdown-custom-button');
@@ -2075,6 +2508,12 @@ function update(onlyWallet) {
                 } else {
                     setRemoveColButton();
                 }
+                if (addingDebt) {
+                    setAddDebtButton();
+                }
+                else {
+                    setRemoveDebtButton();
+                }
             }
         }
 
@@ -2088,8 +2527,6 @@ function update(onlyWallet) {
             update_id();
             if (window.location.pathname === '/liquidations') {
                 setMarkLiqButton();
-                document.getElementById("plus-symbol-liq").click();
-                document.getElementById("minus-symbol-liq").click();
                 setNoMarkLiqButton();
             }
         }).catch(e => {
@@ -2241,8 +2678,6 @@ if (window.location.pathname === '/swap') {
             return;
         }
 
-        console.log('Sell button clicked');
-
         const button = this;
         const buttonText = button.querySelector('.button-text');
         const buttonWaiting = button.querySelector('.button-waiting');
@@ -2286,6 +2721,7 @@ if (window.location.pathname === '/swap') {
                 Expression("ENTIRE_WORKTOP");
                 `
         console.log('Swap manifest: ', manifest)
+        toastMe(0, "Swap", 1);
 
         // Send manifest to extension for signing
         rdt.walletApi
@@ -2295,6 +2731,8 @@ if (window.location.pathname === '/swap') {
                 message,
             })
             .then(result => {
+                toastMe(result.value.transactionIntentHash, "Swap", 2);
+                console.log(result);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
@@ -2380,6 +2818,7 @@ if (window.location.pathname === '/swap') {
         `
         console.log('add liq manifest: ', manifest)
 
+        toastMe(0, "Liquidity provision request", 1);
         // Send manifest to extension for signing
         rdt.walletApi
             .sendTransaction({
@@ -2388,6 +2827,7 @@ if (window.location.pathname === '/swap') {
                 message: "Adding liquidity to the Stabilis Protocol",
             })
             .then(result => {
+                toastMe(result.value.transactionIntentHash, "Liquidity provision", 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
@@ -2459,7 +2899,7 @@ if (window.location.pathname === '/swap') {
         Expression("ENTIRE_WORKTOP");
         `
         console.log('remove liq manifest: ', manifest)
-
+        toastMe(0, "Liquidity removal request", 1);
         rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
@@ -2467,6 +2907,7 @@ if (window.location.pathname === '/swap') {
                 message: "Removing liquidity from the Stabilis Protocol",
             })
             .then(result => {
+                toastMe(result.value.transactionIntentHash, "Liquidity removal", 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
@@ -2643,6 +3084,7 @@ if (window.location.pathname === '/liquidations') {
 
         console.log('mark manifest: ', manifest)
 
+        toastMe(0, "Marking request", 1);
         // Send manifest to extension for signing
         rdt.walletApi
             .sendTransaction({
@@ -2651,6 +3093,7 @@ if (window.location.pathname === '/liquidations') {
                 message: "Marking STAB loan for liquidation",
             })
             .then(result => {
+                toastMe(result.value.transactionIntentHash, "Marking", 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
@@ -2660,6 +3103,7 @@ if (window.location.pathname === '/liquidations') {
                 button.style.backgroundColor = '';
                 console.log("Mint Result: ", result.value);
                 update(false);
+                checkMarking(parseInt(markCounter.textContent));
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2677,7 +3121,6 @@ if (window.location.pathname === '/liquidations') {
 
     // *********** LiquidateWithMarker ***********
     document.getElementById('liqwithmark').onclick = async function () {
-        update(true);
         if (!isConnected) {
             return;
         }
@@ -2690,6 +3133,7 @@ if (window.location.pathname === '/liquidations') {
         let markerId = selectedMarker;
         let stabAmount = walletStab;
         let manifest;
+        let action;
 
         const button = this;
         const buttonText = button.querySelector('.button-text');
@@ -2706,6 +3150,7 @@ if (window.location.pathname === '/liquidations') {
 
         if (markerUsed == false) {
             message = "Liquidating STAB loan with marker";
+            action = "Liquidation";
             manifest = `
     CALL_METHOD
       Address("${accountAddress}")
@@ -2737,6 +3182,7 @@ if (window.location.pathname === '/liquidations') {
             console.log('liq /w mark manifest: ', manifest)
         } else {
             message = "Burning STAB loan marker";
+            action = "Burning marker receipt";
             manifest = `
             CALL_METHOD
       Address("${accountAddress}") #Primary account 
@@ -2761,6 +3207,8 @@ if (window.location.pathname === '/liquidations') {
             console.log('burn manifest: ', manifest)
         }
 
+        toastMe(0, action, 1);
+
         // Send manifest to extension for signing
         rdt.walletApi
             .sendTransaction({
@@ -2769,6 +3217,10 @@ if (window.location.pathname === '/liquidations') {
                 message,
             })
             .then(result => {
+                if (action == "Burning marker receipt") {
+                    selectedMarker = undefined;
+                }
+                toastMe(result.value.transactionIntentHash, action, 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
@@ -2778,6 +3230,8 @@ if (window.location.pathname === '/liquidations') {
                 button.style.backgroundColor = '';
                 console.log("Mint Result: ", result.value);
                 update(false);
+                checkMarking(parseInt(document.getElementById('mark-counter').textContent));
+                checkLiquidation(parseInt(document.getElementById('liq-counter').textContent));
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2811,7 +3265,7 @@ if (window.location.pathname === '/liquidations') {
         button.disabled = true;
         button.style.backgroundColor = '#c6c6c6';
 
-        let skipAmount = 1 + parseFloat(document.getElementById("liq-counter").textContent);
+        let skipAmount = parseFloat(document.getElementById("liq-counter").textContent);
         let stabAmount = liqNextStab + 0.000001;
 
         let manifest = `
@@ -2836,6 +3290,7 @@ if (window.location.pathname === '/liquidations') {
       Expression("ENTIRE_WORKTOP");
       `
         console.log('liquidate manifest: ', manifest)
+        toastMe(0, "Liquidation request", 1);
 
         // Send manifest to extension for signing
         rdt.walletApi
@@ -2845,6 +3300,7 @@ if (window.location.pathname === '/liquidations') {
                 message: "Liquidating STAB loan without marker",
             })
             .then(result => {
+                toastMe(result.value.transactionIntentHash, "Liquidition", 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
@@ -2854,6 +3310,8 @@ if (window.location.pathname === '/liquidations') {
                 button.style.backgroundColor = '';
                 console.log("Mint Result: ", result.value);
                 update(false);
+                checkMarking(parseInt(document.getElementById('mark-counter').textContent));
+                checkLiquidation(parseInt(document.getElementById('liq-counter').textContent));
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -2961,6 +3419,7 @@ if (window.location.pathname === '/incentives') {
     Expression("ENTIRE_WORKTOP");
       `
         console.log('create id manifest: ', manifest)
+        toastMe(0, "ID creation request", 1);
 
         // Send manifest to extension for signing
         rdt.walletApi
@@ -2970,6 +3429,7 @@ if (window.location.pathname === '/incentives') {
                 message: "Creating a new Stabilis Staking ID",
             })
             .then(result => {
+                toastMe(result.value.transactionIntentHash, "ID creation", 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
@@ -3024,6 +3484,7 @@ if (window.location.pathname === '/incentives') {
       Expression("ENTIRE_WORKTOP");
       `
         console.log('update manifest: ', manifest)
+        toastMe(0, "Protocol update", 1);
 
         // Send manifest to extension for signing
         rdt.walletApi
@@ -3033,6 +3494,7 @@ if (window.location.pathname === '/incentives') {
                 message: "Updating Stabilis Protocol",
             })
             .then(result => {
+                toastMe(result.value.transactionIntentHash, "Update", 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
@@ -3101,6 +3563,7 @@ if (window.location.pathname === '/incentives') {
       Expression("ENTIRE_WORKTOP");
       `
         console.log('claim manifest: ', manifest)
+        toastMe(0, "Reward claim", 1);
 
         // Send manifest to extension for signing
         rdt.walletApi
@@ -3110,6 +3573,7 @@ if (window.location.pathname === '/incentives') {
                 message: "Claiming staking rewards from Stabilis Staking ID",
             })
             .then(result => {
+                toastMe(result.value.transactionIntentHash, "Reward claim", 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
@@ -3296,6 +3760,7 @@ if (window.location.pathname === '/incentives') {
               `
             console.log('stake manifest: ', manifest)
         }
+        toastMe(0, "Staking request", 1);
 
         // Send manifest to extension for signing
         rdt.walletApi
@@ -3305,6 +3770,7 @@ if (window.location.pathname === '/incentives') {
                 message: "Staking to Stabilis Staking ID",
             })
             .then(result => {
+                toastMe(result.value.transactionIntentHash, "Staking", 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
@@ -3462,6 +3928,8 @@ if (window.location.pathname === '/incentives') {
             console.log('unstake manifest: ', manifest)
         }
 
+        toastMe(0, "Unstaking request", 1);
+
         // Send manifest to extension for signing
         rdt.walletApi
             .sendTransaction({
@@ -3470,6 +3938,7 @@ if (window.location.pathname === '/incentives') {
                 message: "Unstaking from Stabilis Staking ID",
             })
             .then(result => {
+                toastMe(result.value.transactionIntentHash, "Unstaking", 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
@@ -3512,10 +3981,19 @@ if (window.location.pathname === '/manage-loans') {
     } else {
         setRemoveColButton();
     }
+    if (addingDebt) {
+        setAddDebtButton();
+    }
+    else {
+        setRemoveDebtButton();
+    }
 
     var slider = document.getElementById("slider-col");
     var inputAmount = document.getElementById("amount-to-remove");
     var maxButton = document.getElementById("max-new-cr");
+    var sliderDebt = document.getElementById("slider-debt");
+    var inputAmountDebt = document.getElementById("amount-to-remove-debt");
+    var maxButtonDebt = document.getElementById("max-new-cr-debt");
 
     slider.oninput = function () {
         if (addingCollateral) {
@@ -3526,6 +4004,7 @@ if (window.location.pathname === '/manage-loans') {
             setAddColButton();
         } else {
             newCr = maxCr - this.value;
+            realInputCol = newCr;
             var newCol = Math.max(0, collateralAmount - getNecessaryCollateral(debtAmount, newCr / 100, validatorMultiplier));
             document.getElementById("new-cr").textContent = "New CR: " + newCr.toFixed(2) + "%";
             inputAmount.value = newCol.toFixed(2);
@@ -3547,6 +4026,7 @@ if (window.location.pathname === '/manage-loans') {
             setAddColButton();
         } else {
             newCr = getUpToDateCr(parseFloat(collateralAmount) - parseFloat(this.value), debtAmount, validatorMultiplier) * 100;
+            realInputCol = newCr;
             document.getElementById("new-cr").textContent = "New CR: " + (newCr).toFixed(2) + "%";
             if (this.value != "") {
                 slider.value = maxCr - newCr;
@@ -3561,7 +4041,7 @@ if (window.location.pathname === '/manage-loans') {
     }
 
     maxButton.onclick = function () {
-        if (status === "Closed" || status === "Liquidated" || status === "Marked") {
+        if (status === "Closed" || status === "Liquidated") {
             return;
         }
         if (addingCollateral) {
@@ -3571,12 +4051,89 @@ if (window.location.pathname === '/manage-loans') {
             slider.value = maxCr > 1000 ? 1000 : maxCr;
             inputAmount.value = (availableCollateral * 1).toFixed(2);
             setAddColButton();
-        } else {
+        } else if (status != "Marked") {
             newCr = 150;
+            realInputCol = newCr;
             document.getElementById("new-cr").textContent = "New CR: 150%";
             slider.value = maxCr - 150;
             inputAmount.value = (collateralAmount - getNecessaryCollateral(debtAmount, 1.5, validatorMultiplier));
             setRemoveColButton();
+        }
+
+    }
+
+    sliderDebt.oninput = function () {
+        if (addingDebt == false) {
+            newCrDebt = this.value;
+            var newStab = Math.max(0, debtAmount - getNecessaryStab(collateralAmount, this.value / 100, validatorMultiplier));
+            document.getElementById("new-cr-debt").textContent = "New CR: " + this.value + "%";
+            inputAmountDebt.value = newStab.toFixed(2);
+            setRemoveDebtButton();
+        } else {
+            newCrDebt = maxCrDebt - this.value;
+            realInputDebt = newCrDebt;
+            var newDebt = Math.max(0, getNecessaryStab(collateralAmount, newCrDebt / 100, validatorMultiplier) - debtAmount);
+            document.getElementById("new-cr-debt").textContent = "New CR: " + newCrDebt.toFixed(2) + "%";
+            inputAmountDebt.value = newDebt.toFixed(2);
+            setAddDebtButton();
+        }
+
+    }
+
+    inputAmountDebt.oninput = function () {
+        if (addingDebt == false) {
+            var maxStabToUse = Math.min(debtAmount - 1, walletStab);
+            if (this.value > maxStabToUse) {
+                this.value = maxStabToUse;
+            }
+            newCrDebt = getUpToDateCr(parseFloat(collateralAmount), debtAmount - parseFloat(this.value), validatorMultiplier) * 100;
+            if (newCrDebt < 0) {
+                newCrDebt = 0;
+            }
+            document.getElementById("new-cr-debt").textContent = "New CR: " + (newCrDebt).toFixed(2) + "%";
+            if (this.value != "") {
+                sliderDebt.value = newCrDebt;
+            } else {
+                sliderDebt.value = sliderDebt.min;
+                document.getElementById("new-cr-debt").textContent = "New CR: " + sliderDebt.min + "%";
+            }
+            setRemoveDebtButton();
+        } else {
+            newCrDebt = getUpToDateCr(parseFloat(collateralAmount), (parseFloat(debtAmount) + parseFloat(this.value)), validatorMultiplier) * 100;
+            realInputDebt = newCrDebt;
+            console.log(newCrDebt);
+            document.getElementById("new-cr-debt").textContent = "New CR: " + (newCrDebt).toFixed(2) + "%";
+            if (this.value != "") {
+                sliderDebt.value = maxCrDebt - newCrDebt;
+                newCrDebt = sliderDebt.value;
+            } else {
+                sliderDebt.value = sliderDebt.min;
+                document.getElementById("new-cr-debt").textContent = "New CR: " + maxCrDebt + "%";
+            }
+            setAddDebtButton();
+        }
+
+    }
+
+    maxButtonDebt.onclick = function () {
+        if (status === "Closed" || status === "Liquidated") {
+            return;
+        }
+        if (addingDebt == false) {
+            var maxStabToUse = Math.min(debtAmount - 1, walletStab);
+            maxCrDebt = Number(maxCrDebt); // Convert maxCr to a number
+            newCrDebt = maxCrDebt;
+            document.getElementById("new-cr-debt").textContent = "New CR: " + (maxCrDebt * 1).toFixed(2) + "%";
+            sliderDebt.value = maxCrDebt > 1000 ? 1000 : maxCrDebt;
+            inputAmountDebt.value = (maxStabToUse * 1).toFixed(2);
+            setRemoveDebtButton();
+        } else if (status != "Marked") {
+            newCrDebt = 150;
+            realInputDebt = newCrDebt;
+            document.getElementById("new-cr-debt").textContent = "New CR: 150%";
+            sliderDebt.value = maxCr - 150;
+            inputAmountDebt.value = (getNecessaryStab(collateralAmount, 1.5, validatorMultiplier) - debtAmount);
+            setAddDebtButton();
         }
 
     }
@@ -3592,22 +4149,41 @@ if (window.location.pathname === '/manage-loans') {
     var dropdownContent = document.querySelector('.dropdown-custom-content');
 
     // Get all buttons with the class 'stake-button'
-    const buttons = document.querySelectorAll('.stake-button');
+    const buttonsCol = document.querySelectorAll('.stake-button.col');
+    const buttonsDebt = document.querySelectorAll('.stake-button.debt');
 
     // Add an event listener to each button
-    buttons.forEach(button => {
+    buttonsCol.forEach(button => {
         button.addEventListener('click', function () {
             // Perform different actions depending on the id of the clicked button
-            buttons.forEach(button => button.classList.remove('selected'));
+            buttonsCol.forEach(button => button.classList.remove('selected'));
             this.classList.add('selected');
             if (this.id === 'add-collateral-selector') {
                 document.getElementById('add-col-button').style.display = '';
                 document.getElementById('remove-col-button').style.display = 'none';
                 addingCollateral = true;
-            } else {
+            } else if (this.id === 'remove-collateral-selector') {
                 document.getElementById('add-col-button').style.display = 'none';
                 document.getElementById('remove-col-button').style.display = '';
                 addingCollateral = false;
+            }
+            update_cdp();
+        });
+    });
+
+    buttonsDebt.forEach(button => {
+        button.addEventListener('click', function () {
+            // Perform different actions depending on the id of the clicked button
+            buttonsDebt.forEach(button => button.classList.remove('selected'));
+            this.classList.add('selected');
+            if (this.id === 'add-debt-selector') {
+                document.getElementById('add-debt-button').style.display = 'none';
+                document.getElementById('remove-debt-button').style.display = '';
+                addingDebt = true;
+            } else if (this.id === 'remove-debt-selector') {
+                document.getElementById('add-debt-button').style.display = '';
+                document.getElementById('remove-debt-button').style.display = 'none';
+                addingDebt = false;
             }
             update_cdp();
         });
@@ -3711,6 +4287,8 @@ if (window.location.pathname === '/manage-loans') {
 
         console.log('top up manifest: ', manifest)
 
+        toastMe(0, "Collateral addition", 1);
+
         // Send manifest to extension for signing
         rdt.walletApi
             .sendTransaction({
@@ -3719,6 +4297,7 @@ if (window.location.pathname === '/manage-loans') {
                 message: "Adding collateral to STAB loan",
             })
             .then(result => {
+                toastMe(result.value.transactionIntentHash, "Collateral addition", 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
@@ -3727,7 +4306,7 @@ if (window.location.pathname === '/manage-loans') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
                 console.log("Mint Result: ", result.value);
-                update(true);
+                update(false);
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -3745,7 +4324,6 @@ if (window.location.pathname === '/manage-loans') {
 
     // *********** Remove collateral CDP ***********
     document.getElementById('remove-col-button').onclick = async function () {
-        update(true);
         if (!isConnected) {
             return;
         }
@@ -3798,6 +4376,7 @@ if (window.location.pathname === '/manage-loans') {
           Expression("ENTIRE_WORKTOP");
           `
         console.log('remove col. manifest: ', manifest)
+        toastMe(0, "Collateral removal", 1);
 
         // Send manifest to extension for signing
         rdt.walletApi
@@ -3807,6 +4386,7 @@ if (window.location.pathname === '/manage-loans') {
                 message: "Removing collateral from STAB loan",
             })
             .then(result => {
+                toastMe(result.value.transactionIntentHash, "Collateral removal", 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
@@ -3815,7 +4395,7 @@ if (window.location.pathname === '/manage-loans') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
                 console.log("Mint Result: ", result.value);
-                update_cdp();
+                update(false);
             })
             .catch(error => {
                 // Hide the spinner, show the angle icon, and change the button text back
@@ -3833,7 +4413,6 @@ if (window.location.pathname === '/manage-loans') {
 
     // *********** Close CDP ***********
     document.getElementById('close-entire-button').onclick = async function () {
-        update(true);
         if (!isConnected) {
             return;
         }
@@ -3845,11 +4424,6 @@ if (window.location.pathname === '/manage-loans') {
 
         if (status === "Marked") {
             alert("Please save loan before closing.");
-            return;
-        }
-
-        if (status === "Closed") {
-            alert("Loan already closed.");
             return;
         }
 
@@ -3867,7 +4441,68 @@ if (window.location.pathname === '/manage-loans') {
 
         let cdpId = selectedCdp;
 
-        if (status == "Liquidated" || status == "ForceLiquidated") {
+        if (status == "Closed" || collateralAmount == 0) {
+            let manifest = `
+            CALL_METHOD
+                Address("${accountAddress}") #Primary account 
+                "withdraw_non_fungibles"
+                Address("${cdpAddress}") # XRD address
+                Array<NonFungibleLocalId>(
+                    NonFungibleLocalId("${cdpId}")
+                );
+            
+                TAKE_NON_FUNGIBLES_FROM_WORKTOP 
+                    Address("${cdpAddress}") # XRD address
+                    Array<NonFungibleLocalId>(
+                        NonFungibleLocalId("${cdpId}")
+                    )
+                    Bucket("receipt_bucket");
+            
+                CALL_METHOD    
+                    Address("${componentAddress}") #pool comp address
+                    "burn_loan_receipt"
+                    Bucket("receipt_bucket");
+                `
+            console.log('burn receipt manifest: ', manifest)
+            toastMe(0, "Burning loan receipt", 1);
+
+            // Send manifest to extension for signing
+            rdt.walletApi
+                .sendTransaction({
+                    transactionManifest: manifest,
+                    version: 1,
+                    message: "Burning STAB loan receipt",
+                })
+                .then(result => {
+                    if (status == "Closed" || collateralAmount == 0) {
+                        selectedCdp = undefined;
+                    }
+                    toastMe(result.value.transactionIntentHash, "Burning loan receipt", 2);
+                    // Hide the spinner, show the angle icon, and change the button text back
+                    spinner.style.display = 'none';
+                    angleIcon.style.display = 'inline-block';
+                    buttonText.style.display = 'inline-block';
+                    buttonWaiting.style.display = 'none';
+                    button.disabled = false;
+                    button.style.backgroundColor = '';
+                    console.log("Mint Result: ", result.value);
+                    update_cdp();
+                    update(false);
+                })
+                .catch(error => {
+                    // Hide the spinner, show the angle icon, and change the button text back
+                    spinner.style.display = 'none';
+                    angleIcon.style.display = 'inline-block';
+                    buttonText.style.display = 'inline-block';
+                    buttonWaiting.style.display = 'none';
+                    button.disabled = false;
+                    button.style.backgroundColor = '';
+
+                    // Handle the error
+                    console.error(error);
+                });
+
+        } else if (status == "Liquidated" || status == "ForceLiquidated") {
             let manifest = `
             CALL_METHOD
               Address("${accountAddress}")
@@ -3891,6 +4526,7 @@ if (window.location.pathname === '/manage-loans') {
               Expression("ENTIRE_WORKTOP");
               `
             console.log('retrieve col. manifest: ', manifest)
+            toastMe(0, "Collateral retrieval", 1);
 
             // Send manifest to extension for signing
             rdt.walletApi
@@ -3900,6 +4536,7 @@ if (window.location.pathname === '/manage-loans') {
                     message: "Retrieving leftover collateral from STAB loan",
                 })
                 .then(result => {
+                    toastMe(result.value.transactionIntentHash, "Collateral retrieval", 2);
                     // Hide the spinner, show the angle icon, and change the button text back
                     spinner.style.display = 'none';
                     angleIcon.style.display = 'inline-block';
@@ -3961,6 +4598,7 @@ if (window.location.pathname === '/manage-loans') {
               Expression("ENTIRE_WORKTOP");
               `
             console.log('Close cdp manifest: ', manifest)
+            toastMe(0, "Loan close request", 1);
 
             // Send manifest to extension for signing
             rdt.walletApi
@@ -3970,6 +4608,7 @@ if (window.location.pathname === '/manage-loans') {
                     message: "Closing STAB loan",
                 })
                 .then(result => {
+                    toastMe(result.value.transactionIntentHash, "Closing loan", 2);
                     // Hide the spinner, show the angle icon, and change the button text back
                     spinner.style.display = 'none';
                     angleIcon.style.display = 'inline-block';
@@ -3979,6 +4618,7 @@ if (window.location.pathname === '/manage-loans') {
                     button.style.backgroundColor = '';
                     console.log("Mint Result: ", result.value);
                     update_cdp();
+                    update(true);
                 })
                 .catch(error => {
                     // Hide the spinner, show the angle icon, and change the button text back
@@ -4069,6 +4709,7 @@ if (window.location.pathname === '/borrow') {
                 collateralAmount = 0;
                 document.getElementById("outputStab").innerHTML = customRound(result, 4);
             }
+            setBorrowButton();
         }
         if (this.value >= 200) {
             document.getElementById('warning-low-ratio').style.display = 'none';
@@ -4100,6 +4741,7 @@ if (window.location.pathname === '/borrow') {
                 collateralAmount = 0;
                 document.getElementById("outputStab").innerHTML = customRound(result, 4);
             }
+            setBorrowButton();
         }
 
         if (slider.value >= 200) {
@@ -4132,6 +4774,7 @@ if (window.location.pathname === '/borrow') {
                 collateralAmount = 0;
                 document.getElementById("outputStab").innerHTML = customRound(result, 4);
             }
+            setBorrowButton();
         }
 
         if (slider.value >= 200) {
@@ -4150,7 +4793,6 @@ if (window.location.pathname === '/borrow') {
     }
 
     document.getElementById("colToUse").oninput = function () {
-        setBorrowButton();
         h2.textContent = slider.value;
         if (selectedCollateral !== undefined) {
             if (this.value !== "") {
@@ -4164,6 +4806,7 @@ if (window.location.pathname === '/borrow') {
                 collateralAmount = 0;
                 document.getElementById("outputStab").innerHTML = customRound(result, 4);
             }
+            setBorrowButton();
         }
 
         if (colToUse.value !== "") {
@@ -4226,6 +4869,7 @@ if (window.location.pathname === '/borrow') {
     Expression("ENTIRE_WORKTOP");
     `
         console.log('Mint manifest: ', manifest)
+        toastMe(0, "Borrow request", 1);
 
         // Send manifest to extension for signing
         rdt.walletApi
@@ -4235,6 +4879,7 @@ if (window.location.pathname === '/borrow') {
                 message: "Borrowing STAB through a loan",
             })
             .then(result => {
+                toastMe(result.value.transactionIntentHash, "Borrowing", 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
