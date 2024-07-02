@@ -18,7 +18,7 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "@radixdlt/radix-dapp-toolkit": "^1.1.0",
+    "@radixdlt/radix-dapp-toolkit": "^1.6.1",
     "simple-notify": "^1.0.4"
   }
 }
