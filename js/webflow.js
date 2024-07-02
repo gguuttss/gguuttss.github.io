@@ -1375,7 +1375,7 @@ function restoreButtonLabels() {
 const rdt = RadixDappToolkit({
     dAppDefinitionAddress: dAppId,
     networkId: RadixNetwork.Stokenet, // network ID 2 is for the stokenet test network 1 is for mainnet
-    applicationName: 'Radix Gumball dApp',
+    applicationName: 'Stabilis',
     applicationVersion: '1.0.0',
 })
 rdt.buttonApi.setTheme('white-with-outline')
