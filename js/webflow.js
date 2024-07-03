@@ -4,22 +4,22 @@ import { RadixDappToolkit, DataRequestBuilder, RadixNetwork } from '@radixdlt/ra
 
 const dAppId = 'account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd'
 let stabIdAddress = "resource_tdx_2_1ngnptx4ly75dwcv2knf6cp957qfjjprsz90kc8qmqh4ttamj4a2as3" //still need
-let componentAddress = "component_tdx_2_1cqjzlg9w5vzs7a6ckue8flnypjjja5pfktpzjapfgv0vzwphgmt38p"
-let stabComponentAddress = "component_tdx_2_1cpktta3wywkjphzmfxe4fy5ssuedq8hpygml08c06kr8gk8rlkwm0t"
-let poolComponentAddress = "component_tdx_2_1cra5k08la9gxt46de3ljpt85g20jqsyy89cwu5typk360h7vyhn2ke"
-let poolAddress = "pool_tdx_2_1c5t7qreyk8jyg2peseqfd79k8uqmcnwqekey7hdxhvqh5x54wl9xkc"
-let stabAddress = "resource_tdx_2_1t5j9ml0u4cazp58ycs8wmgsanrs0x5shffd3ay0s32ush58l3t2a32"
-let cdpAddress = "resource_tdx_2_1ngms5ywepk69z9qgtsrmmf73w2lxgqj7e9mgpsvjuc5pw5yzdqa7eu"
-let ctrlBadgeAddress = "resource_tdx_2_1t5zap4sfxwwghv4ft7kgtx26llxt4msepqnvzr97un7aegxa2zj89x"
+let componentAddress = "component_tdx_2_1cq9z3rpmt2vruwkqault43q640pshekt32tndn0dzkfrrwujhlhfgr"
+let stabComponentAddress = "component_tdx_2_1czdep00tnsy9js8atnc6u3v472nxgjmk5j6prtzfw56ttz9fdk9a8n"
+let poolComponentAddress = "component_tdx_2_1cqugvczcd8fpy84t3dn6rp799k37akrfzedarwxmdhfs5azhkyzefl"
+let poolAddress = "pool_tdx_2_1ckcazvgthuenzzgmg57ypu5np60n4z53gcfwgj97dzzzwk080zvyj7"
+let stabAddress = "resource_tdx_2_1t5tj80eezjkzeetr6y949u0zncef802n3nj89ufa9qudfuup48vfta"
+let cdpAddress = "resource_tdx_2_1n2w8fs9w8h2my3gk4ew9md27lsk9zqwfu3glh0gu2a9vfqza6v5f5f"
+let ctrlBadgeAddress = "resource_tdx_2_1t5nf9gq7gv4xu454dt7f2h8xvklq7kh4nastnvs3cheq9zjn3xm8lv"
 let xrdAddress = "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc"
 let ilisAddress = "resource_tdx_2_1t4tsw7n2d0yfs27myw7x5khx00an2lwnvdsj9tyhkv3l8xvgn7mxdc" //still need
-let lpAddress = "resource_tdx_2_1t4mjl2p89k58uxfvrxxeqjl65erdmu9zlyf6m5txt7vxnugltmxzw3"
-let liqAddress = "resource_tdx_2_1n2wy83wwhgsq5fpjx4g5uljwr0rhuen87x96zdfd2j0urtzm4tuc8l"
-let markerAddress = "resource_tdx_2_1ntyu6fsh37l98vecwwsw47rgt2lxakfaqp0c9n24q555k5kapvc6gw"
+let lpAddress = "resource_tdx_2_1th4dw07e73vrshnxpfjld740499unfdwwsdwqayp8n4qdm57ckc8h2"
+let liqAddress = "resource_tdx_2_1ntxtn0eemtwj0n5d2yjga4xtx7q3m8mspawt2c3j0t8dnypjtygv7n"
+let markerAddress = "resource_tdx_2_1n2yuvhnnl3sp8wmysvue3xfenh32zz23y45472m82vrzpps09y8pwg"
 let stakingAddress = "component_tdx_2_1cp3k6zm5xqgx0wcf0qtcndjzlxvpusdfpm4eq4838wuswn5h66j8px" // still need
 let accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec"
 let stakesKvs = "internal_keyvaluestore_tdx_2_1kzphr34g06wgtygn5eppvtavyt4qptp4xn9y0uzwgdesh324zrl7yu" // still need
-let collateralsKvs = "internal_keyvaluestore_tdx_2_1krnw9ezkq0s88ulru4auanycfad3xnk4qhqfdcdaxjf3jtusv2wp4w"
+let collateralsKvs = "internal_keyvaluestore_tdx_2_1kp7gpwzhudc5xe96999ndnxyymzpcadwu78uanug2ses7wjq8qrmpf"
 let xrdKeyHex = "5c805da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6"
 let kvsHexes = ["5c805d78ab93fb11d006a1df76c2f432fc9e7db5f1c5d3931900a25ac8298ce3", "5c805d57077a6a6bc8982bdb23bc6a5ae67bfb357dd3636122ac97b323f39988"]
 const acceptedResources = [["XRD", "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc", "", "images/radix-logo.svg", 1, 'XRD', 0],
@@ -1975,7 +1975,7 @@ function update(onlyWallet) {
                     });
 
                     try {
-                        const earliestTimestamp = new Date("2024-06-23T22:58:31.273Z");
+                        const earliestTimestamp = new Date("2024-07-03T03:45:20.702Z");
 
                         // Determine the timestamp to use
                         const timestampToUse = earliestTimestamp > sevenDaysAgo ? earliestTimestamp : sevenDaysAgo;
@@ -2360,7 +2360,7 @@ function update(onlyWallet) {
                     .then(data => {
                         // Extract minted_stab and collateral_amount from the response
                         const entries = data.entries;
-                        let mintedStab, collateralAmount;
+                        let mintedStab, collateralAmountInProtocol;
 
                         entries.forEach(entry => {
                             const fields = entry.value.programmatic_json.fields;
@@ -2369,12 +2369,11 @@ function update(onlyWallet) {
                                 if (field.field_name === "minted_stab") {
                                     mintedStab = field.value;
                                 } else if (field.field_name === "collateral_amount") {
-                                    collateralAmount = field.value;
+                                    collateralAmountInProtocol = field.value;
                                 }
                             });
                         });
-
-                        document.getElementById('stab-cr').textContent = (((collateralAmount * xrdPrice) / (mintedStab * internalPrice)) * 100).toFixed(2) + "%";
+                        document.getElementById('stab-cr').textContent = (((collateralAmountInProtocol * xrdPrice) / (mintedStab * internalPrice)) * 100).toFixed(2) + "%";
                     })
                     .catch(error => {
                         console.error('Error:', error);
@@ -4000,14 +3999,14 @@ if (window.location.pathname === '/manage-loans') {
             newCr = this.value;
             var newCol = Math.max(0, getNecessaryCollateral(debtAmount, this.value / 100, validatorMultiplier) - collateralAmount);
             document.getElementById("new-cr").textContent = "New CR: " + this.value + "%";
-            inputAmount.value = newCol.toFixed(2);
+            inputAmount.value = Math.min(parseFloat(newCol.toFixed(2)), availableCollateral);
             setAddColButton();
         } else {
             newCr = maxCr - this.value;
             realInputCol = newCr;
             var newCol = Math.max(0, collateralAmount - getNecessaryCollateral(debtAmount, newCr / 100, validatorMultiplier));
             document.getElementById("new-cr").textContent = "New CR: " + newCr.toFixed(2) + "%";
-            inputAmount.value = newCol.toFixed(2);
+            inputAmount.value = Math.min(parseFloat(newCol.toFixed(2)), (collateralAmount - getNecessaryCollateral(debtAmount, 1.5, validatorMultiplier)));
             setRemoveColButton();
         }
 
@@ -4049,7 +4048,7 @@ if (window.location.pathname === '/manage-loans') {
             newCr = maxCr;
             document.getElementById("new-cr").textContent = "New CR: " + (maxCr * 1).toFixed(2) + "%";
             slider.value = maxCr > 1000 ? 1000 : maxCr;
-            inputAmount.value = (availableCollateral * 1).toFixed(2);
+            inputAmount.value = availableCollateral;
             setAddColButton();
         } else if (status != "Marked") {
             newCr = 150;
@@ -4067,14 +4066,14 @@ if (window.location.pathname === '/manage-loans') {
             newCrDebt = this.value;
             var newStab = Math.max(0, debtAmount - getNecessaryStab(collateralAmount, this.value / 100, validatorMultiplier));
             document.getElementById("new-cr-debt").textContent = "New CR: " + this.value + "%";
-            inputAmountDebt.value = newStab.toFixed(2);
+            inputAmountDebt.value = Math.min(walletStab, parseFloat(newStab.toFixed(2)));
             setRemoveDebtButton();
         } else {
             newCrDebt = maxCrDebt - this.value;
             realInputDebt = newCrDebt;
             var newDebt = Math.max(0, getNecessaryStab(collateralAmount, newCrDebt / 100, validatorMultiplier) - debtAmount);
             document.getElementById("new-cr-debt").textContent = "New CR: " + newCrDebt.toFixed(2) + "%";
-            inputAmountDebt.value = newDebt.toFixed(2);
+            inputAmountDebt.value = Math.min((getNecessaryStab(collateralAmount, 1.5, validatorMultiplier) - debtAmount), parseFloat(newDebt.toFixed(2)));
             setAddDebtButton();
         }
 
@@ -4125,7 +4124,7 @@ if (window.location.pathname === '/manage-loans') {
             newCrDebt = maxCrDebt;
             document.getElementById("new-cr-debt").textContent = "New CR: " + (maxCrDebt * 1).toFixed(2) + "%";
             sliderDebt.value = maxCrDebt > 1000 ? 1000 : maxCrDebt;
-            inputAmountDebt.value = (maxStabToUse * 1).toFixed(2);
+            inputAmountDebt.value = maxStabToUse;
             setRemoveDebtButton();
         } else if (status != "Marked") {
             newCrDebt = 150;
@@ -4387,6 +4386,196 @@ if (window.location.pathname === '/manage-loans') {
             })
             .then(result => {
                 toastMe(result.value.transactionIntentHash, "Collateral removal", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Mint Result: ", result.value);
+                update(false);
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
+    }
+
+    // *********** Remove debt CDP ***********
+    document.getElementById('add-debt-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+
+        if (selectedCdp === undefined) {
+            alert("Please select a loan receipt.");
+            return;
+        }
+
+        if (document.getElementById('amount-to-remove-debt').value === "") {
+            alert("Please enter an amount to add.");
+            return;
+        }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
+        let cdpId = selectedCdp;
+        let collateralAmount = document.getElementById('amount-to-remove-debt').value;
+        let manifest = `
+        CALL_METHOD
+          Address("${accountAddress}")
+          "create_proof_of_non_fungibles"
+          Address("${cdpAddress}")
+          Array<NonFungibleLocalId>(
+            NonFungibleLocalId("${cdpId}")
+          );
+         
+        POP_FROM_AUTH_ZONE
+          Proof("cdp_proof");
+
+        CALL_METHOD
+          Address("${accountAddress}")
+          "withdraw"
+          Address("${stabAddress}")
+          Decimal("${collateralAmount}")
+        ;
+
+        TAKE_ALL_FROM_WORKTOP
+          Address("${stabAddress}")
+          Bucket("stab")
+        ;
+         
+        CALL_METHOD    
+          Address("${componentAddress}")
+          "partial_close_cdp"
+          Proof("cdp_proof")
+          Bucket("stab");
+         
+        CALL_METHOD
+          Address("${accountAddress}") 
+          "deposit_batch"
+          Expression("ENTIRE_WORKTOP");
+          `
+        console.log('remove debt. manifest: ', manifest)
+        toastMe(0, "Partial debt pay off", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: "Partially paying off STAB debt",
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Partial debt pay off", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Mint Result: ", result.value);
+                update(false);
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+
+                // Handle the error
+                console.error(error);
+            });
+    }
+
+    // *********** Add debt CDP ***********
+    document.getElementById('remove-debt-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+
+        if (selectedCdp === undefined) {
+            alert("Please select a loan receipt.");
+            return;
+        }
+
+        if (document.getElementById('amount-to-remove-debt').value === "") {
+            alert("Please enter an amount to add.");
+            return;
+        }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
+        let cdpId = selectedCdp;
+        let collateralAmount = document.getElementById('amount-to-remove-debt').value;
+        let manifest = `
+        CALL_METHOD
+          Address("${accountAddress}")
+          "create_proof_of_non_fungibles"
+          Address("${cdpAddress}")
+          Array<NonFungibleLocalId>(
+            NonFungibleLocalId("${cdpId}")
+          );
+         
+        POP_FROM_AUTH_ZONE
+          Proof("cdp_proof");
+         
+        CALL_METHOD    
+          Address("${componentAddress}")
+          "borrow_more"
+          Proof("cdp_proof")
+          Decimal("${collateralAmount}");
+         
+        CALL_METHOD
+          Address("${accountAddress}") 
+          "deposit_batch"
+          Expression("ENTIRE_WORKTOP");
+          `
+        console.log('add debt. manifest: ', manifest)
+        toastMe(0, "Borrow more from loan receipt", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: "Borrowing more STAB",
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Borrowing more from loan receipt", 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
