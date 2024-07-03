@@ -121,7 +121,7 @@
             <div class="right-text" id="swap-sell-amount">max. -</div>
           </div>
           <div class="w-layout-blockcontainer container-5 w-container"><img src="images/radix-logo.svg"
-              alt="radix token logo" class="image-2" id="swap-logo-1"><input
+              alt="radix token logo" class="image-2" id="swap-logo-1"><input type="number"
               class="input-field dex w-input decimal-only" maxlength="256" name="amount" data-name="amount"
               placeholder="amount" type="text" id="amount-sell" required=""></div>
           <div class="w-layout-blockcontainer container-4 w-container">
@@ -144,7 +144,7 @@
             </div>
           </div>
           <div class="w-layout-blockcontainer container-5 w-container"><img src="images/fEwyP5f.png"
-              alt="STAB token logo" class="stab-logo" id="swap-logo-2"><input
+              alt="STAB token logo" class="stab-logo" id="swap-logo-2"><input type="number"
               class="input-field dex w-input decimal-only" maxlength="256" name="amount-4" data-name="Amount 4"
               placeholder="amount" type="text" id="amount-receive" required="" readonly style="cursor: default;"></div>
           <button data-wait="Please wait..." class="submit-button w-button wallet-necessary" id="sell">
@@ -202,12 +202,12 @@
             </div>
             <div class="text-block"></div>
             <div class="div-block-6"><img src="images/radix-logo.svg" alt="radix token logo" class="image-2"><input
-                class="input-field w-input decimal-only" maxlength="256" name="amount-3" data-name="Amount 3"
-                placeholder="amount" type="text" id="amount-xrd-provide-lp" required=""><input
-                class="input-field w-input decimal-only" maxlength="256" name="amount-3" data-name="Amount 3"
-                placeholder="amount" type="text" id="amount-stab-provide-lp" required=""><img src="images/fEwyP5f.png"
-                alt="STAB token logo" class="stab-logo"></div><button data-wait="Please wait..."
-              class="submit-button w-button wallet-necessary" id="provide">
+                type="number" class="input-field w-input decimal-only" maxlength="256" name="amount-3"
+                data-name="Amount 3" placeholder="amount" type="text" id="amount-xrd-provide-lp" required=""><input
+                type="number" class="input-field w-input decimal-only" maxlength="256" name="amount-3"
+                data-name="Amount 3" placeholder="amount" type="text" id="amount-stab-provide-lp" required=""><img
+                src="images/fEwyP5f.png" alt="STAB token logo" class="stab-logo"></div><button
+              data-wait="Please wait..." class="submit-button w-button wallet-necessary" id="provide">
               <i class="spin" data-feather="refresh-cw" style="margin-right: 5px; display: none"></i>
               <i class="chevron" data-feather="chevron-right"></i>
               <i class="warning" data-feather="alert-circle" style="margin-right: 5px; display: none"></i>
@@ -221,8 +221,8 @@
             </div>
             <div class="text-block"></div>
             <div class="div-block-6"><img src="images/lplogo.png" alt="lp token logo" class="image-2"><input
-                class="input-field dex w-input decimal-only" maxlength="256" name="amount-3" data-name="Amount 3"
-                placeholder="amount" type="text" id="amount-remove-lp" required=""></div>
+                type="number" class="input-field dex w-input decimal-only" maxlength="256" name="amount-3"
+                data-name="Amount 3" placeholder="amount" type="text" id="amount-remove-lp" required=""></div>
             <button data-wait="Please wait..." class="submit-button w-button wallet-necessary" id="remove">
               <i class="spin" data-feather="refresh-cw" style="margin-right: 5px; display: none"></i>
               <i class="chevron" data-feather="chevron-right"></i>
