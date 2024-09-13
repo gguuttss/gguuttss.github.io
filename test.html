@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="images/favicon.ico" rel="shortcut icon" type="image/x-icon">
+    <link href="images/webclip.png" rel="apple-touch-icon">
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <title>STAB app - LBP</title>
+    <link href="css/style.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="navbar-container">
+            <header class="navbar">
+                <div class="navbar-content">
+                    <div class="logo-site"><img src="images/stab_app_portal_small.png" alt="Stabilis logo" /></div>
+                    <button class="hamburger" id="hamburger">&#9776;</button>
+                    <nav id="navLinks" class="nav-links">
+                        <a href="/swap">Swap</a>
+                        <a class="selected" href="/borrow">Borrow</a>
+                        <a href="/manage-loans">Manage loans</a>
+                        <a href="/liquidations">Liquidations</a>
+                    </nav>
+                    <div class="cta">
+                        <div id="placeholder">i</div>
+                    </div>
+                </div>
+            </header>
+            <nav id="navLinks-hamburger" class="nav-links-hamburger" style="display:none">
+                <a href="/swap">Swap</a>
+                <a class="selected" href="/borrow">Borrow</a>
+                <a href="/manage-loans">Manage loans</a>
+                <a href="/liquidations">Liquidations</a>
+            </nav>
+        </div>
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section logo-section">
+                <img src="images/6591759c82a086a532a90d33_stabilis-1-p-130x130q80.png" alt="Logo 1">
+            </div>
+            <div class="footer-section">
+                <h3>Socials</h3>
+                <a href="https://twitter.com/stabilislabs" target="_blank">Twitter</a>
+                <a href="https://t.me/stabilislabs" target="_blank">Telegram</a>
+            </div>
+            <div class="footer-section">
+                <h3>Information</h3>
+                <a href="terms-and-conditions.html" target="_blank">Terms & Conditions</a>
+                <a href="https://docs.ilikeitstable.com" target="_blank">Documentation</a>
+            </div>
+            <div class="footer-section logo-section">
+                <img src="images/runs-on-radix.png" alt="Logo 2">
+            </div>
+        </div>
+        <div class="copyright-section">
+            <p>Copyright &copy; 2024 I Like It Stable DAO LLC</p>
+        </div>
+    </footer>
+
+    <script>
+        feather.replace();
+        window.addEventListener('scroll', function () {
+            const navbarContainer = document.querySelector('.navbar-container');
+            navbarContainer.classList.toggle('scrolled', window.scrollY > 0);
+        });
+    </script>
+    <script src="dist/main.js"></script>
+    <script src="dist/313.main.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <radix-connect-button id="buggedElement" style="--radix-connect-button-border-radius: 6px;" />
+</body>
+
+</html>
