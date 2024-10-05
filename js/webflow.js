@@ -127,36 +127,6 @@ window.onload = function () {
             event.preventDefault();
         });
     }
-
-    positionElement();
-}
-
-window.onresize = function () {
-    positionElement();
-}
-
-function positionElement() {
-    var placeholder = document.getElementById('placeholder');
-    var buggedElement = document.getElementById('buggedElement');
-
-    var rect = placeholder.getBoundingClientRect();
-
-    var width = window.innerWidth;
-
-    if (width > 980) {
-        buggedElement.style.position = 'fixed';
-        buggedElement.style.top = rect.top - 10 + 'px';
-        buggedElement.style.left = rect.left - 129 + 'px';
-    } else {
-        buggedElement.style.position = 'fixed';
-        buggedElement.style.top = rect.top - 10 + 'px';
-        buggedElement.style.left = rect.left - 36 + 'px';
-    }
-
-
-    /*buggedElement.style.position = 'fixed';
-    buggedElement.style.top = '0px';
-    buggedElement.style.left = '0px';*/
 }
 
 inputs.forEach(function (input) {
@@ -1601,394 +1571,163 @@ if (window.location.pathname === '/borrow' || window.location.pathname === '/man
         });
 }
 
-function update(onlyWallet) {
-    // Subscribe to updates to the user's shared wallet data
-    rdt.walletApi.walletData$.subscribe((walletData) => {
-        console.log("subscription wallet data: ", walletData)
-        if (walletData && walletData.accounts && walletData.accounts.length > 0) {
-            accountAddress = walletData.accounts[0].address;
-            restoreButtonLabels();
-        } else {
-            isConnected = false;
-            walletStab = 0;
-            walletXrd = 0;
-            walletLp = 0;
-            selectedCdp = undefined;
-            selectedMarker = undefined;
-            selectedId = undefined;
-            accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec"
-        }
+function useWalletData(inputAccountAddress, onlyWallet) {
+    if (inputAccountAddress !== "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec") {
+        accountAddress = inputAccountAddress;
+        restoreButtonLabels();
+    } else {
+        isConnected = false;
+        walletStab = 0;
+        walletXrd = 0;
+        walletLp = 0;
+        selectedCdp = undefined;
+        selectedMarker = undefined;
+        selectedId = undefined;
+        accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec"
+    }
 
-        async function getFungibleResources(accountAddress) {
-            const response = await fetch('https://stokenet.radixdlt.com/state/entity/details', {
+    async function getFungibleResources(accountAddress) {
+        const response = await fetch('https://stokenet.radixdlt.com/state/entity/details', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                addresses: [accountAddress],
+                aggregation_level: 'Vault',
+                opt_ins: {
+                    ancestor_identities: true,
+                    component_royalty_vault_balance: true,
+                    package_royalty_vault_balance: true,
+                    non_fungible_include_nfids: true,
+                    explicit_metadata: []
+                }
+            })
+        });
+
+        const data = await response.json();
+
+        // Iterate over each item in the response
+        const acceptedFungibleResources = data.items.flatMap(item => {
+            // Filter the fungible resources to only include those in the list of accepted resources
+            return item.fungible_resources.items.filter(resource => {
+                return acceptedResources.some(acceptedResource => acceptedResource[1] === resource.resource_address);
+            }).map(resource => {
+                // Find the corresponding accepted resource
+                const acceptedResource = acceptedResources.find(ar => ar[1] === resource.resource_address);
+
+                // Add the name of the accepted resource to the resource object
+                resource.name = acceptedResource ? acceptedResource[0] : '';
+                resource.logo = acceptedResource ? acceptedResource[3] : '';
+                resource.multiplier = acceptedResource ? acceptedResource[4] : 1;
+                resource.identifier = acceptedResource ? acceptedResource[5] : '';
+
+                return resource;
+            });
+        });
+
+        // Map each object to its name, resource_address and amount properties
+        const resourceAddressesAndAmounts = acceptedFungibleResources.map(resource => {
+            let amount = 0;
+            if (resource.vaults && resource.vaults.items && resource.vaults.items.length > 0) {
+                amount = parseFloat(resource.vaults.items[0].amount);
+            }
+
+            return {
+                name: resource.name,
+                resourceAddress: resource.resource_address,
+                amount: amount,
+                logo: resource.logo,
+                multiplier: resource.multiplier,
+                identifier: resource.identifier
+            };
+        });
+
+        // Sort the array by amount in descending order
+        resourceAddressesAndAmounts.sort((a, b) => b.amount - a.amount);
+
+        return resourceAddressesAndAmounts;
+    }
+
+    // Define the request URL and parameters
+    const url_kvs = "https://stokenet.radixdlt.com/state/key-value-store/data";
+    const params_kvs = {
+        "key_value_store_address": stakesKvs,
+        "keys": [
+            { "key_hex": kvsHexes[0] },
+            { "key_hex": kvsHexes[1] },
+            { "key_json": { "kind": "Tuple", "fields": [{ "kind": "U32", "value": "1" }] } }
+        ]
+    };
+
+    const url_fetch_ids = "https://stokenet.radixdlt.com/state/entity/details";
+    const addresses = [accountAddress, componentAddress, poolComponentAddress, stabAddress, poolAddress, stakingAddress]; // Replace with your addresses
+
+    const requestBody = {
+        "addresses": addresses,
+        "aggregation_level": "Vault",
+        "opt_ins": {
+            "ancestor_identities": false,
+            "component_royalty_vault_balance": false,
+            "package_royalty_vault_balance": false,
+            "non_fungible_include_nfids": true,
+            "explicit_metadata": [
+                "name",
+                "description"
+            ]
+        }
+    };
+
+    async function fetchData() {
+        try {
+            // Start both fetch requests
+            /*const fetchPromise1 = fetch(url_kvs, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    addresses: [accountAddress],
-                    aggregation_level: 'Vault',
-                    opt_ins: {
-                        ancestor_identities: true,
-                        component_royalty_vault_balance: true,
-                        package_royalty_vault_balance: true,
-                        non_fungible_include_nfids: true,
-                        explicit_metadata: []
-                    }
-                })
+                body: JSON.stringify(params_kvs)
+            });*/
+
+            const fetchPromise2 = fetch(url_fetch_ids, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
             });
 
-            const data = await response.json();
+            // Wait for both fetch requests to complete
+            const [/*response1,*/response2] = await Promise.all([/*fetchPromise1, */fetchPromise2]);
 
-            // Iterate over each item in the response
-            const acceptedFungibleResources = data.items.flatMap(item => {
-                // Filter the fungible resources to only include those in the list of accepted resources
-                return item.fungible_resources.items.filter(resource => {
-                    return acceptedResources.some(acceptedResource => acceptedResource[1] === resource.resource_address);
-                }).map(resource => {
-                    // Find the corresponding accepted resource
-                    const acceptedResource = acceptedResources.find(ar => ar[1] === resource.resource_address);
+            // Check the status of the responses
+            if (/*!response1.ok || */!response2.ok) {
+                throw new Error(`HTTP error! status: ${response2.status/*change this shit to 1*/}, ${response2.status}`);
+            }
 
-                    // Add the name of the accepted resource to the resource object
-                    resource.name = acceptedResource ? acceptedResource[0] : '';
-                    resource.logo = acceptedResource ? acceptedResource[3] : '';
-                    resource.multiplier = acceptedResource ? acceptedResource[4] : 1;
-                    resource.identifier = acceptedResource ? acceptedResource[5] : '';
+            // Parse the responses as JSON
+            const [/*data1, */data2] = await Promise.all([/*response1.json(), */response2.json()]);
 
-                    return resource;
-                });
+            // Extract the reward_amount values
+            /*const rewardAmounts = data1.entries
+                .map(entry => entry.value.programmatic_json.fields)
+                .flat()
+                .filter(field => field.field_name === 'reward_amount')
+                .map(field => field.value);
+
+            stakeRewards = rewardAmounts[0];
+            lpRewards = rewardAmounts[1];*/
+
+            // Process the second response
+            let sortedItems = [];
+            addresses.forEach(address => {
+                let item = data2.items.find(item => item.address === address);
+                if (item) {
+                    sortedItems.push(item);
+                }
             });
 
-            // Map each object to its name, resource_address and amount properties
-            const resourceAddressesAndAmounts = acceptedFungibleResources.map(resource => {
-                let amount = 0;
-                if (resource.vaults && resource.vaults.items && resource.vaults.items.length > 0) {
-                    amount = parseFloat(resource.vaults.items[0].amount);
-                }
-
-                return {
-                    name: resource.name,
-                    resourceAddress: resource.resource_address,
-                    amount: amount,
-                    logo: resource.logo,
-                    multiplier: resource.multiplier,
-                    identifier: resource.identifier
-                };
-            });
-
-            // Sort the array by amount in descending order
-            resourceAddressesAndAmounts.sort((a, b) => b.amount - a.amount);
-
-            return resourceAddressesAndAmounts;
-        }
-
-        // Define the request URL and parameters
-        const url_kvs = "https://stokenet.radixdlt.com/state/key-value-store/data";
-        const params_kvs = {
-            "key_value_store_address": stakesKvs,
-            "keys": [
-                { "key_hex": kvsHexes[0] },
-                { "key_hex": kvsHexes[1] },
-                { "key_json": { "kind": "Tuple", "fields": [{ "kind": "U32", "value": "1" }] } }
-            ]
-        };
-
-        const url_fetch_ids = "https://stokenet.radixdlt.com/state/entity/details";
-        const addresses = [accountAddress, componentAddress, poolComponentAddress, stabAddress, poolAddress, stakingAddress]; // Replace with your addresses
-
-        const requestBody = {
-            "addresses": addresses,
-            "aggregation_level": "Vault",
-            "opt_ins": {
-                "ancestor_identities": false,
-                "component_royalty_vault_balance": false,
-                "package_royalty_vault_balance": false,
-                "non_fungible_include_nfids": true,
-                "explicit_metadata": [
-                    "name",
-                    "description"
-                ]
-            }
-        };
-
-        async function fetchData() {
-            try {
-                // Start both fetch requests
-                /*const fetchPromise1 = fetch(url_kvs, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(params_kvs)
-                });*/
-
-                const fetchPromise2 = fetch(url_fetch_ids, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                // Wait for both fetch requests to complete
-                const [/*response1,*/response2] = await Promise.all([/*fetchPromise1, */fetchPromise2]);
-
-                // Check the status of the responses
-                if (/*!response1.ok || */!response2.ok) {
-                    throw new Error(`HTTP error! status: ${response2.status/*change this shit to 1*/}, ${response2.status}`);
-                }
-
-                // Parse the responses as JSON
-                const [/*data1, */data2] = await Promise.all([/*response1.json(), */response2.json()]);
-
-                // Extract the reward_amount values
-                /*const rewardAmounts = data1.entries
-                    .map(entry => entry.value.programmatic_json.fields)
-                    .flat()
-                    .filter(field => field.field_name === 'reward_amount')
-                    .map(field => field.value);
-
-                stakeRewards = rewardAmounts[0];
-                lpRewards = rewardAmounts[1];*/
-
-                // Process the second response
-                let sortedItems = [];
-                addresses.forEach(address => {
-                    let item = data2.items.find(item => item.address === address);
-                    if (item) {
-                        sortedItems.push(item);
-                    }
-                });
-
-                sortedItems.forEach(item => {
-                    if (item.non_fungible_resources) {
-                        item.non_fungible_resources.items.forEach(nfrItem => {
-                            if (nfrItem.resource_address === stabIdAddress && nfrItem.vaults) {
-                                nfrItem.vaults.items.forEach(vault => {
-                                    stab_ids = stab_ids.concat(vault.items);
-                                });
-                            }
-                            if (nfrItem.resource_address === cdpAddress && nfrItem.vaults) {
-                                nfrItem.vaults.items.forEach(vault => {
-                                    cdp_ids = cdp_ids.concat(vault.items);
-                                });
-                            }
-                            if (nfrItem.resource_address === markerAddress && nfrItem.vaults) {
-                                nfrItem.vaults.items.forEach(vault => {
-                                    marker_ids = marker_ids.concat(vault.items);
-                                });
-                            }
-                        });
-                    }
-                });
-
-                if (cdp_ids.length > 0) {
-                    // Define the data for the request
-                    const requestDataCdp = {
-                        "resource_address": cdpAddress,
-                        "non_fungible_ids": cdp_ids
-                    };
-
-                    // Make the API request
-                    await fetch('https://stokenet.radixdlt.com/state/non-fungible/data', {
-                        method: 'POST', // Specify the HTTP method
-                        headers: {
-                            'Content-Type': 'application/json', // Set the content type to JSON
-                        },
-                        body: JSON.stringify(requestDataCdp), // Convert the data to JSON string
-                    })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok ' + response.statusText);
-                            }
-                            return response.json(); // Parse the JSON from the response
-                        })
-                        .then(data => {
-                            sortedItems.push(data.non_fungible_ids); // Write the response data to the console
-                        })
-                        .catch(error => {
-                            console.error('There was a problem with the fetch operation:', error); // Handle any errors
-                        });
-                }
-
-                return sortedItems;
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
-
-        function useData(data) {
-            stab_ids = []
-            cdp_ids = []
-            marker_ids = []
-            internalPrice = data[1].details.state.fields[12].value;
-            xrdPrice = data[1].details.state.fields[19].value;
-            stabXrdRatio = internalPrice / xrdPrice;
-            validatorMultiplier = 1;
-            if (window.location.pathname === '/borrow') {
-                let firstOption = true;
-                var dropdownContent = document.querySelector('.dropdown-custom-content');
-                dropdownContent.innerHTML = '';
-                var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                var clickableButton = document.querySelector('.dropdown-custom-button');
-                getFungibleResources(accountAddress).then(resourceAddressesAndAmounts => {
-                    // Add new options
-                    resourceAddressesAndAmounts.forEach(resource => {
-                        clickableButton.disabled = false;
-                        clickableButton.style.backgroundColor = "";
-                        // Fetch the name, subtext, and logo
-                        var name = resource.name;
-                        var address = resource.resourceAddress;
-                        var logoUrl = resource.logo;
-                        var subtext = 'max. ' + resource.amount.toFixed(2);
-                        var slider = document.getElementById('slider-single');
-                        let colToUse = document.getElementById("colToUse");
-
-                        if (address === selectedCollateral) {
-                            availableCollateral = resource.amount;
-                            document.getElementById('col-max').textContent = "max. " + availableCollateral.toFixed(2).toLocaleString('en-US');
-                        }
-
-                        // Create a new option
-                        var option = document.createElement('div');
-                        option.className = 'dropdown-custom-option';
-                        option.dataset.logoUrl = logoUrl;
-                        option.setAttribute('tabindex', '0'); // Make the option focusable
-
-                        // Add the logo image to the option
-                        var logoImage = document.createElement('img');
-                        logoImage.src = logoUrl;
-                        logoImage.alt = 'Logo';
-                        option.appendChild(logoImage);
-
-                        // Add the text to the option
-                        var optionText = document.createElement('div');
-                        optionText.className = 'option-text';
-
-                        var optionTitle = document.createElement('div');
-                        optionTitle.className = 'option-title';
-                        optionTitle.textContent = name;
-                        optionText.appendChild(optionTitle);
-
-                        var optionSubtext = document.createElement('div');
-                        optionSubtext.className = 'option-subtext';
-                        optionSubtext.textContent = subtext;
-                        optionText.appendChild(optionSubtext);
-
-                        option.appendChild(optionText);
-
-                        // Attach the click event listener
-                        option.addEventListener('click', function () {
-                            document.getElementById('col-max').textContent = "max. " + resource.amount.toLocaleString('en-US');
-                            document.getElementById('col-suffix').textContent = resource.identifier;
-                            availableCollateral = resource.amount;
-                            selectedCollateral = address;
-                            selectedText = resource.identifier;
-                            // Remove the 'selected' class from all options
-                            validatorMultiplier = resource.multiplier;
-                            var options = document.querySelectorAll('.dropdown-custom-option');
-                            options.forEach(function (otherOption) {
-                                otherOption.classList.remove('selected');
-                            });
-
-                            // Add the 'selected' class to the clicked option
-                            option.classList.add('selected');
-
-                            // Set the button text to the option title
-                            var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                            dropdownButton.textContent = name;
-
-                            // Hide the dropdown content
-                            var dropdownContent = document.querySelector('.dropdown-custom-content');
-                            dropdownContent.style.display = 'none';
-                            setChevron(dropdownContent);
-
-                            // Change the logo
-                            var logoImage = document.querySelector('.input-logo');
-                            logoImage.src = logoUrl;
-
-                            if (colToUse.value !== "") {
-                                let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
-                                mintAmount = result;
-                                collateralAmount = colToUse.value;
-                                document.getElementById("outputStab").innerHTML = customRound(result, 4);
-                            } else {
-                                let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
-                                mintAmount = result;
-                                collateralAmount = 0;
-                                document.getElementById("outputStab").innerHTML = customRound(result, 4);
-                            }
-
-                            if (colToUse.value !== "") {
-                                document.getElementById("ratio-suffix").innerHTML = "STAB";
-                            }
-                            else {
-                                document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
-                            }
-                            setBorrowButton();
-                        });
-
-                        if (firstOption) {
-                            option.click();
-                            firstOption = false;
-                        }
-
-                        // Append the new option to the dropdown content
-                        var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        dropdownContent.appendChild(option);
-                    });
-                });
-
-                if (firstOption) {
-                    // Fetch the name, subtext, and logo
-                    var name = "XRD";
-                    var logoUrl = "images/radix-logo.svg";
-                    var slider = document.getElementById('slider-single');
-                    let colToUse = document.getElementById("colToUse");
-                    document.getElementById('col-max').textContent = "max. 0";
-                    availableCollateral = 0;
-                    selectedCollateral = xrdAddress;
-                    selectedText = "XRD";
-                    var logoImage = document.querySelector('.input-logo');
-                    logoImage.src = logoUrl;
-                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                    dropdownButton.textContent = name;
-                    clickableButton.disabled = true;
-
-                    if (colToUse.value !== "") {
-                        let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
-                        mintAmount = result;
-                        collateralAmount = colToUse.value;
-                        document.getElementById("outputStab").innerHTML = customRound(result, 4);
-                    } else {
-                        let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
-                        mintAmount = result;
-                        collateralAmount = 0;
-                        document.getElementById("outputStab").innerHTML = customRound(result, 4);
-                    }
-
-                    if (colToUse.value !== "") {
-                        document.getElementById("ratio-suffix").innerHTML = "STAB";
-                    }
-                    else {
-                        document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
-                    }
-                }
-
-                if (!isConnected) {
-                    var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                    dropdownContent.innerHTML = '';
-                    dropdownButton.textContent = 'XRD';
-                    var logoImage = document.querySelector('.input-logo');
-                    logoImage.src = 'images/radix-logo.svg';
-                    clickableButton.disabled = true;
-                }
-
-                setBorrowButton();
-            }
-
-            data.forEach(item => {
+            sortedItems.forEach(item => {
                 if (item.non_fungible_resources) {
                     item.non_fungible_resources.items.forEach(nfrItem => {
                         if (nfrItem.resource_address === stabIdAddress && nfrItem.vaults) {
@@ -2009,548 +1748,77 @@ function update(onlyWallet) {
                     });
                 }
             });
-            //fix for gov: currentPeriod = data[3].details.state.fields[2].value;
-            //fix for gov: let updateRewards = data[1].details.state.fields[30].value;
-            walletIlis = getResourceAmount(ilisAddress, data, 0);
-            walletXrd = getResourceAmount(xrdAddress, data, 0);
-            walletLp = getResourceAmount(lpAddress, data, 0);
-            walletStab = getResourceAmount(stabAddress, data, 0);
-            xrdPoolAmount = getResourceAmount(xrdAddress, data, 4);
-            stabPoolAmount = getResourceAmount(stabAddress, data, 4);
-            interestRate = (100 * ((data[1].details.state.fields[14].value ** (24 * 60 * 365)) - 1)).toFixed(2);
 
-            if (window.location.pathname === '/incentives') {
-                document.getElementById('ilis-staking-rewards').textContent = stakeRewards + " ILIS/day";
-                document.getElementById('lpstab-staking-rewards').textContent = lpRewards + " ILIS/day";
-                document.getElementById('update-rewards').textContent = updateRewards + " ILIS/day";
-            }
-
-            if (window.location.pathname === '/' || window.location.pathname === '/secret_index' || window.location.pathname === '/index') {
-                document.getElementById('interest-rate').textContent = interestRate;
-                document.getElementById('circulating-counter').textContent = (1 * data[3].details.total_supply).toFixed(0);
-                document.getElementById('price-counter').textContent = (xrdPrice * stabXrdRatio).toFixed(2);
-            }
-
-            if (window.location.pathname === '/swap') {
-                calculateChange();
-                setProvideButton();
-                setRemoveLpButton();
-                async function fetchData() {
-                    try {
-                        const response = await fetch('https://stokenet.radixdlt.com/status/gateway-status', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            // Include any necessary body data in string format
-                        });
-                        const data = await response.json();
-                        var now = new Date(data.ledger_state.proposer_round_timestamp);
-                    } catch (error) {
-                        console.error('Error:', error);
-                    }
-                    const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-
-                    const entityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
-                    const entityPageUrl = 'https://stokenet.radixdlt.com/state/entity/page/fungibles';
-                    const customEntityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
-
-                    const entityDetailsPayload = (timestamp) => ({
-                        addresses: [
-                            lpAddress,
-                        ],
-                        aggregation_level: "Vault",
-                        at_ledger_state: {
-                            timestamp: timestamp
-                        },
-                        opt_ins: {
-                            ancestor_identities: true,
-                            component_royalty_config: true,
-                            component_royalty_vault_balance: true,
-                            package_royalty_vault_balance: true,
-                            non_fungible_include_nfids: true,
-                            explicit_metadata: [
-                                "name",
-                                "description"
-                            ]
-                        }
-                    });
-
-                    const entityPagePayload = (timestamp) => ({
-                        address: poolAddress,
-                        at_ledger_state: {
-                            timestamp: timestamp
-                        },
-                    });
-
-                    const customEntityDetailsPayload = (timestamp) => ({
-                        addresses: [
-                            componentAddress
-                        ],
-                        aggregation_level: "Vault",
-                        at_ledger_state: {
-                            timestamp: timestamp
-                        },
-                        opt_ins: {
-                            ancestor_identities: true,
-                            component_royalty_config: true,
-                            component_royalty_vault_balance: true,
-                            package_royalty_vault_balance: true,
-                            non_fungible_include_nfids: true,
-                            explicit_metadata: [
-                                "name",
-                                "description"
-                            ]
-                        }
-                    });
-
-                    try {
-                        const earliestTimestamp = new Date("2024-07-03T03:45:20.702Z");
-
-                        // Determine the timestamp to use
-                        const timestampToUse = earliestTimestamp > sevenDaysAgo ? earliestTimestamp : sevenDaysAgo;
-
-                        // Perform API calls with both the chosen timestamp and the current timestamp (now)
-                        const [detailsResponse1, pageResponse1, detailsResponse2, pageResponse2, customDetailsResponse] = await Promise.all([
-                            fetch(entityDetailsUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(entityDetailsPayload(timestampToUse.toISOString()))
-                            }),
-                            fetch(entityPageUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(entityPagePayload(timestampToUse.toISOString()))
-                            }),
-                            fetch(entityDetailsUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(entityDetailsPayload(now.toISOString()))
-                            }),
-                            fetch(entityPageUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(entityPagePayload(now.toISOString()))
-                            }),
-                            fetch(customEntityDetailsUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(customEntityDetailsPayload(timestampToUse.toISOString()))
-                            })
-                        ]);
-
-                        if (!detailsResponse1.ok || !pageResponse1.ok || !detailsResponse2.ok || !pageResponse2.ok || !customDetailsResponse.ok) {
-                            throw new Error(`Failed to fetch entity data`);
-                        }
-
-                        // Parse responses as JSON
-                        const [detailsData1, pageData1, detailsData2, pageData2, customDetailsData] = await Promise.all([
-                            detailsResponse1.json(),
-                            pageResponse1.json(),
-                            detailsResponse2.json(),
-                            pageResponse2.json(),
-                            customDetailsResponse.json()
-                        ]);
-
-                        // Extract amounts and organize by resource_address
-                        const amountsMap1 = new Map(pageData1.items.map(item => [item.resource_address, item.amount]));
-                        const amountsMap2 = new Map(pageData2.items.map(item => [item.resource_address, item.amount]));
-
-                        // Synchronize the order of amounts based on resource_address
-                        const resourceAddresses = pageData1.items.map(item => item.resource_address);
-                        const amounts1 = resourceAddresses.map(address => amountsMap1.get(address));
-                        const amounts2 = resourceAddresses.map(address => amountsMap2.get(address));
-
-                        // Extract total supply from entity details responses
-                        const totalSupply1 = detailsData1.items[0]?.details?.total_supply;
-                        const totalSupply2 = detailsData2.items[0]?.details?.total_supply;
-
-                        var xrdInitial = amounts1[0];
-                        var stabInitial = amounts1[1];
-                        var xrdFinal = amounts2[0];
-                        var stabFinal = amounts2[1];
-                        var xrdPerStabInitial = xrdInitial / stabInitial;
-                        var xrdPerStabFinal = xrdFinal / stabFinal;
-                        var xrdPriceInitial = customDetailsData.items[0].details.state.fields[19].value;
-                        var stabPriceInitial = xrdPerStabInitial * xrdPriceInitial;
-                        var stabPriceFinal = xrdPerStabFinal * xrdPrice;
-
-                        var dollarPerLpInitial = (xrdInitial * xrdPriceInitial + stabInitial * stabPriceInitial) / totalSupply1;
-                        var dollarPerLpFinal = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
-
-                        var dollarPerLpInitial2 = (xrdInitial * xrdPrice + stabInitial * stabPriceFinal) / totalSupply1;
-                        var dollarPerLpFinal2 = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
-
-                        //var dollarPerLpRatio = (Math.pow((dollarPerLpFinal / dollarPerLpInitial), 365 / 7) - 1) * 100;
-                        var dollarPerLpRatio2 = (Math.pow((dollarPerLpFinal2 / dollarPerLpInitial2), 365 / 7) - 1) * 100;
-                        var apyElement = document.getElementById('apy-real');
-                        var liqElement = document.getElementById('pool-liq');
-                        xrdPoolAmount = getResourceAmount(xrdAddress, bigData, 4);
-                        liqElement.textContent = "$" + Number((xrdPoolAmount * 2 * xrdPrice).toFixed(2)).toLocaleString('en-US');
-                        apyElement.textContent = dollarPerLpRatio2.toFixed(2) + "%";
-                        apyElement.style.color = dollarPerLpRatio2 > 0 ? 'green' : 'red';
-
-                    } catch (error) {
-                        console.error('Error fetching data:', error);
-                    }
-                }
-
-                fetchData();
-
-                if (sell == true) {
-                    formattedWallet = Math.floor(walletXrd * 10) / 10;
-                    document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
-                } else {
-                    if (walletStab >= 0.1) {
-                        formattedWallet = Math.floor((walletStab) * 10) / 10;
-                    } else {
-                        formattedWallet = 0;
-                    }
-                    document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
-                }
-                document.getElementById('internal-price-xrd').innerHTML = stabXrdRatio.toFixed(2) + " XRD";
-                document.getElementById('internal-price-usd').innerHTML = "$" + (stabXrdRatio * xrdPrice).toFixed(3);
-                document.getElementById('market-price-xrd').innerHTML = (xrdPoolAmount / stabPoolAmount).toFixed(2) + " XRD";
-                document.getElementById('market-price-usd').innerHTML = "$" + ((xrdPoolAmount / stabPoolAmount) * xrdPrice).toFixed(3);
-                document.getElementById('interest-rate').innerHTML = interestRate + "% APY";
-                if (xrdPoolAmount / stabPoolAmount < 0.995 * stabXrdRatio) {
-                    document.getElementById("recommendation").innerHTML = `<strong>Market price &lt; Internal price</strong>, sell XRD to arbitrage!`;
-                } else if (xrdPoolAmount / stabPoolAmount > 1.005 * stabXrdRatio) {
-                    document.getElementById("recommendation").innerHTML = `<strong>Market price &gt; Internal price</strong>, sell STAB to arbitrage!`;
-                }
-                else {
-                    document.getElementById("recommendation").innerHTML = `Price error is within acceptable bounds. Minimal arbitrage opportunities.`;
-                }
-                document.getElementById('provide-xrd-amount').textContent = "max. " + (Math.floor(walletXrd * 10) / 10).toLocaleString('en-US');
-                if (walletStab >= 0.1) {
-                    document.getElementById('provide-stab-amount-second').textContent = "max. " + (Math.floor((walletStab) * 10) / 10).toLocaleString('en-US');
-                    document.getElementById('provide-stab-amount').textContent = "max. " + (Math.floor((walletStab) * 10) / 10).toLocaleString('en-US');
-                } else {
-                    document.getElementById('provide-stab-amount-second').textContent = "max. " + 0;
-                    document.getElementById('provide-stab-amount').textContent = "max. " + 0;
-                }
-                document.getElementById('remove-lp-amount').textContent = "max. " + (Math.floor(walletLp * 10) / 10).toLocaleString('en-US');
-            }
-
-            if (window.location.pathname === '/liquidations') {
-                var dropdownContent = document.querySelector('.dropdown-custom-content');
-                dropdownContent.innerHTML = '';
-                var marker_exists = false;
-                marker_ids.forEach(id => {
-                    if (marker_exists == false) {
-                        marker_exists = true;
-                    }
-                    var name = id;
-                    var logoUrl = 'images/marker-receipt.png'
-                    var subtext = "Stabilis Marker Receipt";
-
-                    // Create a new option
-                    var option = document.createElement('div');
-                    option.className = 'dropdown-custom-option';
-                    option.dataset.logoUrl = logoUrl;
-                    option.setAttribute('tabindex', '0'); // Make the option focusable
-
-                    // Add the logo image to the option
-                    var logoImage = document.createElement('img');
-                    logoImage.src = logoUrl;
-                    logoImage.alt = 'Logo';
-                    logoImage.style.borderRadius = '0';
-                    option.appendChild(logoImage);
-
-                    // Add the text to the option
-                    var optionText = document.createElement('div');
-                    optionText.className = 'option-text';
-
-                    var optionTitle = document.createElement('div');
-                    optionTitle.className = 'option-title';
-                    optionTitle.textContent = name;
-                    optionText.appendChild(optionTitle);
-
-                    var optionSubtext = document.createElement('div');
-                    optionSubtext.className = 'option-subtext';
-                    optionSubtext.textContent = subtext;
-                    optionText.appendChild(optionSubtext);
-
-                    option.appendChild(optionText);
-
-                    // Attach the click event listener
-                    option.addEventListener('click', function () {
-                        // Remove the 'selected' class from all options
-                        var options = document.querySelectorAll('.dropdown-custom-option');
-                        options.forEach(function (otherOption) {
-                            otherOption.classList.remove('selected');
-                        });
-
-                        // Add the 'selected' class to the clicked option
-                        option.classList.add('selected');
-
-                        // Set the button text to the option title
-                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                        dropdownButton.textContent = "Marker " + name;
-
-                        // Hide the dropdown content
-                        var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        dropdownContent.style.display = 'none';
-                        setChevron(dropdownContent);
-
-                        selectedMarker = id;
-
-                        update_liq();
-                        setMarkLiqButton();
-                        setNoMarkLiqButton();
-                    });
-
-                    // Append the new option to the dropdown content
-                    var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    dropdownContent.appendChild(option);
-                });
-                var dropdownButton = document.querySelector('.dropdown-custom-button');
-
-                if (marker_exists == false) {
-                    dropdownButton.style.backgroundColor = "";
-                    dropdownButton.disabled = true;
-                } else {
-                    dropdownButton.disabled = false;
-                    dropdownButton.style.backgroundColor = "";
-                }
-
-                if (selectedMarker !== undefined) {
-                    update_liq();
-                } else {
-                    if (isConnected === false) {
-                        dropdownContent.innerHTML = '';
-                    }
-                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                    dropdownButton.textContent = "select a marker";
-                    document.getElementById('liqwithmark').querySelector('.button-text').textContent = "LIQUIDATE";
-                    document.getElementById('liqwithmark').style.color = "";
-                    document.getElementById('marker-time').textContent = "-";
-                    document.getElementById('status').style.color = "";
-                    document.getElementById('marker-state').textContent = "-";
-                    document.getElementById('marker-state').style.color = "";
-                    document.getElementById('status').textContent = "-";
-                    document.getElementById('collateralAmount').textContent = "-";
-                    document.getElementById('debtAmount').textContent = "-";
-                    document.getElementById('cr').textContent = "-";
-                }
-
-                checkLiquidation(parseInt(document.getElementById('liq-counter').textContent));
-                setNoMarkLiqButton();
-            }
-
-            if (window.location.pathname === '/incentives') {
-                selectedId = undefined;
-                var dropdownContent = document.querySelector('.dropdown-custom-content');
-                dropdownContent.innerHTML = '';
-
-                stab_ids.forEach(id => {
-                    var name = id;
-                    var logoUrl = 'images/staking-id.png'
-                    var subtext = "Stabilis Staking ID";
-
-                    // Create a new option
-                    var option = document.createElement('div');
-                    option.className = 'dropdown-custom-option';
-                    option.dataset.logoUrl = logoUrl;
-                    option.setAttribute('tabindex', '0'); // Make the option focusable
-
-                    // Add the logo image to the option
-                    var logoImage = document.createElement('img');
-                    logoImage.src = logoUrl;
-                    logoImage.alt = 'Logo';
-                    logoImage.style.borderRadius = '0';
-                    option.appendChild(logoImage);
-
-                    // Add the text to the option
-                    var optionText = document.createElement('div');
-                    optionText.className = 'option-text';
-
-                    var optionTitle = document.createElement('div');
-                    optionTitle.className = 'option-title';
-                    optionTitle.textContent = name;
-                    optionText.appendChild(optionTitle);
-
-                    var optionSubtext = document.createElement('div');
-                    optionSubtext.className = 'option-subtext';
-                    optionSubtext.textContent = subtext;
-                    optionText.appendChild(optionSubtext);
-
-                    option.appendChild(optionText);
-
-                    // Attach the click event listener
-                    option.addEventListener('click', function () {
-                        // Remove the 'selected' class from all options
-                        var options = document.querySelectorAll('.dropdown-custom-option');
-                        options.forEach(function (otherOption) {
-                            otherOption.classList.remove('selected');
-                        });
-
-                        // Add the 'selected' class to the clicked option
-                        option.classList.add('selected');
-
-                        // Set the button text to the option title
-                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                        dropdownButton.textContent = "ID " + name;
-
-                        // Hide the dropdown content
-                        var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        dropdownContent.style.display = 'none';
-                        setChevron(dropdownContent);
-
-                        selectedId = id;
-
-                        update_id();
-                    });
-
-                    // Append the new option to the dropdown content
-                    var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    dropdownContent.appendChild(option);
-                });
-
-                if (selectedId !== undefined) {
-                    update_id();
-                } else {
-                    if (isConnected === false) {
-                        dropdownContent.innerHTML = '';
-                    }
-                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                    dropdownButton.textContent = "Select ID";
-                    document.getElementById('ilisAmountId').textContent = "-";
-                    document.getElementById('lpAmountId').textContent = "-";
-                    document.getElementById('nextClaim').textContent = "-";
-                    let stakeIlisMax = document.getElementById('stake-ilis-amount');
-                    stakeIlisMax.textContent = "max. -";
-                    var cloneIlis = stakeIlisMax.cloneNode(true);
-                    stakeIlisMax.parentNode.replaceChild(cloneIlis, stakeIlisMax);
-
-                    let stakeLpMax = document.getElementById('stake-lp-amount');
-                    stakeLpMax.textContent = "max. -";
-                    var cloneLp = stakeLpMax.cloneNode(true);
-                    stakeLpMax.parentNode.replaceChild(cloneLp, stakeLpMax);
-
-                    let unstakeIlisMax = document.getElementById('unstake-ilis-amount');
-                    unstakeIlisMax.textContent = "max. -";
-                    var cloneUnstakeIlis = unstakeIlisMax.cloneNode(true);
-                    unstakeIlisMax.parentNode.replaceChild(cloneUnstakeIlis, unstakeIlisMax);
-
-                    let unstakeLpMax = document.getElementById('unstake-lp-amount');
-                    unstakeLpMax.textContent = "max. -";
-                    var cloneUnstakeLp = unstakeLpMax.cloneNode(true);
-                    unstakeLpMax.parentNode.replaceChild(cloneUnstakeLp, unstakeLpMax);
-                }
-            }
-
-            if (window.location.pathname === '/borrow') {
-                document.getElementById('interest-rate').textContent = interestRate + "% APY";
-                var number1 = (1 * data[3].details.total_supply).toFixed(0);
-                document.getElementById('circulating-stab').textContent = Number(number1).toLocaleString('en-US');
-                document.getElementById('stab-internal-price').textContent = "$" + (xrdPrice * stabXrdRatio).toFixed(2);
-                document.getElementById('stab-market-price').textContent = "$" + (xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(2);
-                var number2 = (data[3].details.total_supply * xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(0);
-                document.getElementById('stab-mc').textContent = "$" + Number(number2).toLocaleString('en-US');
-
-                // Define the request payload
-                const requestPayload = {
-                    key_value_store_address: collateralsKvs,
-                    keys: [
-                        {
-                            key_hex: xrdKeyHex,
-                        },
-                        {
-                            key_json: {
-                                kind: "Tuple",
-                                fields: [
-                                    {
-                                        kind: "U32",
-                                        value: "1"
-                                    }
-                                ]
-                            }
-                        }
-                    ]
+            if (cdp_ids.length > 0) {
+                // Define the data for the request
+                const requestDataCdp = {
+                    "resource_address": cdpAddress,
+                    "non_fungible_ids": cdp_ids
                 };
 
                 // Make the API request
-                fetch('https://stokenet.radixdlt.com/state/key-value-store/data', {
-                    method: 'POST',
+                await fetch('https://stokenet.radixdlt.com/state/non-fungible/data', {
+                    method: 'POST', // Specify the HTTP method
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json', // Set the content type to JSON
                     },
-                    body: JSON.stringify(requestPayload)
+                    body: JSON.stringify(requestDataCdp), // Convert the data to JSON string
                 })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok ' + response.statusText);
+                        }
+                        return response.json(); // Parse the JSON from the response
+                    })
                     .then(data => {
-                        // Extract minted_stab and collateral_amount from the response
-                        const entries = data.entries;
-                        let mintedStab, collateralAmountInProtocol;
-
-                        entries.forEach(entry => {
-                            const fields = entry.value.programmatic_json.fields;
-
-                            fields.forEach(field => {
-                                if (field.field_name === "minted_stab") {
-                                    mintedStab = field.value;
-                                } else if (field.field_name === "collateral_amount") {
-                                    collateralAmountInProtocol = field.value;
-                                }
-                            });
-                        });
-                        document.getElementById('stab-cr').textContent = (((collateralAmountInProtocol * xrdPrice) / (mintedStab * internalPrice)) * 100).toFixed(2) + "%";
+                        sortedItems.push(data.non_fungible_ids); // Write the response data to the console
                     })
                     .catch(error => {
-                        console.error('Error:', error);
+                        console.error('There was a problem with the fetch operation:', error); // Handle any errors
                     });
-
             }
 
-            if (window.location.pathname === '/manage-loans') {
-                var dropdownContent = document.querySelector('.dropdown-custom-content');
-                dropdownContent.innerHTML = '';
-                var cdpExists = false;
-                var counter;
-                if (data.length > 5) {
-                    counter = data[5].length - 1;
-                }
-                // Get the dropdown element
-                cdp_ids.forEach(id => {
-                    if (cdpExists == false) {
-                        cdpExists = true;
-                    }
-                    var name = "Receipt " + id;
-                    var logoUrl = 'images/receipt.png'
-                    while (data[5][counter].is_burned == true && counter > 0) {
-                        counter -= 1;
-                    }
-                    const resource = acceptedResources.find(ar => ar[1] === data[5][counter].data.programmatic_json.fields[0].value);
-                    validatorMultiplier = resource[4];
-                    var cr = ((data[5][counter].data.programmatic_json.fields[3].value / data[5][counter].data.programmatic_json.fields[4].value) * xrdPrice * 100 / internalPrice / validatorMultiplier);
-                    var status = data[5][counter].data.programmatic_json.fields[6].variant_name;
+            return sortedItems;
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
 
-                    if (status != "Liquidated" && status != "ForceLiquidated") {
-                        var subtext = status + ", CR: " + (cr * 1).toFixed(2) + "%";
-                    } else {
-                        var subtext = status;
-                    }
+    function useData(data) {
+        stab_ids = []
+        cdp_ids = []
+        marker_ids = []
+        internalPrice = data[1].details.state.fields[12].value;
+        xrdPrice = data[1].details.state.fields[19].value;
+        stabXrdRatio = internalPrice / xrdPrice;
+        validatorMultiplier = 1;
+        if (window.location.pathname === '/borrow') {
+            let firstOption = true;
+            var dropdownContent = document.querySelector('.dropdown-custom-content');
+            dropdownContent.innerHTML = '';
+            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+            var clickableButton = document.querySelector('.dropdown-custom-button');
+            getFungibleResources(accountAddress).then(resourceAddressesAndAmounts => {
+                // Add new options
+                resourceAddressesAndAmounts.forEach(resource => {
+                    clickableButton.disabled = false;
+                    clickableButton.style.backgroundColor = "";
+                    // Fetch the name, subtext, and logo
+                    var name = resource.name;
+                    var address = resource.resourceAddress;
+                    var logoUrl = resource.logo;
+                    var subtext = 'max. ' + resource.amount.toFixed(2);
+                    var slider = document.getElementById('slider-single');
+                    let colToUse = document.getElementById("colToUse");
 
+                    if (address === selectedCollateral) {
+                        availableCollateral = resource.amount;
+                        document.getElementById('col-max').textContent = "max. " + availableCollateral.toFixed(2).toLocaleString('en-US');
+                    }
 
                     // Create a new option
                     var option = document.createElement('div');
                     option.className = 'dropdown-custom-option';
-                    if (cr < 150 || status === "Marked") {
-                        option.classList.add("extrawarning");
-                    } else if (cr < 200) {
-                        option.classList.add("littlewarning");
-                    }
                     option.dataset.logoUrl = logoUrl;
                     option.setAttribute('tabindex', '0'); // Make the option focusable
 
@@ -2558,7 +1826,6 @@ function update(onlyWallet) {
                     var logoImage = document.createElement('img');
                     logoImage.src = logoUrl;
                     logoImage.alt = 'Logo';
-                    logoImage.style.borderRadius = '0';
                     option.appendChild(logoImage);
 
                     // Add the text to the option
@@ -2579,8 +1846,13 @@ function update(onlyWallet) {
 
                     // Attach the click event listener
                     option.addEventListener('click', function () {
-                        document.getElementById('amount-to-remove').value = "";
+                        document.getElementById('col-max').textContent = "max. " + resource.amount.toLocaleString('en-US');
+                        document.getElementById('col-suffix').textContent = resource.identifier;
+                        availableCollateral = resource.amount;
+                        selectedCollateral = address;
+                        selectedText = resource.identifier;
                         // Remove the 'selected' class from all options
+                        validatorMultiplier = resource.multiplier;
                         var options = document.querySelectorAll('.dropdown-custom-option');
                         options.forEach(function (otherOption) {
                             otherOption.classList.remove('selected');
@@ -2597,73 +1869,775 @@ function update(onlyWallet) {
                         var dropdownContent = document.querySelector('.dropdown-custom-content');
                         dropdownContent.style.display = 'none';
                         setChevron(dropdownContent);
-                        selectedCdp = id;
-                        update_cdp();
+
+                        // Change the logo
+                        var logoImage = document.querySelector('.input-logo');
+                        logoImage.src = logoUrl;
+
+                        if (colToUse.value !== "") {
+                            let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
+                            mintAmount = result;
+                            collateralAmount = colToUse.value;
+                            document.getElementById("outputStab").innerHTML = customRound(result, 4);
+                        } else {
+                            let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
+                            mintAmount = result;
+                            collateralAmount = 0;
+                            document.getElementById("outputStab").innerHTML = customRound(result, 4);
+                        }
+
+                        if (colToUse.value !== "") {
+                            document.getElementById("ratio-suffix").innerHTML = "STAB";
+                        }
+                        else {
+                            document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
+                        }
+                        setBorrowButton();
                     });
+
+                    if (firstOption) {
+                        option.click();
+                        firstOption = false;
+                    }
 
                     // Append the new option to the dropdown content
                     var dropdownContent = document.querySelector('.dropdown-custom-content');
                     dropdownContent.appendChild(option);
-                    counter -= 1;
                 });
+            });
 
-                var dropdownButton = document.querySelector('.dropdown-custom-button');
+            if (firstOption) {
+                // Fetch the name, subtext, and logo
+                var name = "XRD";
+                var logoUrl = "images/radix-logo.svg";
+                var slider = document.getElementById('slider-single');
+                let colToUse = document.getElementById("colToUse");
+                document.getElementById('col-max').textContent = "max. 0";
+                availableCollateral = 0;
+                selectedCollateral = xrdAddress;
+                selectedText = "XRD";
+                var logoImage = document.querySelector('.input-logo');
+                logoImage.src = logoUrl;
+                var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                dropdownButton.textContent = name;
+                clickableButton.disabled = true;
 
-                if (cdpExists == false) {
-                    dropdownButton.style.backgroundColor = "";
-                    dropdownButton.disabled = true;
+                if (colToUse.value !== "") {
+                    let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
+                    mintAmount = result;
+                    collateralAmount = colToUse.value;
+                    document.getElementById("outputStab").innerHTML = customRound(result, 4);
                 } else {
-                    dropdownButton.disabled = false;
-                    dropdownButton.style.backgroundColor = "";
+                    let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
+                    mintAmount = result;
+                    collateralAmount = 0;
+                    document.getElementById("outputStab").innerHTML = customRound(result, 4);
                 }
 
-                if (selectedCdp !== undefined) {
-                    update_cdp();
-                } else {
-                    if (isConnected === false) {
-                        dropdownContent.innerHTML = '';
-                    }
-                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                    dropdownButton.textContent = "select loan receipt";
-                    var logoImage = document.querySelector('.input-logo');
-                    logoImage.src = 'images/radix-logo.svg';
-                    document.getElementById('status').textContent = "-";
-                    document.getElementById('collateral').textContent = "-";
-                    document.getElementById('collateralAmount').textContent = "";
-                    document.getElementById('debtAmount').textContent = "-";
-                    document.getElementById('cr').textContent = "-";
-                }
-                setCloseLoanButton();
-                if (addingCollateral) {
-                    setAddColButton();
-                } else {
-                    setRemoveColButton();
-                }
-                if (addingDebt) {
-                    setAddDebtButton();
+                if (colToUse.value !== "") {
+                    document.getElementById("ratio-suffix").innerHTML = "STAB";
                 }
                 else {
-                    setRemoveDebtButton();
+                    document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
                 }
+            }
+
+            if (!isConnected) {
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                dropdownContent.innerHTML = '';
+                dropdownButton.textContent = 'XRD';
+                var logoImage = document.querySelector('.input-logo');
+                logoImage.src = 'images/radix-logo.svg';
+                clickableButton.disabled = true;
+            }
+
+            setBorrowButton();
+        }
+
+        data.forEach(item => {
+            if (item.non_fungible_resources) {
+                item.non_fungible_resources.items.forEach(nfrItem => {
+                    if (nfrItem.resource_address === stabIdAddress && nfrItem.vaults) {
+                        nfrItem.vaults.items.forEach(vault => {
+                            stab_ids = stab_ids.concat(vault.items);
+                        });
+                    }
+                    if (nfrItem.resource_address === cdpAddress && nfrItem.vaults) {
+                        nfrItem.vaults.items.forEach(vault => {
+                            cdp_ids = cdp_ids.concat(vault.items);
+                        });
+                    }
+                    if (nfrItem.resource_address === markerAddress && nfrItem.vaults) {
+                        nfrItem.vaults.items.forEach(vault => {
+                            marker_ids = marker_ids.concat(vault.items);
+                        });
+                    }
+                });
+            }
+        });
+        //fix for gov: currentPeriod = data[3].details.state.fields[2].value;
+        //fix for gov: let updateRewards = data[1].details.state.fields[30].value;
+        walletIlis = getResourceAmount(ilisAddress, data, 0);
+        walletXrd = getResourceAmount(xrdAddress, data, 0);
+        walletLp = getResourceAmount(lpAddress, data, 0);
+        walletStab = getResourceAmount(stabAddress, data, 0);
+        xrdPoolAmount = getResourceAmount(xrdAddress, data, 4);
+        stabPoolAmount = getResourceAmount(stabAddress, data, 4);
+        interestRate = (100 * ((data[1].details.state.fields[14].value ** (24 * 60 * 365)) - 1)).toFixed(2);
+
+        if (window.location.pathname === '/incentives') {
+            document.getElementById('ilis-staking-rewards').textContent = stakeRewards + " ILIS/day";
+            document.getElementById('lpstab-staking-rewards').textContent = lpRewards + " ILIS/day";
+            document.getElementById('update-rewards').textContent = updateRewards + " ILIS/day";
+        }
+
+        if (window.location.pathname === '/' || window.location.pathname === '/secret_index' || window.location.pathname === '/index') {
+            document.getElementById('interest-rate').textContent = interestRate;
+            document.getElementById('circulating-counter').textContent = (1 * data[3].details.total_supply).toFixed(0);
+            document.getElementById('price-counter').textContent = (xrdPrice * stabXrdRatio).toFixed(2);
+        }
+
+        if (window.location.pathname === '/swap') {
+            calculateChange();
+            setProvideButton();
+            setRemoveLpButton();
+            async function fetchData() {
+                try {
+                    const response = await fetch('https://stokenet.radixdlt.com/status/gateway-status', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        // Include any necessary body data in string format
+                    });
+                    const data = await response.json();
+                    var now = new Date(data.ledger_state.proposer_round_timestamp);
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+                const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+
+                const entityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
+                const entityPageUrl = 'https://stokenet.radixdlt.com/state/entity/page/fungibles';
+                const customEntityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
+
+                const entityDetailsPayload = (timestamp) => ({
+                    addresses: [
+                        lpAddress,
+                    ],
+                    aggregation_level: "Vault",
+                    at_ledger_state: {
+                        timestamp: timestamp
+                    },
+                    opt_ins: {
+                        ancestor_identities: true,
+                        component_royalty_config: true,
+                        component_royalty_vault_balance: true,
+                        package_royalty_vault_balance: true,
+                        non_fungible_include_nfids: true,
+                        explicit_metadata: [
+                            "name",
+                            "description"
+                        ]
+                    }
+                });
+
+                const entityPagePayload = (timestamp) => ({
+                    address: poolAddress,
+                    at_ledger_state: {
+                        timestamp: timestamp
+                    },
+                });
+
+                const customEntityDetailsPayload = (timestamp) => ({
+                    addresses: [
+                        componentAddress
+                    ],
+                    aggregation_level: "Vault",
+                    at_ledger_state: {
+                        timestamp: timestamp
+                    },
+                    opt_ins: {
+                        ancestor_identities: true,
+                        component_royalty_config: true,
+                        component_royalty_vault_balance: true,
+                        package_royalty_vault_balance: true,
+                        non_fungible_include_nfids: true,
+                        explicit_metadata: [
+                            "name",
+                            "description"
+                        ]
+                    }
+                });
+
+                try {
+                    const earliestTimestamp = new Date("2024-07-03T03:45:20.702Z");
+
+                    // Determine the timestamp to use
+                    const timestampToUse = earliestTimestamp > sevenDaysAgo ? earliestTimestamp : sevenDaysAgo;
+
+                    // Perform API calls with both the chosen timestamp and the current timestamp (now)
+                    const [detailsResponse1, pageResponse1, detailsResponse2, pageResponse2, customDetailsResponse] = await Promise.all([
+                        fetch(entityDetailsUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(entityDetailsPayload(timestampToUse.toISOString()))
+                        }),
+                        fetch(entityPageUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(entityPagePayload(timestampToUse.toISOString()))
+                        }),
+                        fetch(entityDetailsUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(entityDetailsPayload(now.toISOString()))
+                        }),
+                        fetch(entityPageUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(entityPagePayload(now.toISOString()))
+                        }),
+                        fetch(customEntityDetailsUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(customEntityDetailsPayload(timestampToUse.toISOString()))
+                        })
+                    ]);
+
+                    if (!detailsResponse1.ok || !pageResponse1.ok || !detailsResponse2.ok || !pageResponse2.ok || !customDetailsResponse.ok) {
+                        throw new Error(`Failed to fetch entity data`);
+                    }
+
+                    // Parse responses as JSON
+                    const [detailsData1, pageData1, detailsData2, pageData2, customDetailsData] = await Promise.all([
+                        detailsResponse1.json(),
+                        pageResponse1.json(),
+                        detailsResponse2.json(),
+                        pageResponse2.json(),
+                        customDetailsResponse.json()
+                    ]);
+
+                    // Extract amounts and organize by resource_address
+                    const amountsMap1 = new Map(pageData1.items.map(item => [item.resource_address, item.amount]));
+                    const amountsMap2 = new Map(pageData2.items.map(item => [item.resource_address, item.amount]));
+
+                    // Synchronize the order of amounts based on resource_address
+                    const resourceAddresses = pageData1.items.map(item => item.resource_address);
+                    const amounts1 = resourceAddresses.map(address => amountsMap1.get(address));
+                    const amounts2 = resourceAddresses.map(address => amountsMap2.get(address));
+
+                    // Extract total supply from entity details responses
+                    const totalSupply1 = detailsData1.items[0]?.details?.total_supply;
+                    const totalSupply2 = detailsData2.items[0]?.details?.total_supply;
+
+                    var xrdInitial = amounts1[0];
+                    var stabInitial = amounts1[1];
+                    var xrdFinal = amounts2[0];
+                    var stabFinal = amounts2[1];
+                    var xrdPerStabInitial = xrdInitial / stabInitial;
+                    var xrdPerStabFinal = xrdFinal / stabFinal;
+                    var xrdPriceInitial = customDetailsData.items[0].details.state.fields[19].value;
+                    var stabPriceInitial = xrdPerStabInitial * xrdPriceInitial;
+                    var stabPriceFinal = xrdPerStabFinal * xrdPrice;
+
+                    var dollarPerLpInitial = (xrdInitial * xrdPriceInitial + stabInitial * stabPriceInitial) / totalSupply1;
+                    var dollarPerLpFinal = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
+
+                    var dollarPerLpInitial2 = (xrdInitial * xrdPrice + stabInitial * stabPriceFinal) / totalSupply1;
+                    var dollarPerLpFinal2 = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
+
+                    //var dollarPerLpRatio = (Math.pow((dollarPerLpFinal / dollarPerLpInitial), 365 / 7) - 1) * 100;
+                    var dollarPerLpRatio2 = (Math.pow((dollarPerLpFinal2 / dollarPerLpInitial2), 365 / 7) - 1) * 100;
+                    var apyElement = document.getElementById('apy-real');
+                    var liqElement = document.getElementById('pool-liq');
+                    xrdPoolAmount = getResourceAmount(xrdAddress, bigData, 4);
+                    liqElement.textContent = "$" + Number((xrdPoolAmount * 2 * xrdPrice).toFixed(2)).toLocaleString('en-US');
+                    apyElement.textContent = dollarPerLpRatio2.toFixed(2) + "%";
+                    apyElement.style.color = dollarPerLpRatio2 > 0 ? 'green' : 'red';
+
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                }
+            }
+
+            fetchData();
+
+            if (sell == true) {
+                formattedWallet = Math.floor(walletXrd * 10) / 10;
+                document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
+            } else {
+                if (walletStab >= 0.1) {
+                    formattedWallet = Math.floor((walletStab) * 10) / 10;
+                } else {
+                    formattedWallet = 0;
+                }
+                document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
+            }
+            document.getElementById('internal-price-xrd').innerHTML = stabXrdRatio.toFixed(2) + " XRD";
+            document.getElementById('internal-price-usd').innerHTML = "$" + (stabXrdRatio * xrdPrice).toFixed(3);
+            document.getElementById('market-price-xrd').innerHTML = (xrdPoolAmount / stabPoolAmount).toFixed(2) + " XRD";
+            document.getElementById('market-price-usd').innerHTML = "$" + ((xrdPoolAmount / stabPoolAmount) * xrdPrice).toFixed(3);
+            document.getElementById('interest-rate').innerHTML = interestRate + "% APY";
+            if (xrdPoolAmount / stabPoolAmount < 0.995 * stabXrdRatio) {
+                document.getElementById("recommendation").innerHTML = `<strong>Market price &lt; Internal price</strong>, sell XRD to arbitrage!`;
+            } else if (xrdPoolAmount / stabPoolAmount > 1.005 * stabXrdRatio) {
+                document.getElementById("recommendation").innerHTML = `<strong>Market price &gt; Internal price</strong>, sell STAB to arbitrage!`;
+            }
+            else {
+                document.getElementById("recommendation").innerHTML = `Price error is within acceptable bounds. Minimal arbitrage opportunities.`;
+            }
+            document.getElementById('provide-xrd-amount').textContent = "max. " + (Math.floor(walletXrd * 10) / 10).toLocaleString('en-US');
+            if (walletStab >= 0.1) {
+                document.getElementById('provide-stab-amount-second').textContent = "max. " + (Math.floor((walletStab) * 10) / 10).toLocaleString('en-US');
+                document.getElementById('provide-stab-amount').textContent = "max. " + (Math.floor((walletStab) * 10) / 10).toLocaleString('en-US');
+            } else {
+                document.getElementById('provide-stab-amount-second').textContent = "max. " + 0;
+                document.getElementById('provide-stab-amount').textContent = "max. " + 0;
+            }
+            document.getElementById('remove-lp-amount').textContent = "max. " + (Math.floor(walletLp * 10) / 10).toLocaleString('en-US');
+        }
+
+        if (window.location.pathname === '/liquidations') {
+            var dropdownContent = document.querySelector('.dropdown-custom-content');
+            dropdownContent.innerHTML = '';
+            var marker_exists = false;
+            marker_ids.forEach(id => {
+                if (marker_exists == false) {
+                    marker_exists = true;
+                }
+                var name = id;
+                var logoUrl = 'images/marker-receipt.png'
+                var subtext = "Stabilis Marker Receipt";
+
+                // Create a new option
+                var option = document.createElement('div');
+                option.className = 'dropdown-custom-option';
+                option.dataset.logoUrl = logoUrl;
+                option.setAttribute('tabindex', '0'); // Make the option focusable
+
+                // Add the logo image to the option
+                var logoImage = document.createElement('img');
+                logoImage.src = logoUrl;
+                logoImage.alt = 'Logo';
+                logoImage.style.borderRadius = '0';
+                option.appendChild(logoImage);
+
+                // Add the text to the option
+                var optionText = document.createElement('div');
+                optionText.className = 'option-text';
+
+                var optionTitle = document.createElement('div');
+                optionTitle.className = 'option-title';
+                optionTitle.textContent = name;
+                optionText.appendChild(optionTitle);
+
+                var optionSubtext = document.createElement('div');
+                optionSubtext.className = 'option-subtext';
+                optionSubtext.textContent = subtext;
+                optionText.appendChild(optionSubtext);
+
+                option.appendChild(optionText);
+
+                // Attach the click event listener
+                option.addEventListener('click', function () {
+                    // Remove the 'selected' class from all options
+                    var options = document.querySelectorAll('.dropdown-custom-option');
+                    options.forEach(function (otherOption) {
+                        otherOption.classList.remove('selected');
+                    });
+
+                    // Add the 'selected' class to the clicked option
+                    option.classList.add('selected');
+
+                    // Set the button text to the option title
+                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                    dropdownButton.textContent = "Marker " + name;
+
+                    // Hide the dropdown content
+                    var dropdownContent = document.querySelector('.dropdown-custom-content');
+                    dropdownContent.style.display = 'none';
+                    setChevron(dropdownContent);
+
+                    selectedMarker = id;
+
+                    update_liq();
+                    setMarkLiqButton();
+                    setNoMarkLiqButton();
+                });
+
+                // Append the new option to the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.appendChild(option);
+            });
+            var dropdownButton = document.querySelector('.dropdown-custom-button');
+
+            if (marker_exists == false) {
+                dropdownButton.style.backgroundColor = "";
+                dropdownButton.disabled = true;
+            } else {
+                dropdownButton.disabled = false;
+                dropdownButton.style.backgroundColor = "";
+            }
+
+            if (selectedMarker !== undefined) {
+                update_liq();
+            } else {
+                if (isConnected === false) {
+                    dropdownContent.innerHTML = '';
+                }
+                var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                dropdownButton.textContent = "select a marker";
+                document.getElementById('liqwithmark').querySelector('.button-text').textContent = "LIQUIDATE";
+                document.getElementById('liqwithmark').style.color = "";
+                document.getElementById('marker-time').textContent = "-";
+                document.getElementById('status').style.color = "";
+                document.getElementById('marker-state').textContent = "-";
+                document.getElementById('marker-state').style.color = "";
+                document.getElementById('status').textContent = "-";
+                document.getElementById('collateralAmount').textContent = "-";
+                document.getElementById('debtAmount').textContent = "-";
+                document.getElementById('cr').textContent = "-";
+            }
+
+            checkLiquidation(parseInt(document.getElementById('liq-counter').textContent));
+            setNoMarkLiqButton();
+        }
+
+        if (window.location.pathname === '/incentives') {
+            selectedId = undefined;
+            var dropdownContent = document.querySelector('.dropdown-custom-content');
+            dropdownContent.innerHTML = '';
+
+            stab_ids.forEach(id => {
+                var name = id;
+                var logoUrl = 'images/staking-id.png'
+                var subtext = "Stabilis Staking ID";
+
+                // Create a new option
+                var option = document.createElement('div');
+                option.className = 'dropdown-custom-option';
+                option.dataset.logoUrl = logoUrl;
+                option.setAttribute('tabindex', '0'); // Make the option focusable
+
+                // Add the logo image to the option
+                var logoImage = document.createElement('img');
+                logoImage.src = logoUrl;
+                logoImage.alt = 'Logo';
+                logoImage.style.borderRadius = '0';
+                option.appendChild(logoImage);
+
+                // Add the text to the option
+                var optionText = document.createElement('div');
+                optionText.className = 'option-text';
+
+                var optionTitle = document.createElement('div');
+                optionTitle.className = 'option-title';
+                optionTitle.textContent = name;
+                optionText.appendChild(optionTitle);
+
+                var optionSubtext = document.createElement('div');
+                optionSubtext.className = 'option-subtext';
+                optionSubtext.textContent = subtext;
+                optionText.appendChild(optionSubtext);
+
+                option.appendChild(optionText);
+
+                // Attach the click event listener
+                option.addEventListener('click', function () {
+                    // Remove the 'selected' class from all options
+                    var options = document.querySelectorAll('.dropdown-custom-option');
+                    options.forEach(function (otherOption) {
+                        otherOption.classList.remove('selected');
+                    });
+
+                    // Add the 'selected' class to the clicked option
+                    option.classList.add('selected');
+
+                    // Set the button text to the option title
+                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                    dropdownButton.textContent = "ID " + name;
+
+                    // Hide the dropdown content
+                    var dropdownContent = document.querySelector('.dropdown-custom-content');
+                    dropdownContent.style.display = 'none';
+                    setChevron(dropdownContent);
+
+                    selectedId = id;
+
+                    update_id();
+                });
+
+                // Append the new option to the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.appendChild(option);
+            });
+
+            if (selectedId !== undefined) {
+                update_id();
+            } else {
+                if (isConnected === false) {
+                    dropdownContent.innerHTML = '';
+                }
+                var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                dropdownButton.textContent = "Select ID";
+                document.getElementById('ilisAmountId').textContent = "-";
+                document.getElementById('lpAmountId').textContent = "-";
+                document.getElementById('nextClaim').textContent = "-";
+                let stakeIlisMax = document.getElementById('stake-ilis-amount');
+                stakeIlisMax.textContent = "max. -";
+                var cloneIlis = stakeIlisMax.cloneNode(true);
+                stakeIlisMax.parentNode.replaceChild(cloneIlis, stakeIlisMax);
+
+                let stakeLpMax = document.getElementById('stake-lp-amount');
+                stakeLpMax.textContent = "max. -";
+                var cloneLp = stakeLpMax.cloneNode(true);
+                stakeLpMax.parentNode.replaceChild(cloneLp, stakeLpMax);
+
+                let unstakeIlisMax = document.getElementById('unstake-ilis-amount');
+                unstakeIlisMax.textContent = "max. -";
+                var cloneUnstakeIlis = unstakeIlisMax.cloneNode(true);
+                unstakeIlisMax.parentNode.replaceChild(cloneUnstakeIlis, unstakeIlisMax);
+
+                let unstakeLpMax = document.getElementById('unstake-lp-amount');
+                unstakeLpMax.textContent = "max. -";
+                var cloneUnstakeLp = unstakeLpMax.cloneNode(true);
+                unstakeLpMax.parentNode.replaceChild(cloneUnstakeLp, unstakeLpMax);
             }
         }
 
-        fetchData().then(data => {
-            bigData = data;
-            if (onlyWallet === false) {
-                useData(data);
+        if (window.location.pathname === '/borrow') {
+            document.getElementById('interest-rate').textContent = interestRate + "% APY";
+            var number1 = (1 * data[3].details.total_supply).toFixed(0);
+            document.getElementById('circulating-stab').textContent = Number(number1).toLocaleString('en-US');
+            document.getElementById('stab-internal-price').textContent = "$" + (xrdPrice * stabXrdRatio).toFixed(2);
+            document.getElementById('stab-market-price').textContent = "$" + (xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(2);
+            var number2 = (data[3].details.total_supply * xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(0);
+            document.getElementById('stab-mc').textContent = "$" + Number(number2).toLocaleString('en-US');
+
+            // Define the request payload
+            const requestPayload = {
+                key_value_store_address: collateralsKvs,
+                keys: [
+                    {
+                        key_hex: xrdKeyHex,
+                    },
+                    {
+                        key_json: {
+                            kind: "Tuple",
+                            fields: [
+                                {
+                                    kind: "U32",
+                                    value: "1"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            };
+
+            // Make the API request
+            fetch('https://stokenet.radixdlt.com/state/key-value-store/data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestPayload)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Extract minted_stab and collateral_amount from the response
+                    const entries = data.entries;
+                    let mintedStab, collateralAmountInProtocol;
+
+                    entries.forEach(entry => {
+                        const fields = entry.value.programmatic_json.fields;
+
+                        fields.forEach(field => {
+                            if (field.field_name === "minted_stab") {
+                                mintedStab = field.value;
+                            } else if (field.field_name === "collateral_amount") {
+                                collateralAmountInProtocol = field.value;
+                            }
+                        });
+                    });
+                    document.getElementById('stab-cr').textContent = (((collateralAmountInProtocol * xrdPrice) / (mintedStab * internalPrice)) * 100).toFixed(2) + "%";
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+
+        }
+
+        if (window.location.pathname === '/manage-loans') {
+            var dropdownContent = document.querySelector('.dropdown-custom-content');
+            dropdownContent.innerHTML = '';
+            var cdpExists = false;
+            var counter;
+            if (data.length > 5) {
+                counter = data[5].length - 1;
             }
-            update_cdp();
-            update_liq();
-            update_id();
-            if (window.location.pathname === '/liquidations') {
-                setMarkLiqButton();
-                setNoMarkLiqButton();
+            // Get the dropdown element
+            cdp_ids.forEach(id => {
+                if (cdpExists == false) {
+                    cdpExists = true;
+                }
+                var name = "Receipt " + id;
+                var logoUrl = 'images/receipt.png'
+                while (data[5][counter].is_burned == true && counter > 0) {
+                    counter -= 1;
+                }
+                const resource = acceptedResources.find(ar => ar[1] === data[5][counter].data.programmatic_json.fields[0].value);
+                validatorMultiplier = resource[4];
+                var cr = ((data[5][counter].data.programmatic_json.fields[3].value / data[5][counter].data.programmatic_json.fields[4].value) * xrdPrice * 100 / internalPrice / validatorMultiplier);
+                var status = data[5][counter].data.programmatic_json.fields[6].variant_name;
+
+                if (status != "Liquidated" && status != "ForceLiquidated") {
+                    var subtext = status + ", CR: " + (cr * 1).toFixed(2) + "%";
+                } else {
+                    var subtext = status;
+                }
+
+
+                // Create a new option
+                var option = document.createElement('div');
+                option.className = 'dropdown-custom-option';
+                if (cr < 150 || status === "Marked") {
+                    option.classList.add("extrawarning");
+                } else if (cr < 200) {
+                    option.classList.add("littlewarning");
+                }
+                option.dataset.logoUrl = logoUrl;
+                option.setAttribute('tabindex', '0'); // Make the option focusable
+
+                // Add the logo image to the option
+                var logoImage = document.createElement('img');
+                logoImage.src = logoUrl;
+                logoImage.alt = 'Logo';
+                logoImage.style.borderRadius = '0';
+                option.appendChild(logoImage);
+
+                // Add the text to the option
+                var optionText = document.createElement('div');
+                optionText.className = 'option-text';
+
+                var optionTitle = document.createElement('div');
+                optionTitle.className = 'option-title';
+                optionTitle.textContent = name;
+                optionText.appendChild(optionTitle);
+
+                var optionSubtext = document.createElement('div');
+                optionSubtext.className = 'option-subtext';
+                optionSubtext.textContent = subtext;
+                optionText.appendChild(optionSubtext);
+
+                option.appendChild(optionText);
+
+                // Attach the click event listener
+                option.addEventListener('click', function () {
+                    document.getElementById('amount-to-remove').value = "";
+                    // Remove the 'selected' class from all options
+                    var options = document.querySelectorAll('.dropdown-custom-option');
+                    options.forEach(function (otherOption) {
+                        otherOption.classList.remove('selected');
+                    });
+
+                    // Add the 'selected' class to the clicked option
+                    option.classList.add('selected');
+
+                    // Set the button text to the option title
+                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                    dropdownButton.textContent = name;
+
+                    // Hide the dropdown content
+                    var dropdownContent = document.querySelector('.dropdown-custom-content');
+                    dropdownContent.style.display = 'none';
+                    setChevron(dropdownContent);
+                    selectedCdp = id;
+                    update_cdp();
+                });
+
+                // Append the new option to the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.appendChild(option);
+                counter -= 1;
+            });
+
+            var dropdownButton = document.querySelector('.dropdown-custom-button');
+
+            if (cdpExists == false) {
+                dropdownButton.style.backgroundColor = "";
+                dropdownButton.disabled = true;
+            } else {
+                dropdownButton.disabled = false;
+                dropdownButton.style.backgroundColor = "";
             }
-        }).catch(e => {
-            console.error('Error:', e);
-        });
-    })
+
+            if (selectedCdp !== undefined) {
+                update_cdp();
+            } else {
+                if (isConnected === false) {
+                    dropdownContent.innerHTML = '';
+                }
+                var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                dropdownButton.textContent = "select loan receipt";
+                var logoImage = document.querySelector('.input-logo');
+                logoImage.src = 'images/radix-logo.svg';
+                document.getElementById('status').textContent = "-";
+                document.getElementById('collateral').textContent = "-";
+                document.getElementById('collateralAmount').textContent = "";
+                document.getElementById('debtAmount').textContent = "-";
+                document.getElementById('cr').textContent = "-";
+            }
+            setCloseLoanButton();
+            if (addingCollateral) {
+                setAddColButton();
+            } else {
+                setRemoveColButton();
+            }
+            if (addingDebt) {
+                setAddDebtButton();
+            }
+            else {
+                setRemoveDebtButton();
+            }
+        }
+    }
+
+    fetchData().then(data => {
+        bigData = data;
+        if (onlyWallet === false) {
+            useData(data);
+        }
+        update_cdp();
+        update_liq();
+        update_id();
+        if (window.location.pathname === '/liquidations') {
+            setMarkLiqButton();
+            setNoMarkLiqButton();
+        }
+    }).catch(e => {
+        console.error('Error:', e);
+    });
+}
+
+function update(onlyWallet) {
+    useWalletData("account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec", onlyWallet);
+    rdt.walletApi.walletData$.subscribe((walletData) => {
+        accountAddress = walletData?.accounts?.[0]?.address || "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec";
+        useWalletData(accountAddress, onlyWallet);
+    });
 }
 
 update(false);
