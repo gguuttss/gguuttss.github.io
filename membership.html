@@ -18,7 +18,7 @@
         <div class="navbar-container">
             <header class="navbar">
                 <div class="navbar-content">
-                    <div class="logo-site"><img src="images/stab_app_portal_small.png" alt="Stabilis logo" /></div>
+                    <div class="logo-site"><img src="images/stab_gov_portal_small.png" alt="Stabilis logo" /></div>
                     <button class="hamburger" id="hamburger">&#9776;</button>
                     <nav id="navLinks" class="nav-links">
                         <a href="/lbp">LBP</a>
@@ -42,7 +42,7 @@
         <h1>Membership</h1>
         <p class="subtitle">Stake ILIS to your Membership ID to become a member of the ILIS DAO and be rewarded.</p>
         <p class="subtitle">Read up on membership in the <a target="_blank"
-                href="https://docs.ilikeitstable.com/stab-protocol/using-ilis-dao/membership" style="color: #00a3cc;">relevant
+                href="https://docs.ilikeitstable.com/ilis-dao/using-ilis-dao/membership" style="color: #00a3cc;">relevant
                 docs section</a>.</p>
 
         <div class="total-content-wrapper">
@@ -50,13 +50,13 @@
                 <div class="stat-box"
                     style="position:relative; box-sizing: border-box; outline: 4px solid #00a3cc; outline-offset:-4px;">
                     <div class="dropdown-custom">
-                        <button type="button" class="dropdown-custom-button"><b id="membership-id-button">select membership ID</b> <i class="chevron-down" data-feather="chevron-down"></i><i
+                        <button type="button" class="dropdown-custom-button"><b id="membership-id-button">Select Membership ID</b> <i class="chevron-down" data-feather="chevron-down"></i><i
                                 class="chevron-up" data-feather="chevron-up" style="display:none"></i></button>
                         <div class="dropdown-custom-content">
                         </div>
                     </div>
                 </div>
-                <button class="wallet-necessary transaction-button bottom" id="close-entire-button">
+                <button class="wallet-necessary transaction-button bottom" id="new-id">
                     <i class="spin" data-feather="refresh-cw"
                         style="margin-right: 5px; display: none; vertical-align: middle"></i>
                     <i class="chevron" style="vertical-align: middle" data-feather="chevron-right"></i>
@@ -67,9 +67,8 @@
                         WALLET</b> <b class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
                 </button>
             </div>
-            <div class="warning-box" id="warning-message-close"
-                style="display: none; margin-top: 20px; text-align: center; cursor: auto">
-                <p class="paragraph-2"><strong id="message-close"></strong></p>
+            <div class="warning-box" id="warning-message-id-select" style="display: none; margin-top: 20px; text-align: center; cursor: auto">
+                <p class="paragraph-2">No ID selected. Select an ILIS DAO Membership ID or create a new one.</p>
             </div>
             <div class="statistics" style="margin-top: 20px;">
                 <div class="stat-box">
@@ -77,7 +76,7 @@
                     <p class="stat-value" style="display: flex; align-items: center; justify-content: center">
                         <img src="images/ilislogo.png" alt="Logo" class="logo"
                             id="col-logo-upper" /><span id="collateralAmount" style="margin-right:5px"></span> <span
-                            id="collateral"></span>
+                            id="staked-ilis"></span>
                     </p>
                 </div>
                 <div class="stat-box">
@@ -85,7 +84,7 @@
                     <p class="stat-value" style="display: flex; align-items: center; justify-content: center">
                         <img src="images/ilislogo.png" alt="Logo" class="logo"
                             id="col-logo-upper" /><span id="collateralAmount" style="margin-right:5px"></span> <span
-                            id="collateral"></span>
+                            id="unstake-ready"></span>
                     </p>
                     </p>
                     <button class="wallet-necessary transaction-button bottom" id="claim-unstaked-button">
@@ -113,22 +112,22 @@
             <div class="main-content" style="margin-top: 20px;">
                 <div class="left-section">
                     <h2>Manage stake</h2>
-                    <div class="buttons-box"><button id="add-collateral-selector"
-                            class="stake-button selected col left">Add stake</button>
-                        <button id="remove-collateral-selector" class="stake-button col right">Remove
+                    <div class="buttons-box"><button id="add-stake-selector"
+                            class="stake-button selected stake left">Add stake</button>
+                        <button id="remove-stake-selector" class="stake-button stake right">Remove
                             stake</button>
                     </div>
                     <div class="input-group">
                         <div class="two-labels">
-                            <label class="left-label" id="new-cr-debt">New stake: -</label>
-                            <label class="right-label clickable" id="max-new-cr-debt">Max stake: -</label>
+                            <label class="left-label" id="new-stake">New stake: -</label>
+                            <label class="right-label clickable" id="max-new-stake">Max stake: -</label>
                         </div>
-                        <input type="range" id="slider-debt" step="0.01" required
+                        <input type="range" id="slider-stake" step="0.01" required
                             style="width: 100%; margin-bottom: 0px" class="slider start-at-zero">
                         <div class="input-logo-wrapper">
                             <img src="images/ilislogo.png" alt="Logo"
                                 class="input-logo" id="col-logo" />
-                            <input id="amount-to-remove" class="full-input with-logo decimal-only" type="text"
+                            <input id="amount-to-stake" class="full-input with-logo decimal-only" type="text"
                                 value="0" />
                             <label id="amount-to-remove-suffix" for="amount-to-remove" class="suffix">ILIS</label>
                         </div>
@@ -159,25 +158,35 @@
                 </div>
                 <div class="right-section">
                     <h2>Manage lock</h2>
-                    <div class="buttons-box"><button id="remove-debt-selector"
-                            class="stake-button selected debt left">Lock stake</button>
-                        <button id="add-debt-selector" class="stake-button debt right">Unlock stake</button>
+                    <div class="buttons-box"><button id="add-lock-selector"
+                            class="stake-button selected lock left">Lock stake</button>
+                        <button id="remove-lock-selector" class="stake-button lock right">Unlock stake</button>
                     </div>
                     <div class="input-group">
                         <div class="two-labels">
-                            <label class="left-label" id="new-cr-debt">New lock: -</label>
-                            <label class="right-label clickable" id="max-new-cr-debt">Max lock: -</label>
+                            <label class="left-label" id="new-lock">New lock: -</label>
+                            <label class="right-label clickable" id="max-new-lock">Max lock: -</label>
                         </div>
-                        <input type="range" id="slider-debt" step="0.01" required
+                        <input type="range" id="slider-lock" step="1" required
                             style="width: 100%; margin-bottom: 0px" class="slider start-at-zero">
                         <div class="input-logo-wrapper">
-                            <input id="amount-to-remove-debt" class="full-input integer-only" type="number" min="0" step="1" value="0" onkeypress="return event.charCode >= 48 && event.charCode <= 57" oninput="this.value = Math.round(this.value);" />
+                            <input id="days-to-lock" class="full-input integer-only" type="number" min="0" step="1" value="0" onkeypress="return event.charCode >= 48 && event.charCode <= 57" oninput="this.value = Math.round(this.value);" />
                             <label id="amount-to-remove-debt-suffix" for="amount-to-remove-debt" class="suffix">DAYS</label>
-                        </div>
+                        </div>                      
                     </div>
 
-                    <button class="wallet-necessary transaction-button bottom" id="remove-debt-button"
-                        style="display:none">
+                    <div class="input-group">
+                        <div class="two-labels">
+                            <label class="left-label" id="lock-reward-label">ILIS Reward</label>
+                            <p class="right-label" style="display: flex; align-items: center; justify-content: center;">
+                                <span id="collateralAmount" style="margin-right:5px"></span> <span
+                                    id="ilis-reward">0</span><img src="images/ilislogo.png" alt="Logo" class="logo"
+                                    id="col-logo-upper" style="margin-left: 10px"/>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <button class="wallet-necessary transaction-button bottom" id="add-lock-button">
                         <i class="spin" data-feather="refresh-cw"
                             style="margin-right: 5px; display: none; vertical-align: middle"></i>
                         <i class="chevron" style="vertical-align: middle" data-feather="chevron-right"></i>
@@ -187,7 +196,7 @@
                             style="display:none">CONNECT
                             WALLET</b> <b class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
                     </button>
-                    <button class="wallet-necessary transaction-button bottom" id="add-debt-button">
+                    <button class="wallet-necessary transaction-button bottom" id="remove-lock-button" style="display:none">
                         <i class="spin" data-feather="refresh-cw"
                             style="margin-right: 5px; display: none; vertical-align: middle"></i>
                         <i class="chevron" style="vertical-align: middle" data-feather="chevron-right"></i>
@@ -233,8 +242,8 @@
             navbarContainer.classList.toggle('scrolled', window.scrollY > 0);
         });
     </script>
-    <script src="dist/main.js"></script>
-    <script src="dist/784.main.js"></script>
+    <script src="dist/main.js?v=1.0.3"></script>
+    <script src="dist/784.main.js?v=1.0.3"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 </body>
 

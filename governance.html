@@ -18,7 +18,7 @@
         <div class="navbar-container">
             <header class="navbar">
                 <div class="navbar-content">
-                    <div class="logo-site"><img src="images/stab_app_portal_small.png" alt="Stabilis logo" /></div>
+                    <div class="logo-site"><img src="images/stab_gov_portal_small.png" alt="Stabilis logo" /></div>
                     <button class="hamburger" id="hamburger">&#9776;</button>
                     <nav id="navLinks" class="nav-links">
                         <a href="/lbp">LBP</a>
@@ -42,7 +42,7 @@
         <h1>Governance</h1>
         <p class="subtitle">Use your Membership ID to vote on ILIS DAO proposals.</p>
         <p class="subtitle">Read up on governance in the <a target="_blank"
-                href="https://docs.ilikeitstable.com/stab-protocol/using-ilis-dao/governance" style="color: #00a3cc;">relevant
+                href="https://docs.ilikeitstable.com/ilis-dao/using-ilis-dao/governance" style="color: #00a3cc;">relevant
                 docs section</a>.</p>
 
         <div class="total-content-wrapper">
@@ -61,8 +61,8 @@
                     <h3 class="stat-title">Voting power</h3>
                     <p class="stat-value" style="display: flex; align-items: center; justify-content: center">
                         <img src="images/ilislogo.png" alt="Logo" class="logo"
-                            id="incentive-logo" /><span id="collateralAmount" style="margin-right:5px"></span> <span
-                            id="collateral"></span>
+                            id="incentive-logo" /><span
+                            id="vote-power"></span>
                     </p>
                 </div>
                 <div class="stat-box">
@@ -73,14 +73,13 @@
                     </div>
                 </div>
             </div>
-            <div class="warning-box" id="warning-message-close"
-                style="display: none; margin-top: 20px; text-align: center; cursor: auto">
-                <p class="paragraph-2"><strong id="message-close"></strong></p>
+            <div class="warning-box" id="warning-message-id-select" style="display: none; margin-top: 20px; text-align: center; cursor: auto">
+                <p class="paragraph-2">No ID selected. Select an ILIS DAO Membership ID or create a new one on the Membership page.</p>
             </div>
             <div class="statistics" style="margin-top: 20px;">
                 <div class="stat-box">
-                    <h3 class="stat-title">Proposal #3#: Title of Proposal</h3>
-                    <p class="stat-value"> <span id="locked-until">Description of Proposal. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ut purus eget sapien.
+                    <h3 class="stat-title" id="proposal-title">Proposal #3#: Title of Proposal</h3>
+                    <p class="stat-value"> <span id="proposal-description">Description of Proposal. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ut purus eget sapien.
                         Nulla facilisi. Sed ut purus eget sapien. Nulla facilisi.</span>
                     </p>
                 </div>
@@ -91,25 +90,25 @@
                     <div class="input-group">
                         <div class="two-labels">
                             <label class="left-label">Status</label>
-                            <label class="right-label" id="status">Ongoing</label>
+                            <label class="right-label" id="status">-</label>
                         </div>
                     </div>
                     <div class="input-group">
                         <div class="two-labels">
                             <label class="left-label">Deadline</label>
-                            <label class="right-label" id="deadline">2024-01-01 00:00:00</label>
+                            <label class="right-label" id="deadline">-</label>
                         </div>
                     </div>
                     <div class="input-group">
                         <div class="two-labels">
                             <label class="left-label">Attachments</label>
-                            <label class="right-label" id="stab-internal-price">Download</label>
+                            <label class="right-label" id="attachments">-</label>
                         </div>
                     </div>
                     <div class="input-group">
                         <div class="two-labels">
-                            <label class="left-label">Advanced specifics</label>
-                            <label class="right-label" id="specifics">Download</label>
+                            <label class="left-label">Verify proposal</label>
+                            <label class="right-label" id="specifics">-</label>
                         </div>
                     </div>
 
@@ -119,38 +118,32 @@
                     <div class="input-group">
                         <div class="two-labels">
                             <label class="left-label">Votes for</label>
-                            <label class="right-label" id="deadline">10.000 (33.3%)</label>
+                            <label class="right-label" id="votes-for">- (-%)</label>
                         </div>
                     </div>
                     <div class="input-group">
                         <div class="two-labels">
                             <label class="left-label">Votes against</label>
-                            <label class="right-label" id="stab-internal-price">20.000 (66.7%)</label>
+                            <label class="right-label" id="votes-against">- (-%)</label>
                         </div>
                     </div>
                     <div class="input-group">
                         <div class="two-labels">
-                            <label class="left-label">My vote</label>
-                            <label class="right-label" id="stab-internal-price">For</label>
+                            <label class="left-label">Quorum</label>
+                            <label class="right-label" id="quorum">-/-</label>
                         </div>
                     </div>
-                    <div class="buttons-box"><button id="remove-debt-selector"
-                            class="stake-button selected debt left">Vote for</button>
-                        <button id="add-debt-selector" class="stake-button debt right">Vote against</button>
+                    <div class="buttons-box" id="vote-buttons">
+                        <button id="vote-for"
+                            class="stake-button selected vote left">Vote for</button>
+                        <button id="vote-against" class="stake-button vote right">Vote against</button>
                     </div>
 
-                    <button class="wallet-necessary transaction-button bottom" id="vote-for-button"
-                        style="display:none">
-                        <i class="spin" data-feather="refresh-cw"
-                            style="margin-right: 5px; display: none; vertical-align: middle"></i>
-                        <i class="chevron" style="vertical-align: middle" data-feather="chevron-right"></i>
-                        <i class="warning" data-feather="alert-circle"
-                            style="margin-right: 5px; display: none; vertical-align: middle;"></i>
-                        <b class="button-text" style="vertical-align: middle;">VOTE</b> <b class="button-warning"
-                            style="display:none">CONNECT
-                            WALLET</b> <b class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
-                    </button>
-                    <button class="wallet-necessary transaction-button bottom" id="vote-against-button">
+                    <div class="warning-box" id="warning-vote" style="display: none; margin-bottom: 20px; text-align: center; cursor: auto">
+                        <p class="paragraph-2" id="warning-vote-text">You have voted against this proposal.</p>
+                    </div>
+
+                    <button class="wallet-necessary transaction-button bottom" id="vote-button">
                         <i class="spin" data-feather="refresh-cw"
                             style="margin-right: 5px; display: none; vertical-align: middle"></i>
                         <i class="chevron" style="vertical-align: middle" data-feather="chevron-right"></i>
@@ -196,8 +189,8 @@
             navbarContainer.classList.toggle('scrolled', window.scrollY > 0);
         });
     </script>
-    <script src="dist/main.js"></script>
-    <script src="dist/784.main.js"></script>
+    <script src="dist/main.js?v=1.0.3"></script>
+    <script src="dist/784.main.js?v=1.0.3"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 </body>
 

@@ -1,75 +1,688 @@
 import { RadixDappToolkit, DataRequestBuilder, RadixNetwork } from '@radixdlt/radix-dapp-toolkit'
 import * as d3 from 'd3';
 import { Chart, registerables } from 'chart.js';
+import { BehaviorSubject, firstValueFrom, timeout, catchError, of } from 'rxjs';
+import { distinctUntilChanged, filter } from 'rxjs/operators';
 Chart.register(...registerables);
 
 
 // You can create a dApp definition in the dev console at https://stokenet-console.radixdlt.com/dapp-metadata 
 // then use that account for your dAppId
 
-const dAppId = 'account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd'
-let stabIdAddress = "resource_tdx_2_1ngnptx4ly75dwcv2knf6cp957qfjjprsz90kc8qmqh4ttamj4a2as3" //still need
-let componentAddress = "component_tdx_2_1cq9z3rpmt2vruwkqault43q640pshekt32tndn0dzkfrrwujhlhfgr"
-let stabComponentAddress = "component_tdx_2_1czdep00tnsy9js8atnc6u3v472nxgjmk5j6prtzfw56ttz9fdk9a8n"
-let poolComponentAddress = "component_tdx_2_1cqugvczcd8fpy84t3dn6rp799k37akrfzedarwxmdhfs5azhkyzefl"
-let poolAddress = "pool_tdx_2_1ckcazvgthuenzzgmg57ypu5np60n4z53gcfwgj97dzzzwk080zvyj7"
-let stabAddress = "resource_tdx_2_1t5tj80eezjkzeetr6y949u0zncef802n3nj89ufa9qudfuup48vfta"
-let cdpAddress = "resource_tdx_2_1n2w8fs9w8h2my3gk4ew9md27lsk9zqwfu3glh0gu2a9vfqza6v5f5f"
-let ctrlBadgeAddress = "resource_tdx_2_1t5nf9gq7gv4xu454dt7f2h8xvklq7kh4nastnvs3cheq9zjn3xm8lv"
+const DEFAULT_ADDRESS = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec";
+let accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec";
+
+let accountAddressForDeployment = "account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd"
+
+let hashToStore = "2e7eaac1752cb1971a01d876caef6c85b38654e4cbca547c0e690cdce44052d9"
+let storageKvs = "internal_keyvaluestore_tdx_2_1kpe22yzcpgxaxxk6nmcvyfut9lysj5lwttkdjstmz5a4uwfuyrxhc8"
+let storageComponent = "component_tdx_2_1cpd8dr5lza00jyk28npcu9qknn4j7ug26nmnhzwtsa6qhmr99enex6"
 let xrdAddress = "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc"
-let ilisAddress = "resource_tdx_2_1t4tsw7n2d0yfs27myw7x5khx00an2lwnvdsj9tyhkv3l8xvgn7mxdc" //still need
-let lpAddress = "resource_tdx_2_1th4dw07e73vrshnxpfjld740499unfdwwsdwqayp8n4qdm57ckc8h2"
-let liqAddress = "resource_tdx_2_1ntxtn0eemtwj0n5d2yjga4xtx7q3m8mspawt2c3j0t8dnypjtygv7n"
-let markerAddress = "resource_tdx_2_1n2yuvhnnl3sp8wmysvue3xfenh32zz23y45472m82vrzpps09y8pwg"
-let stakingAddress = "component_tdx_2_1cp3k6zm5xqgx0wcf0qtcndjzlxvpusdfpm4eq4838wuswn5h66j8px" // still need
-let accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec"
-let stakesKvs = "internal_keyvaluestore_tdx_2_1kzphr34g06wgtygn5eppvtavyt4qptp4xn9y0uzwgdesh324zrl7yu" // still need
-let collateralsKvs = "internal_keyvaluestore_tdx_2_1kp7gpwzhudc5xe96999ndnxyymzpcadwu78uanug2ses7wjq8qrmpf"
+let ilisAddress = "resource_tdx_2_1tk9urmuml7vfl6j5e30dtglex85wzz07pq3gdmkpdd7nypr0x2k4mh"
+let ilisCtrlBadgeAddress = "resource_tdx_2_1t4qmpev6pnjy2t76j7ydgfq3ay2xznnq5gr3yzmmzyj8xqwqf767xm"
+let ociDappDef = "account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd"
+let morpherComponentAddress = "component_tdx_2_1cryq46xl9jxej3v8dr6q0lpnzhs4knlg6x2en6gynahghxztdvdp74"
+let incentiveInterval = 1
+let bootstrapLength = 1
+
+let daoPackageAddress = "package_tdx_2_1p5fz3534hxypv4ftn2cun8r73ly5ugkxmyzf3qk8hesp3du24evc6h"
+
+let daoAddress = "component_tdx_2_1czr9gmaeqvtqae38kehdxu40y3j6fc643fdx7p9a7f0fc6q3sfyztn"
+let dAppIdDao = "account_tdx_2_1c8fadvp43lzn3t7cd07ln9j68wy0g3nu7xvsqdtq54497fruvyck7a"
+let accountLocker = "locker_tdx_2_1dzhsa0t4ptjgtyh8f6hned402duc05wjzsf0jvr725ujj7kzdgn5qp"
+let lbpComponentAddress = "component_tdx_2_1crra5tzyk2sqlg59l9wmda4x0xfxh90kgqka3mkdcsep989ftx9s5r"
+let lbpPoolAddress = "pool_tdx_2_1c5ka5ylujulqszv3c7u5axmpkcexxth4wh5ppwma8wvg4ftl9dnlzs"
+let stakingAddress = "component_tdx_2_1czakxq5ta95rry2n2pz927plfrvqn55c588qrnzyprhaw86zlsmq2q"
+let ilisPool = "pool_tdx_2_1cs8tnqvckummqujsnd6q8lx42qepcz67rwtzh8dq6v6wsf9nzsu7e5"
+let incentiveAddress = "component_tdx_2_1cr6pkmtvm2rdu86f5evshse3exxv366yexwqgfk4t06qdzp26awcn4"
+let governanceAddress = "component_tdx_2_1cpjdug2zrfpkeq0pflnw7eutkn30qvx45lsm4tt6yg0gmpwwx6xms3"
+let reentracyProxy = "component_tdx_2_1cpjdug2zrfpkeq0pflnw7eutkn30qvx45lsm4tt6yg0gmpwwx6xms3"
+let bootBadge = "resource_tdx_2_1thhfctt6xr2nc68c7rtqa0hfl9ws4xeule3j4vumhq0pqp7rtuu46c"
+let lbpPoolUnit = "resource_tdx_2_1th9r866524dwwepwxje5swplagd5gxqhpk4maaax0c3qwgwjyjh4q4"
+let poolIlisAddress = "resource_tdx_2_1tkzzwfgdgnajjc7fccqnq6lpuqrg77e70c9u32yj0f8lvzmly9wyca"
+let membershipIdAddress = "resource_tdx_2_1nt2sflp94mzge2l50qh7p3vxvsd66vwcpjr8nu38dwze67q3ks3yye"
+let membershipTransferAddress = "resource_tdx_2_1nfhksd7ag60e2p8s3w7ah73da7xhml7h6pqvqj0afr3rkk7erqfchk"
+let membershipUnstakeAddress = "resource_tdx_2_1n2w8ynyyjxnqjnt3mf33y9gy9x8qcem38h942dlfryrg90r2rrkyah"
+let incentiveIdAddress = "resource_tdx_2_1nfpq506lwsvfgxc3efa5lwtfhmwwwzvlzhr4d9lesncjyr9nfdxfd7"
+let incentiveTransferAddress = "resource_tdx_2_1nf4cdtflgq5ppddh5japddpm3fdx4tv0j06t7ld4v4c7zecnefy78t"
+let incentiveUnstakeAddress = "resource_tdx_2_1nfvhuyzxcmpky5tget66jtkzwnx4zkvwf97frz6rj54w702cr9z3sz"
+let proposalReceiptAddress = "resource_tdx_2_1nfcsf8shazua0tdeujzn3c2yl2tn07g3yveve7pzkx5p5603rhhnfz"
+
+let stabPackageAddress = "package_tdx_2_1pk60t9hhf25m4t4mrfdy9w6mhgul5jfx2w0k9kuz7mvnhxnz0n3dl7"
+
+let stabComponentAddress = "component_tdx_2_1crgrtkgwfq04l69y5emg9rvgx0y4uz8vd9ufmu3gzjm2tgqjdn356n"
+let ctrlBadgeAddress = "resource_tdx_2_1tkpaqe9t7e3gc2mzqnxsrg08vu5qyxfywm77u8z842s9l32rrajv29"
+let stabAddress = "resource_tdx_2_1tkj84nc5xy7rgrtq3mz6ugxf3ztqk7dpchc0kgs7u07s7ugy7rrytv"
+let cdpAddress = "resource_tdx_2_1ngxn3t4sle965cg4vw3t5mhzz0xayz4dm3vj746d9yaz7dyyc5cdmy"
+let markerAddress = "resource_tdx_2_1nft8duf7sqq75w9cesy7zex6wzm4yg0k5lq5yyjdxqfahh8fa3zegq"
+let liqAddress = "resource_tdx_2_1ngnexzywt0uyujtm3khghfr3rle237n5tyfz8svrk2gkq3xr4vf4f8"
+
+let proxyComponentAddress = "component_tdx_2_1cqgcrncu2edlkwc4ht68w4rmv0gdzwxv00y2d0xvzjygmgnag595r6"
+let dAppIdStab = "account_tdx_2_1c9ng02j7hkyv8t65tdhreh5ukdqf2xpfgrcz72l45x9upks0we92j7"
+let poolComponentAddress = "component_tdx_2_1cpqlrfv4xsnekzwpqgt5f00y5w75jq09qj0stes5nh09chzyywz9cm"
+let poolAddress = "pool_tdx_2_1c4wzvej460zx0yue35nclnkhcnwuhmez6gh5kjqkw6g3j7zq2ayl7a"
+let oracleComponent = "component_tdx_2_1czlqhe5zgr0c3t89l5asxm5z0lyw38qre8avhyca2vrjyzwphjhln6"
+let flashLoansComponent = 'component_tdx_2_1crk6srdg4v4fe32lv8525vrh04h6pjkdp47lc4sxewn8mzjmflcghr'
+let lpAddress = "resource_tdx_2_1t4nw3xcttpq3k3jkzfd0une3etmk7fynd7npugsm2meged27slc3x5"
+let flashLoanReceipt = "resource_tdx_2_1nttv0zur20a4narwgszrxyrksd9n2lkfszwjkggfwl2zsx6g33wg8y"
+let lpAddressForIncentives = xrdAddress
+let selectedResource = lpAddressForIncentives
+
+let lbpKvsHexes = ["5c0a0000000000000000", "5c0a0000000000000001", "5c0a0000000000000002"]
 let xrdKeyHex = "5c805da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6"
-let kvsHexes = ["5c805d78ab93fb11d006a1df76c2f432fc9e7db5f1c5d3931900a25ac8298ce3", "5c805d57077a6a6bc8982bdb23bc6a5ae67bfb357dd3636122ac97b323f39988"]
-const acceptedResources = [["XRD", "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc", "", "images/radix-logo.svg", 1, 'XRD', 0],
+const earliestTimestamp = new Date("2024-10-12T03:04:13.615Z");
+
+let ilisUnlockMultiplier = 2;
+let lbpUnlockMultiplier = 5;
+let lbpLockPayment = 1.001;
+let ilisLockPayment = 1.001;
+let feeLbp = 0.002;
+let initialIlisWeight = 0.99;
+let initialXrdWeight = 0.01;
+
+const acceptedResources = [["XRD", xrdAddress, "", "images/radix-logo.svg", 1, 'XRD', 0],
 ["Hermes LSU", "resource_tdx_2_1th9k30slgu9uekfu42llstgcq80dx8d59hxgexe5hdaqzyp8etc2dv", "validator_tdx_2_1s0l6946a2kx33vjmuuh3qrax3ueauznd2fc3d69md2exx29rcnjmnj", "https://hermesprotocol.io/assets/images/icon.svg", 1, 'LSU', 0],
 ["Radst0kes LSU", "resource_tdx_2_1thutwwmqwk6z4vyju8v0fhdlxdhgj2h7kgc8822cfsdeyjp7e5j3hd", "validator_tdx_2_1sdvnyupyl2atq72f5lsq7lcyw3cc4vnevf05yvtemn5c8fyncvv3xw", "images/radstokes-logo.png", 1, 'LSU', 0]]
+const incentive_resources = [["LPSTAB", "images/lplogo.png", lpAddressForIncentives]]
+
+const addressSubject = new BehaviorSubject(DEFAULT_ADDRESS);
+let latestUpdateId = 0;
+const baseLink = "https://radix-files.vercel.app/";
+let network = RadixNetwork.Stokenet;
+
+let dAppId = dAppIdDao;
+let dAppName = 'ILIS DAO'
+if (window.location.pathname === "/borrow" || window.location.pathname === "/swap" || window.location.pathname === "/manage-loans" || window.location.pathname === "/liquidations") {
+    dAppId = dAppIdStab;
+    dAppName = 'STAB Protocol'
+}
+
+if (window.location.pathname == "/deployment") {
+    dAppId = "account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd"
+    document.getElementById('instantiate-dao').onclick = async function () {
+        let manifest;
+        manifest = `
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${ilisAddress}")
+            Decimal("100000000")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${ilisAddress}")
+            Bucket("ilis")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${ilisCtrlBadgeAddress}")
+            Decimal("9")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${ilisCtrlBadgeAddress}")
+            Bucket("admin_badge")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${xrdAddress}")
+            Decimal("50000")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${xrdAddress}")
+            Bucket("bootstrap_xrd")
+            ;
+
+            CALL_FUNCTION
+            Address("${daoPackageAddress}")
+            "Dao"
+            "instantiate_dao"
+            Bucket("ilis")
+            Decimal("0.18")
+            Decimal("0.08")
+            Decimal("0.1")
+            Decimal("0.1")
+            Bucket("admin_badge")
+            "ILIS DAO"
+            "ILIS"
+            Bucket("bootstrap_xrd")
+            Address("${ociDappDef}")
+            true
+            ${bootstrapLength}i64
+            Decimal("1000")
+            ${incentiveInterval}i64
+            "https://ilikeitstable.com"
+            "https://ilikeitstable.com/images/proposal.png"
+            "https://ilikeitstable.com/images/staking-id.png"
+            "https://ilikeitstable.com/images/transfer.png"
+            "https://ilikeitstable.com/images/unstake.png"
+            "https://ilikeitstable.com/images/ilislogo.png"
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('change-ilis-metadata').onclick = async function () {
+        let manifest;
+        manifest = `
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "create_proof_of_amount"
+            Address("${ilisCtrlBadgeAddress}")
+            Decimal("1")
+            ;
+
+            SET_METADATA
+            Address("${ilisAddress}")
+            "stake_component"
+            Enum<8u8>(
+                Address("${stakingAddress}")
+            )
+            ;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('deposit-admin-badges-into-governance').onclick = async function () {
+        let manifest;
+        manifest = `
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${ilisCtrlBadgeAddress}")
+            Decimal("1")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${ilisCtrlBadgeAddress}")
+            Bucket("admin_badge")
+            ;
+
+            CALL_METHOD
+            Address("${governanceAddress}")
+            "put_tokens"
+            Bucket("admin_badge")
+;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('instantiate-stab-protocol').onclick = async function () {
+        let manifest;
+        manifest = `
+            CALL_FUNCTION
+            Address("${stabPackageAddress}")
+            "Stabilis"
+            "instantiate"
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+            ;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('instantiate-stab-protocol-after').onclick = async function () {
+        let manifest;
+        manifest = `
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "create_proof_of_amount"
+            Address("${ctrlBadgeAddress}")
+            Decimal("0.75")
+            ;
+
+            CALL_METHOD
+            Address("${stabComponentAddress}")
+            "add_collateral"
+            Address("${xrdAddress}")
+            Decimal("1.5")
+            Decimal("0.15")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${xrdAddress}")
+            Decimal("1000")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${xrdAddress}")
+            Bucket("xrd_bucket")
+            ;
+
+            CALL_METHOD
+            Address("${stabComponentAddress}")
+            "open_cdp"
+            Bucket("xrd_bucket")
+            Decimal("1")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+            ;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('instantiate-proxy').onclick = async function () {
+        let manifest;
+        manifest = `
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${xrdAddress}")
+            Decimal("75")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${xrdAddress}")
+            Bucket("xrd")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${stabAddress}")
+            Decimal("1")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${stabAddress}")
+            Bucket("stab")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${ctrlBadgeAddress}")
+            Decimal("9")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${ctrlBadgeAddress}")
+            Bucket("admin_badge")
+            ;
+
+            CALL_FUNCTION
+            Address("${stabPackageAddress}")
+            "Proxy"
+            "new"
+            Bucket("xrd")
+            Bucket("stab")
+            Bucket("admin_badge")
+            Enum<1u8>(
+                Enum<2u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                    Enum<1u8>(
+                        Address("${ilisCtrlBadgeAddress}")
+                    )
+                    )
+                )
+                )
+            )
+            Address("${morpherComponentAddress}")
+            Address("${cdpAddress}")
+            Address("${markerAddress}")
+            Address("${stabComponentAddress}")
+            Address("${ilisAddress}")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+            ;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('after-proxy-instantiation').onclick = async function () {
+        let manifest;
+        manifest = `
+           CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "create_proof_of_amount"
+            Address("${ctrlBadgeAddress}")
+            Decimal("0.75")
+            ;
+
+            CALL_METHOD
+            Address("${stabComponentAddress}")
+            "set_stops"
+            false
+            true
+            false
+            false
+            false
+            ;
+
+            SET_METADATA
+            Address("${lpAddress}")
+            "icon_url"
+            Enum<13u8>(
+                "https://ilikeitstable.com/images/lplogo.png"
+            )
+            ;
+
+            SET_METADATA
+            Address("${lpAddress}")
+            "stake_component"
+            Enum<8u8>(
+                Address("${incentiveAddress}")
+            )
+            ;
+
+            SET_METADATA
+            Address("${stabComponentAddress}")
+            "dapp_definition"
+            Enum<8u8>(
+                Address("${dAppIdStab}")
+            )
+            ;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('add-proposal-and-vote').onclick = async function () {
+        let manifest;
+        manifest = `
+           CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${ilisAddress}")
+            Decimal("10000")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${ilisAddress}")
+            Bucket("payment_for_proposal")
+            ;
+
+            CALL_METHOD
+            Address("${governanceAddress}")
+            "create_proposal"
+            "Deploy and govern STAB Protocol"
+            "This is the same proposal as the last one you dummy. Just testin here."
+            Enum<1u8>(
+                Array<Tuple>(
+                Tuple(
+                    "${storageKvs}",
+                    Address("${storageComponent}"),
+                    "${hashToStore}"
+                )
+                )
+            )
+            Address("${incentiveAddress}")
+            Address("${ilisCtrlBadgeAddress}")
+            "add_stakable"
+            Tuple(
+                Address("${lpAddress}"),
+                Decimal("200000"),
+                Decimal("1.001"),
+                365i64,
+                Decimal("5")
+            )
+            false
+            false
+            Bucket("payment_for_proposal")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${proposalReceiptAddress}")
+            Bucket("proposal_receipt")
+            ;
+
+            CREATE_PROOF_FROM_BUCKET_OF_ALL
+            Bucket("proposal_receipt")
+            Proof("proposal_proof")
+            ;
+
+            CALL_METHOD
+            Address("${governanceAddress}")
+            "add_proposal_step"
+            Proof("proposal_proof")
+            Address("${daoAddress}")
+            Address("${ilisCtrlBadgeAddress}")
+            "send_tokens"
+            Tuple(
+                Address("${ilisAddress}"),
+                Enum<0u8>(
+                Decimal("100000")
+                ),
+                Address("${proxyComponentAddress}"),
+                "put_reward_in_vault"
+            )
+            false
+            false
+            ;
+
+            CREATE_PROOF_FROM_BUCKET_OF_ALL
+            Bucket("proposal_receipt")
+            Proof("proposal_proof_2")
+            ;
+
+            CALL_METHOD
+            Address("${governanceAddress}")
+            "add_proposal_step"
+            Proof("proposal_proof_2")
+            Address("${governanceAddress}")
+            Address("${ilisCtrlBadgeAddress}")
+            "set_parameters"
+            Tuple(
+                Decimal("10000"),
+                7i64,
+                Decimal("10000"),
+                Decimal("0.5"),
+                7i64
+            )
+            false
+            true
+            ;
+
+            CREATE_PROOF_FROM_BUCKET_OF_ALL
+            Bucket("proposal_receipt")
+            Proof("proposal_proof_3")
+            ;
+
+            CALL_METHOD
+            Address("${governanceAddress}")
+            "submit_proposal"
+            Proof("proposal_proof_3")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "create_proof_of_non_fungibles"
+            Address("${membershipIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("#1#")
+            )
+            ;
+
+            POP_FROM_AUTH_ZONE
+            Proof("member_id_proof")
+            ;
+
+            CALL_METHOD
+            Address("${governanceAddress}")
+            "vote_on_proposal"
+            0u64
+            true
+            Proof("member_id_proof")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "deposit"
+            Bucket("proposal_receipt")
+            ;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('start-bootstrap').onclick = async function () {
+        let manifest;
+        manifest = `
+            CALL_METHOD
+            Address("${lbpComponentAddress}")
+            "start_bootstrap"
+            ;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+}
+
+
 let selectedText;
 let xrdPrice;
 let interestRate;
 let stab_ids = [];
 let cdp_ids = [];
 let marker_ids = [];
-let cdpIds;
-let cdpWaitingAmount;
-let cdpWaitingIds;
-let lpAmountId;
-let lpWaitingAmount;
-let ilisAmountId;
-let ilisWaitingAmount;
-let nextClaim;
-let currentPeriod;
+let incentive_ids = [];
+let incentive_unstake_receipts = [];
+let membership_unstake_receipts = [];
+let currentIncentivePeriod;
 let stabXrdRatio;
 let internalPrice;
 let validatorMultiplier;
 let walletIlis;
+let walletResource;
 let walletXrd;
 let walletLp;
 let walletStab;
-let balance;
 let formattedWallet;
-let formattedRemoveLp;
-let formattedProvideStab;
 let xrdPoolAmount;
 let stabPoolAmount;
 let fee = 0.001;
 let sell = true;
+let stake = true;
+let lock = true;
+let lbpSell = true;
 let idSupplied = false;
-let stakeRewards;
-let lpRewards;
 let status;
 let resourceAddress;
 let debtAmount;
-let parentAddress;
 let collateralAmount;
 let cr;
-let markedId;
 let markedTime;
 let markerUsed;
 let markerDate;
@@ -78,9 +691,6 @@ let availableCollateral;
 let selectedCdp;
 let selectedId;
 let selectedMarker;
-let weekAgoXrdPrice;
-let weekAgoStabPrice;
-let weekAgoLpPrice;
 let mintAmount;
 let markerUsable = false;
 let upToDateCr;
@@ -97,9 +707,120 @@ let addingDebt = false;
 let realInputDebt;
 let realInputCol;
 let cantLiqWithSkips;
-
+let ilisLbpPoolAmount;
+let xrdLbpPoolAmount;
+let ilisWeight;
+let xrdWeight;
+let lbpProgress;
+let nowLbpTime;
+let lbpLength;
+let lbpDuration;
+let lbpStartTime;
+let ledgerData;
 let resourceAddresses = []
 let validatorAddresses = []
+let votingUntil;
+let lockedUntil;
+let ilisUndelegatingUntil;
+let ilisDelegatingTo;
+let amountStaked;
+let poolIlisDelegatedToMe;
+let poolMultiplier;
+let totalInUnstaking = 0;
+let totalReadyToUnstake = 0;
+let idsReadyToUnstake = [];
+let maxLockDaysFloor;
+let maxUnlockDaysCeil;
+let lockNow;
+let currentRequiredPayment;
+let claimablePeriods = 0;
+let vote = true;
+let maxProposals = 0;
+let proposalsKvs;
+let proposalToView = -1;
+let quorum;
+let parentAddress;
+let stakingAmount;
+let collateralsKvs;
+let lbpEnded = false;
+let realChart;
+
+function resizeChart() {
+    const chartContainer = document.getElementById('chartContainer');
+    chartContainer.style.height = '50vh';
+    realChart.resize();
+}
+
+function generateKey(value) {
+    // Ensure the value is treated as a BigInt
+    const bigIntValue = BigInt(value);
+    
+    // Convert to hex, remove '0x' prefix, pad to 16 characters
+    let hexValue = bigIntValue.toString(16).padStart(16, '0');
+    
+    // Reverse byte order (little-endian)
+    let littleEndian = '';
+    for (let i = 14; i >= 0; i -= 2) {
+        littleEndian += hexValue.substr(i, 2);
+    }
+    
+    // Prepend the prefix
+    return `5c0a${littleEndian}`;
+}
+
+function generateDownloadLinks(files, baseLink) {
+    return files.map(file => {
+      const kvsAddress = file.fields.find(field => field.field_name === 'kvs_address').value;
+      const fileHash = file.fields.find(field => field.field_name === 'file_hash').value;
+      return `${baseLink}file/${kvsAddress}/${fileHash}`;
+    });
+  }
+  
+  function displayAttachmentLinks(links) {
+    const attachmentsElement = document.getElementById('attachments');
+    attachmentsElement.innerHTML = ''; // Clear any existing content
+  
+    const maxLinks = Math.min(links.length, 10); // Display max 10 links
+  
+    for (let i = 0; i < maxLinks; i++) {
+      if (i > 0) {
+        attachmentsElement.appendChild(document.createTextNode(', '));
+      }
+  
+      const link = document.createElement('a');
+      link.href = links[i];
+      link.textContent = `[${i + 1}]`;
+      link.style.color = '#00a3cc'; // Style to match your existing links
+      link.style.textDecoration = 'none';
+      link.target = '_blank'; // Open in new tab
+  
+      attachmentsElement.appendChild(link);
+    }
+  
+    if (links.length > 10) {
+      attachmentsElement.appendChild(document.createTextNode(', ...'));
+    }
+  }
+
+function createStyledDownloadLink(data, filename) {
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename || 'data.json';
+    link.textContent = 'download .json';
+    link.target = '_blank';
+    link.style.color = '#00a3cc';
+    link.style.textDecoration = 'none'; // Add this if you want to remove the underline
+    
+    link.addEventListener('click', (e) => {
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+    });
+    
+    return link;
+}
 
 var inputs = document.querySelectorAll('.decimal-only');
 
@@ -161,7 +882,38 @@ function updateSliderBackground(slider) {
     const percentage = (value - slider.min) / (slider.max - slider.min) * 100;
     // Update the slider background style
     slider.style.background = `linear-gradient(to right, #1BA9A0 0%, #2B6CCC ${percentage}%, #f2f2f2 ${percentage}%)`;
+    if (slider.min == slider.max) {
+        slider.style.background = "#f2f2f2";
+    }
 }
+
+function dateToUnix(dateString) {
+    // Create a new Date object from the input date string
+    const date = new Date(dateString);
+    
+    // Get the Unix time in milliseconds, then convert it to seconds
+    const unixTimeInSeconds = Math.floor(date.getTime() / 1000);
+    
+    return unixTimeInSeconds;
+  }
+
+  function unixToDate(unixTimeInSeconds) {
+    // Convert seconds to milliseconds
+    const date = new Date(unixTimeInSeconds * 1000);
+    return date.toLocaleString();  // Returns the date in a human-readable format
+  }
+
+  function getRequiredPayment(payment, multiplier, duration, stakedAmount) {
+    var requiredPayment = (multiplier * (payment**(duration) * stakedAmount - (stakedAmount)));
+
+    if (requiredPayment > walletIlis && lock == false) {
+        document.getElementById('ilis-reward').style.color = "red";
+    } else {
+        document.getElementById('ilis-reward').style.color = "";
+    }
+
+    return requiredPayment;
+  }
 
 function toastMe(txId, action, kind) {
     if (kind === 1) {
@@ -262,6 +1014,31 @@ function setSwapButton() {
     } else if (sell == true && parseFloat(document.getElementById('amount-sell').value) > walletXrd) {
         enable = false;
     } else if (sell == false && parseFloat(document.getElementById('amount-sell').value) > walletStab) {
+        enable = false;
+    } else if (document.getElementById('amount-sell').value == '') {
+        enable = false;
+    } else if (parseFloat(document.getElementById('amount-sell').value) == 0) {
+        enable = false;
+    }
+
+    if (enable) {
+        document.getElementById('swap-warning').style.display = 'none';
+        swapButton.style.backgroundColor = "";
+        swapButton.disabled = false;
+    } else {
+        swapButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        swapButton.disabled = true;
+    }
+}
+
+function setLbpSwapButton() {
+    var swapButton = document.getElementById('sell');
+    var enable = true;
+    if (isConnected == false) {
+        enable = false;
+    } else if (sell == true && parseFloat(document.getElementById('amount-sell').value) > walletXrd) {
+        enable = false;
+    } else if (sell == false && parseFloat(document.getElementById('amount-sell').value) > walletIlis) {
         enable = false;
     } else if (document.getElementById('amount-sell').value == '') {
         enable = false;
@@ -682,6 +1459,182 @@ function setNoMarkLiqButton() {
     }
 }
 
+function setStakeButton() {
+    var stakeButton = document.getElementById('add-stake-button');
+    var unstakeButton = document.getElementById('remove-stake-button');
+    var enableButton = true;
+    var enableInput = true;
+    if (isConnected == false) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (selectedId == undefined) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (document.getElementById('amount-to-stake').value == '' || parseFloat(document.getElementById('amount-to-stake').value) == 0) {
+        enableButton = false;
+    }
+    if (walletIlis == 0 && stake == true && window.location.pathname == "/membership") {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (walletResource == 0 && stake == true && window.location.pathname == "/incentives") {
+        enableButton = false;
+        enableInput = false;
+    }
+    if ((amountStaked == 0 || amountStaked == undefined) && stake == false) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (stake == false && lockedUntil > nowLbpTime) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (stake == false && votingUntil > nowLbpTime && window.location.pathname == "/membership") {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (enableButton) {
+        stakeButton.style.backgroundColor = "";
+        stakeButton.disabled = false;
+        unstakeButton.style.backgroundColor = "";
+        unstakeButton.disabled = false;
+    } else {
+        stakeButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        stakeButton.disabled = true;
+        unstakeButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        unstakeButton.disabled = true;
+    }
+    if (enableInput) {
+        document.getElementById('slider-stake').disabled = false;
+        document.getElementById('amount-to-stake').disabled = false;
+        document.getElementById('max-new-stake').classList.add("clickable");
+        document.getElementById('max-new-stake').disabled = false;
+    } else {
+        document.getElementById('slider-stake').disabled = true;
+        document.getElementById('amount-to-stake').disabled = true;
+        document.getElementById('max-new-stake').classList.remove("clickable");
+        document.getElementById('max-new-stake').disabled = true;
+    }
+}
+
+function setLockButton() {
+    var lockButton = document.getElementById('add-lock-button');
+    var unlockButton = document.getElementById('remove-lock-button');
+    var enableButton = true;
+    var enableInput = true;
+    if (isConnected == false) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (selectedId == undefined) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (document.getElementById('days-to-lock').value == '' || parseFloat(document.getElementById('days-to-lock').value) == 0) {
+        enableButton = false;
+    }
+    if (walletIlis == 0 && lock == false) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (walletIlis < currentRequiredPayment) {
+        enableButton = false;
+    }
+    if ((amountStaked == 0 || amountStaked == undefined)) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (lock == false && lockNow == 0) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (enableButton) {
+        lockButton.style.backgroundColor = "";
+        lockButton.disabled = false;
+        unlockButton.style.backgroundColor = "";
+        unlockButton.disabled = false;
+    } else {
+        lockButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        lockButton.disabled = true;
+        unlockButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        unlockButton.disabled = true;
+    }
+    if (enableInput) {
+        document.getElementById('slider-lock').disabled = false;
+        document.getElementById('days-to-lock').disabled = false;
+        document.getElementById('max-new-lock').classList.add("clickable");
+        document.getElementById('max-new-lock').disabled = false;
+    } else {
+        document.getElementById('slider-lock').disabled = true;
+        document.getElementById('days-to-lock').disabled = true;
+        document.getElementById('max-new-lock').classList.remove("clickable");
+        document.getElementById('max-new-lock').disabled = true;
+    }
+}
+
+function setNewIdButton() {
+    var newIdButton = document.getElementById('new-id');
+    var enableButton = true;
+    if (isConnected == false) {
+        enableButton = false;
+    }
+    if (enableButton) {
+        newIdButton.style.backgroundColor = "";
+        newIdButton.disabled = false;
+    } else {
+        newIdButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        newIdButton.disabled = true;
+    }
+}
+
+function setUnstakeFinishButton() {
+    var unstakeFinishButton = document.getElementById('claim-unstaked-button');
+    var enableButton = true;
+    console.log("hello");
+    if (isConnected == false) {
+        enableButton = false;
+    }
+    if (totalReadyToUnstake == 0) {
+        enableButton = false;
+    }
+    if (enableButton) {
+        unstakeFinishButton.style.backgroundColor = "";
+        unstakeFinishButton.disabled = false;
+    } else {
+        unstakeFinishButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        unstakeFinishButton.disabled = true;
+    }
+}
+
+function setClaimButton() {
+    if (window.location.pathname == "/incentives") {
+        var claimButton = document.getElementById('claim-periods-button');
+        var enableButton = true;
+        console.log(selectedId);
+        if (isConnected == false) {
+            enableButton = false;
+        }
+        if (totalReadyToUnstake == 0) {
+            enableButton = false;
+        }
+        if (claimablePeriods == 0) {
+            enableButton = false;
+        }
+        if (selectedId == undefined) {
+            enableButton = false;
+        }
+        if (enableButton) {
+            claimButton.style.backgroundColor = "";
+            claimButton.disabled = false;
+        } else {
+            claimButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+            claimButton.disabled = true;
+        }
+    }
+}
+
 function calculateChange() {
     setSwapButton();
     var inputAmount = parseFloat(document.getElementById('amount-sell').value);
@@ -728,6 +1681,86 @@ function calculateChange() {
     }
 }
 
+function getWeights() {
+    lbpProgress = (nowLbpTime - lbpStartTime) / lbpDuration;
+    if (lbpProgress > 1) {
+        lbpProgress = 1;
+    }
+    ilisWeight = initialIlisWeight + (0.5 - initialIlisWeight) * lbpProgress;
+    xrdWeight = initialXrdWeight + (0.5 - initialXrdWeight) * lbpProgress;
+}
+
+function calculateLbpChange() {
+    getWeights();
+    if (lbpEnded == false) {
+        setLbpSwapButton();
+        var inputAmount = parseFloat(document.getElementById('amount-sell').value);
+        var parsedIlisPoolAmount = parseFloat(ilisLbpPoolAmount);
+        var parsedXrdPoolAmount = parseFloat(xrdLbpPoolAmount);
+        var percentage = document.getElementById('percentage-change');
+        let swapReceive = document.getElementById('amount-receive');
+        if (isNaN(inputAmount)) {
+            inputAmount = 0;
+        }
+        if (lbpSell == true) {
+            let outputAmount = (parsedIlisPoolAmount * (1 - feeLbp) * inputAmount * xrdWeight)
+                / (parsedXrdPoolAmount * ilisWeight + inputAmount * xrdWeight * (1 - feeLbp));
+            swapReceive.value = outputAmount;
+            var newparsedXrdPoolAmount = parsedXrdPoolAmount + inputAmount;
+            var newparsedIlisPoolAmount = parsedIlisPoolAmount - outputAmount;
+            var percentageChange = ((((newparsedXrdPoolAmount / newparsedIlisPoolAmount) - (parsedXrdPoolAmount / parsedIlisPoolAmount)) / (parsedXrdPoolAmount / parsedIlisPoolAmount))) * 100;
+            var idealRatio = internalPrice / xrdPrice;
+            percentage.style.color = "green";
+            document.getElementById('percentage-change').childNodes[0].nodeValue = "+" + percentageChange.toFixed(2) + "%";
+        } else {
+            console.log("buy side");
+            let outputAmount = (parsedXrdPoolAmount * (1 - feeLbp) * inputAmount * ilisWeight)
+                / (parsedIlisPoolAmount * xrdWeight + inputAmount * ilisWeight * (1 - feeLbp));
+            swapReceive.value = outputAmount;
+            var newparsedXrdPoolAmount = parseFloat(parsedXrdPoolAmount) - outputAmount;
+            var newparsedIlisPoolAmount = parseFloat(parsedIlisPoolAmount) + inputAmount;
+            var percentageChange = ((((newparsedIlisPoolAmount / newparsedXrdPoolAmount) - (parsedIlisPoolAmount / parsedXrdPoolAmount)) / (parsedIlisPoolAmount / parsedXrdPoolAmount))) * 100;
+            var idealRatio = internalPrice / xrdPrice;
+            percentage.style.color = "red";
+            document.getElementById('percentage-change').childNodes[0].nodeValue = "+" + percentageChange.toFixed(2) + "%";
+        }
+    } else {
+        document.getElementById('swap-widget').style.display = "none";
+        document.getElementById('lbp-status').style.display = "block";
+        document.getElementById('lbp-end-text').style.display = "block";
+    }
+}
+
+function parseLbpLedger(response) {
+    // Check if the response has the expected structure
+    if (!response.entries || !response.entries[0] || !response.entries[0].value || !response.entries[0].value.programmatic_json) {
+        console.error('Unexpected API response structure');
+        return [];
+    }
+
+    const elements = response.entries[0].value.programmatic_json.elements;
+
+    // Map each element to the desired format
+    return elements.map(element => {
+        if (element.fields && element.fields.length === 2) {
+            const [firstField, secondField] = element.fields;
+            
+            if (secondField.fields && secondField.fields.length === 2) {
+                return [
+                    parseFloat(firstField.value),
+                    [
+                        parseFloat(secondField.fields[0].value),
+                        parseFloat(secondField.fields[1].value)
+                    ]
+                ];
+            }
+        }
+        
+        console.error('Unexpected element structure', element);
+        return null;
+    }).filter(item => item !== null); // Remove any null items if parsing failed
+}
+
 async function checkMarking(amount) {
     // URL to get the gateway status
     const statusUrl = "https://stokenet.radixdlt.com/status/gateway-status";
@@ -759,7 +1792,7 @@ async function checkMarking(amount) {
         // Repeat the specified part of the manifest
         const repeatManifest = `
             CALL_METHOD
-                Address("${componentAddress}")
+                Address("${proxyComponentAddress}")
                 "mark_for_liquidation"
                 Address("resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc")
                 ;
@@ -872,7 +1905,7 @@ async function checkLiquidation(toSkip) {
             Bucket("stab");
 
         CALL_METHOD
-            Address("${componentAddress}")
+            Address("${proxyComponentAddress}")
             "liquidate_position_without_marker"
             Bucket("stab")
             true
@@ -997,69 +2030,772 @@ async function checkLiquidation(toSkip) {
     }
 }
 
+function extractErrorMessage(errorString) {
+    const regex = /PanicMessage\("([^@]+)@/;
+    const match = errorString.match(regex);
+    if (match && match[1]) {
+        return match[1].trim();
+    }
+    return "Unknown error";
+}
+
+async function checkVoting() {
+    var voteButton = document.getElementById('vote-button');
+
+    if (isConnected == false) {
+        voteButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        voteButton.disabled = true;
+        return;
+    }
+    if (selectedId == undefined) {
+        voteButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        voteButton.disabled = true;
+        return;
+    }
+    // URL to get the gateway status
+    const statusUrl = "https://stokenet.radixdlt.com/status/gateway-status";
+
+    const headers = {
+        "Content-Type": "application/json"
+    };
+
+    try {
+        // Fetch the gateway status to get the current epoch
+        const statusResponse = await fetch(statusUrl, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({}) // Sending an empty body
+        });
+        const statusData = await statusResponse.json();
+
+        // Extract the current epoch
+        const currentEpoch = statusData.ledger_state.epoch;
+        const startEpochInclusive = currentEpoch;
+        const endEpochExclusive = currentEpoch + 2;
+
+        // URL to send the POST request to
+        const url = "https://stokenet.radixdlt.com/transaction/preview";
+
+        // Base manifest string
+        
+        let manifestString = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${membershipIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+            ;
+
+            POP_FROM_AUTH_ZONE
+            Proof("id_proof")
+            ;
+
+            CALL_METHOD
+            Address("${governanceAddress}")
+            "vote_on_proposal"
+            ${proposalToView}u64
+            ${vote}
+            Proof("id_proof")
+            ;
+        `;
+
+        // JSON payload
+        const payload = {
+            "manifest": manifestString,
+            "start_epoch_inclusive": startEpochInclusive,
+            "end_epoch_exclusive": endEpochExclusive,
+            "tip_percentage": 0,
+            "nonce": 1,
+            "signer_public_keys": [
+                {
+                    "key_type": "EcdsaSecp256k1",
+                    "key_hex": "0305684de356f5126befda977935827f6f74ca3b7865cd8516ca72ef7afc8c0e06"
+                }
+            ],
+            "flags": {
+                "use_free_credit": true,
+                "assume_all_signature_proofs": true,
+                "skip_epoch_check": true,
+                "disable_auth_checks": false,
+            }
+        };
+
+        // Send the POST request
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload)
+        });
+
+        // Parse and save the response to a variable
+        const responseData = await response.json();
+        console.log("let's go");
+        console.log(responseData);
+        if (responseData.receipt.status != "Succeeded") {
+            var errorMessage = extractErrorMessage(responseData.receipt.error_message);
+            console.log(errorMessage);
+            document.getElementById('warning-vote-text').textContent = errorMessage;
+            document.getElementById('warning-vote').style.display = 'block';
+            voteButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+            voteButton.disabled = true;
+        } else {
+            document.getElementById('warning-vote').style.display = 'none';
+            voteButton.style.backgroundColor = "";
+            voteButton.disabled = false;
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        throw error;
+    }
+}
+
 async function update_id() {
-    if (window.location.pathname === '/incentives') {
+    if (window.location.pathname === '/membership') {
         let request = {
-            "resource_address": stabIdAddress,
+            "resource_address": membershipIdAddress,
             "non_fungible_ids": [selectedId],
         };
-        if (selectedId === undefined) {
-            return;
-        }
-
-        await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(request)
-        })
+        if (selectedId != undefined) {
+            document.getElementById('warning-message-id-select').style.display = 'none';
+            await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request)
+            })
             .then(response => response.json())
             .then(data => {
-                lpAmountId = data.non_fungible_ids[0].data.programmatic_json.fields[0].elements[1].value;
-                lpWaitingAmount = data.non_fungible_ids[0].data.programmatic_json.fields[1].elements[1].value;
-                nextClaim = data.non_fungible_ids[0].data.programmatic_json.fields[2].value;
-                ilisAmountId = data.non_fungible_ids[0].data.programmatic_json.fields[0].elements[0].value;
-                ilisWaitingAmount = data.non_fungible_ids[0].data.programmatic_json.fields[1].elements[0].value;
+                console.log(data);
+                amountStaked = data.non_fungible_ids[0].data.programmatic_json.fields[0].value;
+                document.getElementById('staked-ilis').textContent = (amountStaked * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 });
+                poolIlisDelegatedToMe = data.non_fungible_ids[0].data.programmatic_json.fields[1].value;
+                var lockedUntilOption = data.non_fungible_ids[0].data.programmatic_json.fields[3].variant_name;
+                if (lockedUntilOption == "Some") {
+                    lockedUntil = data.non_fungible_ids[0].data.programmatic_json.fields[3].fields[0].value;
+                    if (lockedUntil > nowLbpTime) {
+                        document.getElementById('locked-until').textContent = new Date(lockedUntil * 1000).toLocaleString();
+                    } else {
+                        document.getElementById('locked-until').textContent = "Not locked";
+                    }
+                } else {
+                    document.getElementById('locked-until').textContent = "Not locked";
+                    lockedUntil = nowLbpTime;
+                }
+                var votingUntilOption = data.non_fungible_ids[0].data.programmatic_json.fields[4].variant_name;
+                if (votingUntilOption == "Some") {
+                    votingUntil = data.non_fungible_ids[0].data.programmatic_json.fields[4].fields[0].value;
+                    if (votingUntil > nowLbpTime) {
+                        document.getElementById('voting-until').textContent = new Date(votingUntil * 1000).toLocaleString();
+                    } else {
+                        document.getElementById('voting-until').textContent = "Not voting";
+                    }
+                } else {
+                    document.getElementById('voting-until').textContent = "Not voting";
+                }
+                var ilisUndelegatingUntilOption = data.non_fungible_ids[0].data.programmatic_json.fields[5].variant_name;
+                if (ilisUndelegatingUntilOption == "Some") {
+                    ilisUndelegatingUntil = data.non_fungible_ids[0].data.programmatic_json.fields[5].fields[0].value;
+                    if (ilisUndelegatingUntil > nowLbpTime) {
+                        document.getElementById('voting-until').textContent = new Date(ilisUndelegatingUntil * 1000).toLocaleString();
+                    }
+                }
+                var ilisDelegatingToOption = data.non_fungible_ids[0].data.programmatic_json.fields[2].variant_name;
+                if (ilisDelegatingToOption == "Some") {
+                    ilisDelegatingTo = data.non_fungible_ids[0].data.programmatic_json.fields[2].fields[0].value;
+                    document.getElementById('voting-until').textContent = "Delegating to " + ilisDelegatingTo;
+                }
             })
             .catch(error => console.error('Error:', error));
 
-        document.getElementById('lpAmountId').textContent = (1 * lpAmountId).toFixed(2) + ` (${(1 * lpWaitingAmount).toFixed(2)})`;
-        document.getElementById('ilisAmountId').textContent = (1 * ilisAmountId).toFixed(2) + ` (${(1 * ilisWaitingAmount).toFixed(2)})`;
-        document.getElementById('nextClaim').textContent = Math.min(currentPeriod - nextClaim + 1, 5);
+            document.getElementById('amount-to-stake').value = 0;
+            document.getElementById('days-to-lock').value = 0;
+            document.getElementById('ilis-reward').textContent = 0;
 
-        let stakeIlisMax = document.getElementById('stake-ilis-amount');
-        let formattedWalletIlis = (Math.floor(walletIlis * 10) / 10).toLocaleString('en-US');
-        stakeIlisMax.textContent = "max. " + formattedWalletIlis;
-        stakeIlisMax.style.cursor = "pointer";
-        stakeIlisMax.addEventListener('click', function () {
-            let inputField = document.getElementById('stake-ilis-field');
-            inputField.value = Math.floor(walletIlis * 10) / 10;
+            if (stake == true) {
+                document.getElementById('max-new-stake').textContent = "Max: " + (parseFloat(walletIlis)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS";
+                document.getElementById('new-stake').textContent = "New stake: " + (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS";
+            } else {
+                document.getElementById('max-new-stake').textContent = "Unstake all";
+                document.getElementById('new-stake').textContent = "New stake: " + (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS";
+            }
+
+            lockNow = Math.max(0, ((lockedUntil - nowLbpTime) / 60 / 60 / 24));
+
+            if (lock == true) {
+                var maxLockDaysSeconds = (nowLbpTime + 365 * 24 * 60 * 60) - lockedUntil;
+                maxLockDaysFloor = Math.floor(maxLockDaysSeconds / (60 * 60 * 24));
+                document.getElementById('max-new-lock').textContent = "Max lock: " + maxLockDaysFloor + " days";
+                document.getElementById('new-lock').textContent = "New lock: " + lockNow.toFixed(2) + " days";
+            } else {
+                var maxUnlockDaysSeconds = lockedUntil - nowLbpTime;
+                maxUnlockDaysCeil = Math.ceil(maxUnlockDaysSeconds / (60 * 60 * 24));
+                document.getElementById('max-new-lock').textContent = "Max unlock: " + maxUnlockDaysCeil + " days";
+                document.getElementById('new-lock').textContent = "New lock: " + lockNow.toFixed(2) + " days";
+            }
+        } else {
+            document.getElementById('warning-message-id-select').style.display = 'block';
+        }
+        let request2 = {
+            "resource_address": membershipUnstakeAddress,
+            "non_fungible_ids": membership_unstake_receipts,
+        };
+
+        totalInUnstaking = 0;
+        totalReadyToUnstake = 0;
+        idsReadyToUnstake = [];
+
+        if (membership_unstake_receipts.length > 0) {
+            await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request2)
+            })
+            .then(response => response.json())
+            .then(data => {
+                totalInUnstaking = 0;
+                totalReadyToUnstake = 0;
+                idsReadyToUnstake = [];
+                data.non_fungible_ids.forEach(receipt => {
+                    if (!receipt.is_burned && receipt.data && receipt.data.programmatic_json) {
+                        const fields = receipt.data.programmatic_json.fields;
+                        const amount = parseFloat(fields[0].value);
+                        const redemptionTime = parseInt(fields[1].value);
+
+                        totalInUnstaking += parseFloat(amount);
+
+                        if (redemptionTime < nowLbpTime) {
+                            totalReadyToUnstake += amount;
+                            idsReadyToUnstake.push(receipt.non_fungible_id);
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        document.getElementById('unstake-ready').textContent = totalReadyToUnstake.toLocaleString('en-US', { maximumFractionDigits: 1 }) +
+                                                                "/" +
+                                                                totalInUnstaking.toLocaleString('en-US', { maximumFractionDigits: 1 });
+        console.log(totalInUnstaking);
+
+        var sliderStake = document.getElementById('slider-stake');
+        var sliderLock = document.getElementById('slider-lock');
+
+        if (stake) {
+            var maxStake = parseFloat(walletIlis);
+            sliderStake.min = 0;
+            sliderStake.max = maxStake;
+            sliderStake.value = 0;
+        } else {
+            var maxUnstake = parseFloat(amountStaked) * poolMultiplier;
+            sliderStake.min = 0;
+            sliderStake.max = maxUnstake;
+            sliderStake.value = 0; // Set the value to the min value
+        }
+
+        if (lock) {
+            var maxLock = maxLockDaysFloor;
+            sliderLock.min = 0;
+            sliderLock.max = maxLock;
+            sliderLock.value = 0;
+        } else {
+            var maxUnlock = maxUnlockDaysCeil;
+            sliderLock.min = 0;
+            sliderLock.max = maxUnlock;
+            sliderLock.value = 0;
+        }
+
+        updateSliderBackground(sliderStake);
+        updateSliderBackground(sliderLock);
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+    }
+}
+
+async function fetchData(address) {
+    const url_fetch_ids = "https://stokenet.radixdlt.com/state/entity/details";
+    const addresses = [address, proxyComponentAddress, poolComponentAddress, stabAddress,
+                        poolAddress, stakingAddress, lbpPoolAddress, lbpComponentAddress,
+                        incentiveAddress, governanceAddress, daoAddress, ilisPool,
+                        poolIlisAddress, stabComponentAddress];
+
+    const requestBody = {
+        "addresses": addresses,
+        "aggregation_level": "Vault",
+        "opt_ins": {
+            "ancestor_identities": false,
+            "component_royalty_vault_balance": false,
+            "package_royalty_vault_balance": false,
+            "non_fungible_include_nfids": true,
+            "explicit_metadata": [
+                "name",
+                "description"
+            ]
+        }
+    };
+
+    if (address !== "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec") {
+        accountAddress = address;
+        if (window.location.pathname !== "/deployment") {
+            restoreButtonLabels();
+        }
+    } else {
+        isConnected = false;
+        walletStab = 0;
+        walletIlis = 0;
+        walletResource = 0;
+        walletXrd = 0;
+        walletLp = 0;
+        selectedCdp = undefined;
+        selectedMarker = undefined;
+        selectedId = undefined;
+        accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec"
+    }
+    stab_ids = []
+    cdp_ids = []
+    marker_ids = []
+    incentive_ids = []
+    membership_unstake_receipts = []
+    incentive_unstake_receipts = []
+    try {
+        // Start both fetch requests
+        /*const fetchPromise1 = fetch(url_kvs, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(params_kvs)
+        });*/
+
+        const fetchPromise2 = fetch(url_fetch_ids, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
         });
-        let stakeLpMax = document.getElementById('stake-lp-amount');
-        let formattedWalletLp = (Math.floor(walletLp * 10) / 10).toLocaleString('en-US');
-        stakeLpMax.textContent = "max. " + formattedWalletLp;
-        stakeLpMax.style.cursor = "pointer";
-        stakeLpMax.addEventListener('click', function () {
-            let inputField = document.getElementById('stake-lp-field');
-            inputField.value = Math.floor(walletLp * 10) / 10;
+
+        // Wait for both fetch requests to complete
+        const [/*response1,*/response2] = await Promise.all([/*fetchPromise1, */fetchPromise2]);
+
+        // Check the status of the responses
+        if (/*!response1.ok || */!response2.ok) {
+            throw new Error(`HTTP error! status: ${response2.status/*change this shit to 1*/}, ${response2.status}`);
+        }
+
+        // Parse the responses as JSON
+        const [/*data1, */data2] = await Promise.all([/*response1.json(), */response2.json()]);
+
+        // Extract the reward_amount values
+        /*const rewardAmounts = data1.entries
+            .map(entry => entry.value.programmatic_json.fields)
+            .flat()
+            .filter(field => field.field_name === 'reward_amount')
+            .map(field => field.value);
+
+        stakeRewards = rewardAmounts[0];
+        lpRewards = rewardAmounts[1];*/
+
+        // Process the second response
+        let sortedItems = [];
+        addresses.forEach(address => {
+            let item = data2.items.find(item => item.address === address);
+            if (item) {
+                sortedItems.push(item);
+            }
         });
-        let unstakeIlisMax = document.getElementById('unstake-ilis-amount');
-        let formattedWalletIlisUnstake = (Math.floor((ilisAmountId + ilisWaitingAmount) * 10) / 10).toLocaleString('en-US');
-        unstakeIlisMax.textContent = "max. " + formattedWalletIlisUnstake;
-        unstakeIlisMax.style.cursor = "pointer";
-        unstakeIlisMax.addEventListener('click', function () {
-            let inputField = document.getElementById('unstake-ilis-field');
-            inputField.value = Math.floor((ilisAmountId + ilisWaitingAmount) * 10) / 10;
+
+        sortedItems.forEach(item => {
+            if (item.non_fungible_resources) {
+                item.non_fungible_resources.items.forEach(nfrItem => {
+                    if (nfrItem.resource_address === membershipIdAddress && nfrItem.vaults) {
+                        nfrItem.vaults.items.forEach(vault => {
+                            stab_ids = stab_ids.concat(vault.items.filter(item => !stab_ids.includes(item)));
+                        });
+                    }
+                    if (nfrItem.resource_address === cdpAddress && nfrItem.vaults) {
+                        nfrItem.vaults.items.forEach(vault => {
+                            cdp_ids = cdp_ids.concat(vault.items.filter(item => !cdp_ids.includes(item)));
+                        });
+                    }
+                    if (nfrItem.resource_address === markerAddress && nfrItem.vaults) {
+                        nfrItem.vaults.items.forEach(vault => {
+                            marker_ids = marker_ids.concat(vault.items.filter(item => !marker_ids.includes(item)));
+                        });
+                    }
+                });
+            }
         });
-        let unstakeLpMax = document.getElementById('unstake-lp-amount');
-        let formattedWalletLpUnstake = (Math.floor((lpAmountId + lpWaitingAmount) * 10) / 10).toLocaleString('en-US');
-        unstakeLpMax.textContent = "max. " + formattedWalletLpUnstake;
-        unstakeLpMax.style.cursor = "pointer";
-        unstakeLpMax.addEventListener('click', function () {
-            let inputField = document.getElementById('unstake-lp-field');
-            inputField.value = Math.floor((lpAmountId + lpWaitingAmount) * 10) / 10;
+
+        if (cdp_ids.length > 0) {
+            // Define the data for the request
+            const requestDataCdp = {
+                "resource_address": cdpAddress,
+                "non_fungible_ids": cdp_ids
+            };
+
+            // Make the API request
+            await fetch('https://stokenet.radixdlt.com/state/non-fungible/data', {
+                method: 'POST', // Specify the HTTP method
+                headers: {
+                    'Content-Type': 'application/json', // Set the content type to JSON
+                },
+                body: JSON.stringify(requestDataCdp), // Convert the data to JSON string
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json(); // Parse the JSON from the response
+                })
+                .then(data => {
+                    sortedItems.push(data.non_fungible_ids); // Write the response data to the console
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error); // Handle any errors
+                });
+        }
+
+        const timeResponse = await fetch('https://stokenet.radixdlt.com/status/gateway-status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            // Include any necessary body data in string format
         });
+        const timeData = await timeResponse.json();
+        nowLbpTime = dateToUnix(timeData.ledger_state.proposer_round_timestamp);
+
+        if (window.location.pathname === '/lbp') {
+            let ledgerKvs = sortedItems[7].details.state.fields[19].value;
+            let ledgerCounter = parseInt(sortedItems[7].details.state.fields[20].value);
+            let kvsHexesToUse;
+
+            if (typeof ledgerCounter === 'number' && ledgerCounter >= 0 && Number.isInteger(ledgerCounter)) {
+                // Take ledgerCounter + 1 hexes, but not more than the total available
+                kvsHexesToUse = lbpKvsHexes.slice(0, Math.min(ledgerCounter + 1, lbpKvsHexes.length));
+            } else {
+                // Handle unexpected ledgerCounter values
+                console.error('Unexpected ledgerCounter value:', ledgerCounter);
+                kvsHexesToUse = [];
+            }
+
+            const ledgerKvsRequest = {
+                "key_value_store_address": ledgerKvs,
+                "keys": [
+                    ...kvsHexesToUse.map(hex => ({ "key_hex": hex })),
+                    {
+                        "key_json": {
+                            "kind": "Tuple",
+                            "fields": [
+                                {
+                                    "kind": "U32",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            };
+
+            const ledgerState = await fetch('https://stokenet.radixdlt.com/state/key-value-store/data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(ledgerKvsRequest)
+            });
+
+            const ledgerStateData = await ledgerState.json();
+            ledgerData = parseLbpLedger(ledgerStateData);
+        }
+        return sortedItems;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function update_governance() {
+    if (window.location.pathname === '/governance') {
+        let request = {
+            "resource_address": membershipIdAddress,
+            "non_fungible_ids": [selectedId],
+        };
+        if (selectedId != undefined) {
+            document.getElementById('warning-message-id-select').style.display = 'none';
+            await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                amountStaked = data.non_fungible_ids[0].data.programmatic_json.fields[0].value;
+                poolIlisDelegatedToMe = data.non_fungible_ids[0].data.programmatic_json.fields[1].value;
+                console.log(amountStaked);
+                console.log(poolIlisDelegatedToMe);
+                document.getElementById('vote-power').textContent = ((parseFloat(amountStaked) + parseFloat(poolIlisDelegatedToMe)) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 });
+                var ilisUndelegatingUntilOption = data.non_fungible_ids[0].data.programmatic_json.fields[5].variant_name;
+                if (ilisUndelegatingUntilOption == "Some") {
+                    ilisUndelegatingUntil = data.non_fungible_ids[0].data.programmatic_json.fields[5].fields[0].value;
+                    if (ilisUndelegatingUntil > nowLbpTime) {
+                        document.getElementById('vote-power').textContent = "Undelegating until " + new Date(ilisUndelegatingUntil * 1000).toLocaleString();
+                    }
+                }
+                var ilisDelegatingToOption = data.non_fungible_ids[0].data.programmatic_json.fields[2].variant_name;
+                if (ilisDelegatingToOption == "Some") {
+                    ilisDelegatingTo = data.non_fungible_ids[0].data.programmatic_json.fields[2].fields[0].value;
+                    document.getElementById('vote-power').textContent = "Delegating to " + ilisDelegatingTo;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+
+        } else {
+            document.getElementById('warning-message-id-select').style.display = 'block';
+        }
+
+        if (maxProposals >= 0) {
+            let request2 = {
+                "key_value_store_address": proposalsKvs,
+                "keys": [
+                {
+                    "key_hex": `${generateKey(proposalToView)}`
+                },
+                {
+                    "key_json": {
+                    "kind": "Tuple",
+                    "fields": [
+                        {
+                        "kind": "U32",
+                        "value": "1"
+                        }
+                    ]
+                    }
+                }
+                ]
+            };
+
+            await fetch("https://stokenet.radixdlt.com/state/key-value-store/data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request2)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                var proposalData = data.entries[0].value.programmatic_json.fields;
+                document.getElementById('proposal-title').textContent = "Proposal #" + proposalToView + ": " + proposalData[0].value;
+                document.getElementById('proposal-description').textContent = proposalData[1].value;
+                var status = proposalData[10].variant_name;
+                document.getElementById('status').textContent = status;
+                document.getElementById('deadline').textContent = new Date(parseInt(proposalData[7].value) * 1000).toLocaleString();
+                var votesFor = proposalData[4].value;
+                var votesAgainst = proposalData[5].value;
+                var totalVotes = parseFloat(votesFor) + parseFloat(votesAgainst);
+                if (status != "Building") {
+                    document.getElementById('votes-for').textContent = parseFloat(votesFor).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " (" + ((votesFor / totalVotes) * 100).toFixed(2) + "%)";
+                    document.getElementById('votes-against').textContent = parseFloat(votesAgainst).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " (" + ((votesAgainst / totalVotes) * 100).toFixed(2) + "%)";
+                } else {
+                    document.getElementById('votes-for').textContent = "-";
+                    document.getElementById('votes-against').textContent = "-";
+                }
+                document.getElementById('quorum').textContent = parseFloat(totalVotes).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " / " + parseFloat(quorum).toLocaleString('en-US', { maximumFractionDigits: 2 });
+            
+                if (proposalData[2].variant_name == "Some") {
+                    const attachmentList = proposalData[2].fields[0].elements;
+                    const downloadLinks = generateDownloadLinks(attachmentList, baseLink);
+                    displayAttachmentLinks(downloadLinks);
+                } else {
+                    document.getElementById('attachments').textContent = "-";
+                }
+
+                // Create download link
+                const downloadLink = createStyledDownloadLink(data, 'proposal_data.json');
+                const specificsElement = document.getElementById('specifics');
+                specificsElement.innerHTML = ''; // Clear any existing content
+                specificsElement.appendChild(downloadLink);
+            })
+            .catch(error => console.error('Error:', error));
+
+            checkVoting();
+        } else {
+            var voteButton = document.getElementById('vote-button');
+            voteButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+            voteButton.disabled = true;
+        }
+    }
+}
+
+async function update_incentives() {
+    if (window.location.pathname === '/incentives') {
+        let request = {
+            "resource_address": incentiveIdAddress,
+            "non_fungible_ids": [selectedId],
+        };
+        if (selectedId != undefined) {
+            document.getElementById('warning-message-id-select').style.display = 'none';
+            await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                const nftData = data.non_fungible_ids[0].data.programmatic_json.fields[0];
+                var nextPeriod = data.non_fungible_ids[0].data.programmatic_json.fields[1].value;
+                claimablePeriods = Math.max(0, currentIncentivePeriod - nextPeriod + 1);
+                const resourceEntry = nftData.entries.find(entry => 
+                    entry.key.value.startsWith(selectedResource)
+                );
+                console.log(resourceEntry);
+                if (resourceEntry) {
+                    amountStaked = resourceEntry.value.fields[0].value;
+                    var lockedUntilOption = resourceEntry.value.fields[1].variant_name;
+                    if (lockedUntilOption == "Some") {
+                        lockedUntil = resourceEntry.value.fields[1].fields[0].value;
+                        if (lockedUntil > nowLbpTime) {
+                            document.getElementById('locked-until').textContent = new Date(lockedUntil * 1000).toLocaleString();
+                        } else {
+                            document.getElementById('locked-until').textContent = "Not locked";
+                        }
+                    } else {
+                        document.getElementById('locked-until').textContent = "Not locked";
+                        lockedUntil = nowLbpTime;
+                }
+                } else {
+                    amountStaked = 0;
+                    document.getElementById('locked-until').textContent = "-";
+                    lockedUntil = nowLbpTime;
+                }
+                document.getElementById('staked').textContent = (amountStaked * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 });
+                document.getElementById('periods-to-claim').textContent = claimablePeriods;
+                
+            })
+            .catch(error => console.error('Error:', error));
+
+            document.getElementById('amount-to-stake').value = 0;
+            document.getElementById('days-to-lock').value = 0;
+            document.getElementById('ilis-reward').textContent = 0;
+
+            if (stake == true) {
+                document.getElementById('max-new-stake').textContent = "Max: " + (parseFloat(walletResource)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " LPSTAB";
+                document.getElementById('new-stake').textContent = "New stake: " + (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " LPSTAB";
+            } else {
+                document.getElementById('max-new-stake').textContent = "Unstake all";
+                document.getElementById('new-stake').textContent = "New stake: " + (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " LPSTAB";
+            }
+
+            lockNow = Math.max(0, ((lockedUntil - nowLbpTime) / 60 / 60 / 24));
+
+            if (lock == true) {
+                var maxLockDaysSeconds = (nowLbpTime + 365 * 24 * 60 * 60) - lockedUntil;
+                maxLockDaysFloor = Math.floor(maxLockDaysSeconds / (60 * 60 * 24));
+                document.getElementById('max-new-lock').textContent = "Max lock: " + maxLockDaysFloor + " days";
+                document.getElementById('new-lock').textContent = "New lock: " + lockNow.toFixed(2) + " days";
+            } else {
+                var maxUnlockDaysSeconds = lockedUntil - nowLbpTime;
+                maxUnlockDaysCeil = Math.ceil(maxUnlockDaysSeconds / (60 * 60 * 24));
+                document.getElementById('max-new-lock').textContent = "Max unlock: " + maxUnlockDaysCeil + " days";
+                document.getElementById('new-lock').textContent = "New lock: " + lockNow.toFixed(2) + " days";
+            }
+        } else {
+            document.getElementById('warning-message-id-select').style.display = 'block';
+        }
+        let request2 = {
+            "resource_address": incentiveUnstakeAddress,
+            "non_fungible_ids": incentive_unstake_receipts,
+        };
+
+        totalInUnstaking = 0;
+        totalReadyToUnstake = 0;
+        idsReadyToUnstake = [];
+
+        if (incentive_unstake_receipts.length > 0) {
+            await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request2)
+            })
+            .then(response => response.json())
+            .then(data => {
+                totalInUnstaking = 0;
+                totalReadyToUnstake = 0;
+                idsReadyToUnstake = [];
+                data.non_fungible_ids.forEach(receipt => {
+                    if (!receipt.is_burned && receipt.data && receipt.data.programmatic_json) {
+                        const fields = receipt.data.programmatic_json.fields;
+                        const amount = parseFloat(fields[1].value);
+                        const redemptionTime = parseInt(fields[2].value);
+
+                        totalInUnstaking += parseFloat(amount);
+
+                        if (redemptionTime < nowLbpTime) {
+                            totalReadyToUnstake += amount;
+                            idsReadyToUnstake.push(receipt.non_fungible_id);
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        document.getElementById('unstake-ready').textContent = totalReadyToUnstake.toLocaleString('en-US', { maximumFractionDigits: 1 }) +
+                                                                "/" +
+                                                                totalInUnstaking.toLocaleString('en-US', { maximumFractionDigits: 1 });
+        console.log(totalInUnstaking);
+
+        var sliderStake = document.getElementById('slider-stake');
+        var sliderLock = document.getElementById('slider-lock');
+
+        if (stake) {
+            var maxStake = parseFloat(walletResource);
+            sliderStake.min = 0;
+            sliderStake.max = maxStake;
+            sliderStake.value = 0;
+        } else {
+            var maxUnstake = parseFloat(amountStaked) * poolMultiplier;
+            sliderStake.min = 0;
+            sliderStake.max = maxUnstake;
+            sliderStake.value = 0; // Set the value to the min value
+        }
+
+        if (lock) {
+            var maxLock = maxLockDaysFloor;
+            sliderLock.min = 0;
+            sliderLock.max = maxLock;
+            sliderLock.value = 0;
+        } else {
+            var maxUnlock = maxUnlockDaysCeil;
+            sliderLock.min = 0;
+            sliderLock.max = maxUnlock;
+            sliderLock.value = 0;
+        }
+
+        updateSliderBackground(sliderStake);
+        updateSliderBackground(sliderLock);
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
     }
 }
 
@@ -1120,9 +2856,13 @@ async function update_liq() {
                     parentAddress = data2.non_fungible_ids[0].data.programmatic_json.fields[1].value;
                     collateralAmount = data2.non_fungible_ids[0].data.programmatic_json.fields[3].value;
                     debtAmount = data2.non_fungible_ids[0].data.programmatic_json.fields[4].value;
-                    cr = data2.non_fungible_ids[0].data.programmatic_json.fields[5].value;
+                    console.log(collateralAmount);
+                    console.log(debtAmount);
+                    console.log(validatorMultiplier);
+                    upToDateCr = getUpToDateCr(collateralAmount, debtAmount, validatorMultiplier);
+                    cr = upToDateCr * 100;
                     status = data2.non_fungible_ids[0].data.programmatic_json.fields[6].variant_name;
-                    collateralName = getResourceName(resourceAddress);
+                    collateralName = getResourceName(resourceAddress);                    
                 } else {
                     parentAddress = "-";
                     collateralAmount = "-";
@@ -1136,7 +2876,7 @@ async function update_liq() {
                 if (collateralName == "XRD") {
                     document.getElementById('collateralAmount').textContent = (1 * collateralAmount).toFixed(2) + " " + collateralName;;
                     document.getElementById('debtAmount').textContent = (1 * debtAmount).toFixed(2) + " STAB";
-                    document.getElementById('cr').textContent = (cr * xrdPrice * 100).toFixed(2) + "%";
+                    document.getElementById('cr').textContent = cr.toFixed(2) + "%";
                 } else if (collateralName == "-") {
                     document.getElementById('collateralAmount').textContent = "";
                     document.getElementById('debtAmount').textContent = "-";
@@ -1145,7 +2885,7 @@ async function update_liq() {
                 } else {
                     document.getElementById('collateralAmount').textContent = (1 * collateralAmount).toFixed(2) + " " + collateralName;
                     document.getElementById('debtAmount').textContent = (1 * debtAmount).toFixed(2) + " STAB";
-                    document.getElementById('cr').textContent = (cr * xrdPrice * 100).toFixed(2) + "%";
+                    document.getElementById('cr').textContent = cr.toFixed(2) + "%";
                 }
                 if (markerUsed == true) {
                     document.getElementById('marker-state').style.color = 'red';
@@ -1272,7 +3012,6 @@ async function update_cdp() {
                     slider.min = 0;
                     slider.max = maxCrDebt - 150;
                     slider.value = slider.min; // Set the value to the min value
-
                 }
 
                 document.getElementById('amount-to-remove').value = "0";
@@ -1457,6 +3196,7 @@ for (var i = 0; i < buttons.length; i++) {
     });
 }
 
+
 // Function to restore the original text and color of the buttons
 function restoreButtonLabels() {
     if (isConnected) {
@@ -1475,8 +3215,8 @@ function restoreButtonLabels() {
 // Instantiate DappToolkit
 const rdt = RadixDappToolkit({
     dAppDefinitionAddress: dAppId,
-    networkId: RadixNetwork.Stokenet, // network ID 2 is for the stokenet test network 1 is for mainnet
-    applicationName: 'Stabilis',
+    networkId: network, // network ID 2 is for the stokenet test network 1 is for mainnet
+    applicationName: dAppName,
     applicationVersion: '1.0.0',
 })
 rdt.buttonApi.setTheme('white-with-outline')
@@ -1571,655 +3311,53 @@ if (window.location.pathname === '/borrow' || window.location.pathname === '/man
         });
 }
 
-function useWalletData(inputAccountAddress, onlyWallet) {
-    if (inputAccountAddress !== "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec") {
-        accountAddress = inputAccountAddress;
-        restoreButtonLabels();
+function useData(data) {
+    if (window.location.pathname === "/deployment") {
+        return;
+    }
+    bigData = data;
+    console.log(data);
+    var lbpEndStatus = data[7].details.state.fields[12].variant_name;
+    if (lbpEndStatus === "Some") {
+        lbpEnded = true;
+    }
+    collateralsKvs = data[13].details.state.fields[0].value;
+    lbpLength = data[7].details.state.fields[8].value;
+    lbpDuration = lbpLength * 24 * 60 * 60;
+    lbpStartTime = data[7].details.state.fields[11].fields[0].value;
+    internalPrice = data[1].details.state.fields[15].fields[4].value;
+    console.log(data);
+    xrdPrice = data[1].details.state.fields[10].value;
+    if (window.location.pathname === '/membership' || window.location.pathname === '/governance') {
+        poolMultiplier = data[11].fungible_resources.items[0].vaults.items[0].amount / data[12].details.total_supply;
     } else {
-        isConnected = false;
-        walletStab = 0;
-        walletXrd = 0;
-        walletLp = 0;
-        selectedCdp = undefined;
-        selectedMarker = undefined;
-        selectedId = undefined;
-        accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec"
+        poolMultiplier = 1;
     }
-
-    async function getFungibleResources(accountAddress) {
-        const response = await fetch('https://stokenet.radixdlt.com/state/entity/details', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                addresses: [accountAddress],
-                aggregation_level: 'Vault',
-                opt_ins: {
-                    ancestor_identities: true,
-                    component_royalty_vault_balance: true,
-                    package_royalty_vault_balance: true,
-                    non_fungible_include_nfids: true,
-                    explicit_metadata: []
-                }
-            })
-        });
-
-        const data = await response.json();
-
-        // Iterate over each item in the response
-        const acceptedFungibleResources = data.items.flatMap(item => {
-            // Filter the fungible resources to only include those in the list of accepted resources
-            return item.fungible_resources.items.filter(resource => {
-                return acceptedResources.some(acceptedResource => acceptedResource[1] === resource.resource_address);
-            }).map(resource => {
-                // Find the corresponding accepted resource
-                const acceptedResource = acceptedResources.find(ar => ar[1] === resource.resource_address);
-
-                // Add the name of the accepted resource to the resource object
-                resource.name = acceptedResource ? acceptedResource[0] : '';
-                resource.logo = acceptedResource ? acceptedResource[3] : '';
-                resource.multiplier = acceptedResource ? acceptedResource[4] : 1;
-                resource.identifier = acceptedResource ? acceptedResource[5] : '';
-
-                return resource;
-            });
-        });
-
-        // Map each object to its name, resource_address and amount properties
-        const resourceAddressesAndAmounts = acceptedFungibleResources.map(resource => {
-            let amount = 0;
-            if (resource.vaults && resource.vaults.items && resource.vaults.items.length > 0) {
-                amount = parseFloat(resource.vaults.items[0].amount);
-            }
-
-            return {
-                name: resource.name,
-                resourceAddress: resource.resource_address,
-                amount: amount,
-                logo: resource.logo,
-                multiplier: resource.multiplier,
-                identifier: resource.identifier
-            };
-        });
-
-        // Sort the array by amount in descending order
-        resourceAddressesAndAmounts.sort((a, b) => b.amount - a.amount);
-
-        return resourceAddressesAndAmounts;
-    }
-
-    // Define the request URL and parameters
-    const url_kvs = "https://stokenet.radixdlt.com/state/key-value-store/data";
-    const params_kvs = {
-        "key_value_store_address": stakesKvs,
-        "keys": [
-            { "key_hex": kvsHexes[0] },
-            { "key_hex": kvsHexes[1] },
-            { "key_json": { "kind": "Tuple", "fields": [{ "kind": "U32", "value": "1" }] } }
-        ]
-    };
-
-    const url_fetch_ids = "https://stokenet.radixdlt.com/state/entity/details";
-    const addresses = [accountAddress, componentAddress, poolComponentAddress, stabAddress, poolAddress, stakingAddress]; // Replace with your addresses
-
-    const requestBody = {
-        "addresses": addresses,
-        "aggregation_level": "Vault",
-        "opt_ins": {
-            "ancestor_identities": false,
-            "component_royalty_vault_balance": false,
-            "package_royalty_vault_balance": false,
-            "non_fungible_include_nfids": true,
-            "explicit_metadata": [
-                "name",
-                "description"
-            ]
-        }
-    };
-
-    async function fetchData() {
-        try {
-            // Start both fetch requests
-            /*const fetchPromise1 = fetch(url_kvs, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(params_kvs)
-            });*/
-
-            const fetchPromise2 = fetch(url_fetch_ids, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
-            });
-
-            // Wait for both fetch requests to complete
-            const [/*response1,*/response2] = await Promise.all([/*fetchPromise1, */fetchPromise2]);
-
-            // Check the status of the responses
-            if (/*!response1.ok || */!response2.ok) {
-                throw new Error(`HTTP error! status: ${response2.status/*change this shit to 1*/}, ${response2.status}`);
-            }
-
-            // Parse the responses as JSON
-            const [/*data1, */data2] = await Promise.all([/*response1.json(), */response2.json()]);
-
-            // Extract the reward_amount values
-            /*const rewardAmounts = data1.entries
-                .map(entry => entry.value.programmatic_json.fields)
-                .flat()
-                .filter(field => field.field_name === 'reward_amount')
-                .map(field => field.value);
-
-            stakeRewards = rewardAmounts[0];
-            lpRewards = rewardAmounts[1];*/
-
-            // Process the second response
-            let sortedItems = [];
-            addresses.forEach(address => {
-                let item = data2.items.find(item => item.address === address);
-                if (item) {
-                    sortedItems.push(item);
-                }
-            });
-
-            sortedItems.forEach(item => {
-                if (item.non_fungible_resources) {
-                    item.non_fungible_resources.items.forEach(nfrItem => {
-                        if (nfrItem.resource_address === stabIdAddress && nfrItem.vaults) {
-                            nfrItem.vaults.items.forEach(vault => {
-                                stab_ids = stab_ids.concat(vault.items);
-                            });
-                        }
-                        if (nfrItem.resource_address === cdpAddress && nfrItem.vaults) {
-                            nfrItem.vaults.items.forEach(vault => {
-                                cdp_ids = cdp_ids.concat(vault.items);
-                            });
-                        }
-                        if (nfrItem.resource_address === markerAddress && nfrItem.vaults) {
-                            nfrItem.vaults.items.forEach(vault => {
-                                marker_ids = marker_ids.concat(vault.items);
-                            });
-                        }
-                    });
-                }
-            });
-
-            if (cdp_ids.length > 0) {
-                // Define the data for the request
-                const requestDataCdp = {
-                    "resource_address": cdpAddress,
-                    "non_fungible_ids": cdp_ids
-                };
-
-                // Make the API request
-                await fetch('https://stokenet.radixdlt.com/state/non-fungible/data', {
-                    method: 'POST', // Specify the HTTP method
-                    headers: {
-                        'Content-Type': 'application/json', // Set the content type to JSON
-                    },
-                    body: JSON.stringify(requestDataCdp), // Convert the data to JSON string
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok ' + response.statusText);
-                        }
-                        return response.json(); // Parse the JSON from the response
-                    })
-                    .then(data => {
-                        sortedItems.push(data.non_fungible_ids); // Write the response data to the console
-                    })
-                    .catch(error => {
-                        console.error('There was a problem with the fetch operation:', error); // Handle any errors
-                    });
-            }
-
-            return sortedItems;
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    }
-
-    function useData(data) {
-        stab_ids = []
-        cdp_ids = []
-        marker_ids = []
-        internalPrice = data[1].details.state.fields[12].value;
-        xrdPrice = data[1].details.state.fields[19].value;
-        stabXrdRatio = internalPrice / xrdPrice;
-        validatorMultiplier = 1;
-        if (window.location.pathname === '/borrow') {
-            let firstOption = true;
-            var dropdownContent = document.querySelector('.dropdown-custom-content');
-            dropdownContent.innerHTML = '';
-            var dropdownButton = document.querySelector('.dropdown-custom-button b');
-            var clickableButton = document.querySelector('.dropdown-custom-button');
-            getFungibleResources(accountAddress).then(resourceAddressesAndAmounts => {
-                // Add new options
-                resourceAddressesAndAmounts.forEach(resource => {
-                    clickableButton.disabled = false;
-                    clickableButton.style.backgroundColor = "";
-                    // Fetch the name, subtext, and logo
-                    var name = resource.name;
-                    var address = resource.resourceAddress;
-                    var logoUrl = resource.logo;
-                    var subtext = 'max. ' + resource.amount.toFixed(2);
-                    var slider = document.getElementById('slider-single');
-                    let colToUse = document.getElementById("colToUse");
-
-                    if (address === selectedCollateral) {
-                        availableCollateral = resource.amount;
-                        document.getElementById('col-max').textContent = "max. " + availableCollateral.toFixed(2).toLocaleString('en-US');
-                    }
-
-                    // Create a new option
-                    var option = document.createElement('div');
-                    option.className = 'dropdown-custom-option';
-                    option.dataset.logoUrl = logoUrl;
-                    option.setAttribute('tabindex', '0'); // Make the option focusable
-
-                    // Add the logo image to the option
-                    var logoImage = document.createElement('img');
-                    logoImage.src = logoUrl;
-                    logoImage.alt = 'Logo';
-                    option.appendChild(logoImage);
-
-                    // Add the text to the option
-                    var optionText = document.createElement('div');
-                    optionText.className = 'option-text';
-
-                    var optionTitle = document.createElement('div');
-                    optionTitle.className = 'option-title';
-                    optionTitle.textContent = name;
-                    optionText.appendChild(optionTitle);
-
-                    var optionSubtext = document.createElement('div');
-                    optionSubtext.className = 'option-subtext';
-                    optionSubtext.textContent = subtext;
-                    optionText.appendChild(optionSubtext);
-
-                    option.appendChild(optionText);
-
-                    // Attach the click event listener
-                    option.addEventListener('click', function () {
-                        document.getElementById('col-max').textContent = "max. " + resource.amount.toLocaleString('en-US');
-                        document.getElementById('col-suffix').textContent = resource.identifier;
-                        availableCollateral = resource.amount;
-                        selectedCollateral = address;
-                        selectedText = resource.identifier;
-                        // Remove the 'selected' class from all options
-                        validatorMultiplier = resource.multiplier;
-                        var options = document.querySelectorAll('.dropdown-custom-option');
-                        options.forEach(function (otherOption) {
-                            otherOption.classList.remove('selected');
-                        });
-
-                        // Add the 'selected' class to the clicked option
-                        option.classList.add('selected');
-
-                        // Set the button text to the option title
-                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                        dropdownButton.textContent = name;
-
-                        // Hide the dropdown content
-                        var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        dropdownContent.style.display = 'none';
-                        setChevron(dropdownContent);
-
-                        // Change the logo
-                        var logoImage = document.querySelector('.input-logo');
-                        logoImage.src = logoUrl;
-
-                        if (colToUse.value !== "") {
-                            let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
-                            mintAmount = result;
-                            collateralAmount = colToUse.value;
-                            document.getElementById("outputStab").innerHTML = customRound(result, 4);
-                        } else {
-                            let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
-                            mintAmount = result;
-                            collateralAmount = 0;
-                            document.getElementById("outputStab").innerHTML = customRound(result, 4);
-                        }
-
-                        if (colToUse.value !== "") {
-                            document.getElementById("ratio-suffix").innerHTML = "STAB";
-                        }
-                        else {
-                            document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
-                        }
-                        setBorrowButton();
-                    });
-
-                    if (firstOption) {
-                        option.click();
-                        firstOption = false;
-                    }
-
-                    // Append the new option to the dropdown content
-                    var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    dropdownContent.appendChild(option);
-                });
-            });
-
-            if (firstOption) {
+    stabXrdRatio = internalPrice / xrdPrice;
+    validatorMultiplier = 1;
+    if (window.location.pathname === '/borrow') {
+        let firstOption = true;
+        var dropdownContent = document.querySelector('.dropdown-custom-content');
+        dropdownContent.innerHTML = '';
+        var dropdownButton = document.querySelector('.dropdown-custom-button b');
+        var clickableButton = document.querySelector('.dropdown-custom-button');
+        getFungibleResources(accountAddress).then(resourceAddressesAndAmounts => {
+            // Add new options
+            resourceAddressesAndAmounts.forEach(resource => {
+                clickableButton.disabled = false;
+                clickableButton.style.backgroundColor = "";
                 // Fetch the name, subtext, and logo
-                var name = "XRD";
-                var logoUrl = "images/radix-logo.svg";
+                var name = resource.name;
+                var address = resource.resourceAddress;
+                var logoUrl = resource.logo;
+                var subtext = 'max. ' + resource.amount.toFixed(2);
                 var slider = document.getElementById('slider-single');
                 let colToUse = document.getElementById("colToUse");
-                document.getElementById('col-max').textContent = "max. 0";
-                availableCollateral = 0;
-                selectedCollateral = xrdAddress;
-                selectedText = "XRD";
-                var logoImage = document.querySelector('.input-logo');
-                logoImage.src = logoUrl;
-                var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                dropdownButton.textContent = name;
-                clickableButton.disabled = true;
 
-                if (colToUse.value !== "") {
-                    let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
-                    mintAmount = result;
-                    collateralAmount = colToUse.value;
-                    document.getElementById("outputStab").innerHTML = customRound(result, 4);
-                } else {
-                    let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
-                    mintAmount = result;
-                    collateralAmount = 0;
-                    document.getElementById("outputStab").innerHTML = customRound(result, 4);
+                if (address === selectedCollateral) {
+                    availableCollateral = resource.amount;
+                    document.getElementById('col-max').textContent = "max. " + availableCollateral.toFixed(2).toLocaleString('en-US');
                 }
-
-                if (colToUse.value !== "") {
-                    document.getElementById("ratio-suffix").innerHTML = "STAB";
-                }
-                else {
-                    document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
-                }
-            }
-
-            if (!isConnected) {
-                var dropdownContent = document.querySelector('.dropdown-custom-content');
-                var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                dropdownContent.innerHTML = '';
-                dropdownButton.textContent = 'XRD';
-                var logoImage = document.querySelector('.input-logo');
-                logoImage.src = 'images/radix-logo.svg';
-                clickableButton.disabled = true;
-            }
-
-            setBorrowButton();
-        }
-
-        data.forEach(item => {
-            if (item.non_fungible_resources) {
-                item.non_fungible_resources.items.forEach(nfrItem => {
-                    if (nfrItem.resource_address === stabIdAddress && nfrItem.vaults) {
-                        nfrItem.vaults.items.forEach(vault => {
-                            stab_ids = stab_ids.concat(vault.items);
-                        });
-                    }
-                    if (nfrItem.resource_address === cdpAddress && nfrItem.vaults) {
-                        nfrItem.vaults.items.forEach(vault => {
-                            cdp_ids = cdp_ids.concat(vault.items);
-                        });
-                    }
-                    if (nfrItem.resource_address === markerAddress && nfrItem.vaults) {
-                        nfrItem.vaults.items.forEach(vault => {
-                            marker_ids = marker_ids.concat(vault.items);
-                        });
-                    }
-                });
-            }
-        });
-        //fix for gov: currentPeriod = data[3].details.state.fields[2].value;
-        //fix for gov: let updateRewards = data[1].details.state.fields[30].value;
-        walletIlis = getResourceAmount(ilisAddress, data, 0);
-        walletXrd = getResourceAmount(xrdAddress, data, 0);
-        walletLp = getResourceAmount(lpAddress, data, 0);
-        walletStab = getResourceAmount(stabAddress, data, 0);
-        xrdPoolAmount = getResourceAmount(xrdAddress, data, 4);
-        stabPoolAmount = getResourceAmount(stabAddress, data, 4);
-        interestRate = (100 * ((data[1].details.state.fields[14].value ** (24 * 60 * 365)) - 1)).toFixed(2);
-
-        if (window.location.pathname === '/incentives') {
-            document.getElementById('ilis-staking-rewards').textContent = stakeRewards + " ILIS/day";
-            document.getElementById('lpstab-staking-rewards').textContent = lpRewards + " ILIS/day";
-            document.getElementById('update-rewards').textContent = updateRewards + " ILIS/day";
-        }
-
-        if (window.location.pathname === '/' || window.location.pathname === '/secret_index' || window.location.pathname === '/index') {
-            document.getElementById('interest-rate').textContent = interestRate;
-            document.getElementById('circulating-counter').textContent = (1 * data[3].details.total_supply).toFixed(0);
-            document.getElementById('price-counter').textContent = (xrdPrice * stabXrdRatio).toFixed(2);
-        }
-
-        if (window.location.pathname === '/swap') {
-            calculateChange();
-            setProvideButton();
-            setRemoveLpButton();
-            async function fetchData() {
-                try {
-                    const response = await fetch('https://stokenet.radixdlt.com/status/gateway-status', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        // Include any necessary body data in string format
-                    });
-                    const data = await response.json();
-                    var now = new Date(data.ledger_state.proposer_round_timestamp);
-                } catch (error) {
-                    console.error('Error:', error);
-                }
-                const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-
-                const entityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
-                const entityPageUrl = 'https://stokenet.radixdlt.com/state/entity/page/fungibles';
-                const customEntityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
-
-                const entityDetailsPayload = (timestamp) => ({
-                    addresses: [
-                        lpAddress,
-                    ],
-                    aggregation_level: "Vault",
-                    at_ledger_state: {
-                        timestamp: timestamp
-                    },
-                    opt_ins: {
-                        ancestor_identities: true,
-                        component_royalty_config: true,
-                        component_royalty_vault_balance: true,
-                        package_royalty_vault_balance: true,
-                        non_fungible_include_nfids: true,
-                        explicit_metadata: [
-                            "name",
-                            "description"
-                        ]
-                    }
-                });
-
-                const entityPagePayload = (timestamp) => ({
-                    address: poolAddress,
-                    at_ledger_state: {
-                        timestamp: timestamp
-                    },
-                });
-
-                const customEntityDetailsPayload = (timestamp) => ({
-                    addresses: [
-                        componentAddress
-                    ],
-                    aggregation_level: "Vault",
-                    at_ledger_state: {
-                        timestamp: timestamp
-                    },
-                    opt_ins: {
-                        ancestor_identities: true,
-                        component_royalty_config: true,
-                        component_royalty_vault_balance: true,
-                        package_royalty_vault_balance: true,
-                        non_fungible_include_nfids: true,
-                        explicit_metadata: [
-                            "name",
-                            "description"
-                        ]
-                    }
-                });
-
-                try {
-                    const earliestTimestamp = new Date("2024-07-03T03:45:20.702Z");
-
-                    // Determine the timestamp to use
-                    const timestampToUse = earliestTimestamp > sevenDaysAgo ? earliestTimestamp : sevenDaysAgo;
-
-                    // Perform API calls with both the chosen timestamp and the current timestamp (now)
-                    const [detailsResponse1, pageResponse1, detailsResponse2, pageResponse2, customDetailsResponse] = await Promise.all([
-                        fetch(entityDetailsUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(entityDetailsPayload(timestampToUse.toISOString()))
-                        }),
-                        fetch(entityPageUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(entityPagePayload(timestampToUse.toISOString()))
-                        }),
-                        fetch(entityDetailsUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(entityDetailsPayload(now.toISOString()))
-                        }),
-                        fetch(entityPageUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(entityPagePayload(now.toISOString()))
-                        }),
-                        fetch(customEntityDetailsUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(customEntityDetailsPayload(timestampToUse.toISOString()))
-                        })
-                    ]);
-
-                    if (!detailsResponse1.ok || !pageResponse1.ok || !detailsResponse2.ok || !pageResponse2.ok || !customDetailsResponse.ok) {
-                        throw new Error(`Failed to fetch entity data`);
-                    }
-
-                    // Parse responses as JSON
-                    const [detailsData1, pageData1, detailsData2, pageData2, customDetailsData] = await Promise.all([
-                        detailsResponse1.json(),
-                        pageResponse1.json(),
-                        detailsResponse2.json(),
-                        pageResponse2.json(),
-                        customDetailsResponse.json()
-                    ]);
-
-                    // Extract amounts and organize by resource_address
-                    const amountsMap1 = new Map(pageData1.items.map(item => [item.resource_address, item.amount]));
-                    const amountsMap2 = new Map(pageData2.items.map(item => [item.resource_address, item.amount]));
-
-                    // Synchronize the order of amounts based on resource_address
-                    const resourceAddresses = pageData1.items.map(item => item.resource_address);
-                    const amounts1 = resourceAddresses.map(address => amountsMap1.get(address));
-                    const amounts2 = resourceAddresses.map(address => amountsMap2.get(address));
-
-                    // Extract total supply from entity details responses
-                    const totalSupply1 = detailsData1.items[0]?.details?.total_supply;
-                    const totalSupply2 = detailsData2.items[0]?.details?.total_supply;
-
-                    var xrdInitial = amounts1[0];
-                    var stabInitial = amounts1[1];
-                    var xrdFinal = amounts2[0];
-                    var stabFinal = amounts2[1];
-                    var xrdPerStabInitial = xrdInitial / stabInitial;
-                    var xrdPerStabFinal = xrdFinal / stabFinal;
-                    var xrdPriceInitial = customDetailsData.items[0].details.state.fields[19].value;
-                    var stabPriceInitial = xrdPerStabInitial * xrdPriceInitial;
-                    var stabPriceFinal = xrdPerStabFinal * xrdPrice;
-
-                    var dollarPerLpInitial = (xrdInitial * xrdPriceInitial + stabInitial * stabPriceInitial) / totalSupply1;
-                    var dollarPerLpFinal = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
-
-                    var dollarPerLpInitial2 = (xrdInitial * xrdPrice + stabInitial * stabPriceFinal) / totalSupply1;
-                    var dollarPerLpFinal2 = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
-
-                    //var dollarPerLpRatio = (Math.pow((dollarPerLpFinal / dollarPerLpInitial), 365 / 7) - 1) * 100;
-                    var dollarPerLpRatio2 = (Math.pow((dollarPerLpFinal2 / dollarPerLpInitial2), 365 / 7) - 1) * 100;
-                    var apyElement = document.getElementById('apy-real');
-                    var liqElement = document.getElementById('pool-liq');
-                    xrdPoolAmount = getResourceAmount(xrdAddress, bigData, 4);
-                    liqElement.textContent = "$" + Number((xrdPoolAmount * 2 * xrdPrice).toFixed(2)).toLocaleString('en-US');
-                    apyElement.textContent = dollarPerLpRatio2.toFixed(2) + "%";
-                    apyElement.style.color = dollarPerLpRatio2 > 0 ? 'green' : 'red';
-
-                } catch (error) {
-                    console.error('Error fetching data:', error);
-                }
-            }
-
-            fetchData();
-
-            if (sell == true) {
-                formattedWallet = Math.floor(walletXrd * 10) / 10;
-                document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
-            } else {
-                if (walletStab >= 0.1) {
-                    formattedWallet = Math.floor((walletStab) * 10) / 10;
-                } else {
-                    formattedWallet = 0;
-                }
-                document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
-            }
-            document.getElementById('internal-price-xrd').innerHTML = stabXrdRatio.toFixed(2) + " XRD";
-            document.getElementById('internal-price-usd').innerHTML = "$" + (stabXrdRatio * xrdPrice).toFixed(3);
-            document.getElementById('market-price-xrd').innerHTML = (xrdPoolAmount / stabPoolAmount).toFixed(2) + " XRD";
-            document.getElementById('market-price-usd').innerHTML = "$" + ((xrdPoolAmount / stabPoolAmount) * xrdPrice).toFixed(3);
-            document.getElementById('interest-rate').innerHTML = interestRate + "% APY";
-            if (xrdPoolAmount / stabPoolAmount < 0.995 * stabXrdRatio) {
-                document.getElementById("recommendation").innerHTML = `<strong>Market price &lt; Internal price</strong>, sell XRD to arbitrage!`;
-            } else if (xrdPoolAmount / stabPoolAmount > 1.005 * stabXrdRatio) {
-                document.getElementById("recommendation").innerHTML = `<strong>Market price &gt; Internal price</strong>, sell STAB to arbitrage!`;
-            }
-            else {
-                document.getElementById("recommendation").innerHTML = `Price error is within acceptable bounds. Minimal arbitrage opportunities.`;
-            }
-            document.getElementById('provide-xrd-amount').textContent = "max. " + (Math.floor(walletXrd * 10) / 10).toLocaleString('en-US');
-            if (walletStab >= 0.1) {
-                document.getElementById('provide-stab-amount-second').textContent = "max. " + (Math.floor((walletStab) * 10) / 10).toLocaleString('en-US');
-                document.getElementById('provide-stab-amount').textContent = "max. " + (Math.floor((walletStab) * 10) / 10).toLocaleString('en-US');
-            } else {
-                document.getElementById('provide-stab-amount-second').textContent = "max. " + 0;
-                document.getElementById('provide-stab-amount').textContent = "max. " + 0;
-            }
-            document.getElementById('remove-lp-amount').textContent = "max. " + (Math.floor(walletLp * 10) / 10).toLocaleString('en-US');
-        }
-
-        if (window.location.pathname === '/liquidations') {
-            var dropdownContent = document.querySelector('.dropdown-custom-content');
-            dropdownContent.innerHTML = '';
-            var marker_exists = false;
-            marker_ids.forEach(id => {
-                if (marker_exists == false) {
-                    marker_exists = true;
-                }
-                var name = id;
-                var logoUrl = 'images/marker-receipt.png'
-                var subtext = "Stabilis Marker Receipt";
 
                 // Create a new option
                 var option = document.createElement('div');
@@ -2231,7 +3369,6 @@ function useWalletData(inputAccountAddress, onlyWallet) {
                 var logoImage = document.createElement('img');
                 logoImage.src = logoUrl;
                 logoImage.alt = 'Logo';
-                logoImage.style.borderRadius = '0';
                 option.appendChild(logoImage);
 
                 // Add the text to the option
@@ -2252,302 +3389,13 @@ function useWalletData(inputAccountAddress, onlyWallet) {
 
                 // Attach the click event listener
                 option.addEventListener('click', function () {
+                    document.getElementById('col-max').textContent = "max. " + resource.amount.toLocaleString('en-US');
+                    document.getElementById('col-suffix').textContent = resource.identifier;
+                    availableCollateral = resource.amount;
+                    selectedCollateral = address;
+                    selectedText = resource.identifier;
                     // Remove the 'selected' class from all options
-                    var options = document.querySelectorAll('.dropdown-custom-option');
-                    options.forEach(function (otherOption) {
-                        otherOption.classList.remove('selected');
-                    });
-
-                    // Add the 'selected' class to the clicked option
-                    option.classList.add('selected');
-
-                    // Set the button text to the option title
-                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                    dropdownButton.textContent = "Marker " + name;
-
-                    // Hide the dropdown content
-                    var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    dropdownContent.style.display = 'none';
-                    setChevron(dropdownContent);
-
-                    selectedMarker = id;
-
-                    update_liq();
-                    setMarkLiqButton();
-                    setNoMarkLiqButton();
-                });
-
-                // Append the new option to the dropdown content
-                var dropdownContent = document.querySelector('.dropdown-custom-content');
-                dropdownContent.appendChild(option);
-            });
-            var dropdownButton = document.querySelector('.dropdown-custom-button');
-
-            if (marker_exists == false) {
-                dropdownButton.style.backgroundColor = "";
-                dropdownButton.disabled = true;
-            } else {
-                dropdownButton.disabled = false;
-                dropdownButton.style.backgroundColor = "";
-            }
-
-            if (selectedMarker !== undefined) {
-                update_liq();
-            } else {
-                if (isConnected === false) {
-                    dropdownContent.innerHTML = '';
-                }
-                var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                dropdownButton.textContent = "select a marker";
-                document.getElementById('liqwithmark').querySelector('.button-text').textContent = "LIQUIDATE";
-                document.getElementById('liqwithmark').style.color = "";
-                document.getElementById('marker-time').textContent = "-";
-                document.getElementById('status').style.color = "";
-                document.getElementById('marker-state').textContent = "-";
-                document.getElementById('marker-state').style.color = "";
-                document.getElementById('status').textContent = "-";
-                document.getElementById('collateralAmount').textContent = "-";
-                document.getElementById('debtAmount').textContent = "-";
-                document.getElementById('cr').textContent = "-";
-            }
-
-            checkLiquidation(parseInt(document.getElementById('liq-counter').textContent));
-            setNoMarkLiqButton();
-        }
-
-        if (window.location.pathname === '/incentives') {
-            selectedId = undefined;
-            var dropdownContent = document.querySelector('.dropdown-custom-content');
-            dropdownContent.innerHTML = '';
-
-            stab_ids.forEach(id => {
-                var name = id;
-                var logoUrl = 'images/staking-id.png'
-                var subtext = "Stabilis Staking ID";
-
-                // Create a new option
-                var option = document.createElement('div');
-                option.className = 'dropdown-custom-option';
-                option.dataset.logoUrl = logoUrl;
-                option.setAttribute('tabindex', '0'); // Make the option focusable
-
-                // Add the logo image to the option
-                var logoImage = document.createElement('img');
-                logoImage.src = logoUrl;
-                logoImage.alt = 'Logo';
-                logoImage.style.borderRadius = '0';
-                option.appendChild(logoImage);
-
-                // Add the text to the option
-                var optionText = document.createElement('div');
-                optionText.className = 'option-text';
-
-                var optionTitle = document.createElement('div');
-                optionTitle.className = 'option-title';
-                optionTitle.textContent = name;
-                optionText.appendChild(optionTitle);
-
-                var optionSubtext = document.createElement('div');
-                optionSubtext.className = 'option-subtext';
-                optionSubtext.textContent = subtext;
-                optionText.appendChild(optionSubtext);
-
-                option.appendChild(optionText);
-
-                // Attach the click event listener
-                option.addEventListener('click', function () {
-                    // Remove the 'selected' class from all options
-                    var options = document.querySelectorAll('.dropdown-custom-option');
-                    options.forEach(function (otherOption) {
-                        otherOption.classList.remove('selected');
-                    });
-
-                    // Add the 'selected' class to the clicked option
-                    option.classList.add('selected');
-
-                    // Set the button text to the option title
-                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                    dropdownButton.textContent = "ID " + name;
-
-                    // Hide the dropdown content
-                    var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    dropdownContent.style.display = 'none';
-                    setChevron(dropdownContent);
-
-                    selectedId = id;
-
-                    update_id();
-                });
-
-                // Append the new option to the dropdown content
-                var dropdownContent = document.querySelector('.dropdown-custom-content');
-                dropdownContent.appendChild(option);
-            });
-
-            if (selectedId !== undefined) {
-                update_id();
-            } else {
-                if (isConnected === false) {
-                    dropdownContent.innerHTML = '';
-                }
-                var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                dropdownButton.textContent = "Select ID";
-                document.getElementById('ilisAmountId').textContent = "-";
-                document.getElementById('lpAmountId').textContent = "-";
-                document.getElementById('nextClaim').textContent = "-";
-                let stakeIlisMax = document.getElementById('stake-ilis-amount');
-                stakeIlisMax.textContent = "max. -";
-                var cloneIlis = stakeIlisMax.cloneNode(true);
-                stakeIlisMax.parentNode.replaceChild(cloneIlis, stakeIlisMax);
-
-                let stakeLpMax = document.getElementById('stake-lp-amount');
-                stakeLpMax.textContent = "max. -";
-                var cloneLp = stakeLpMax.cloneNode(true);
-                stakeLpMax.parentNode.replaceChild(cloneLp, stakeLpMax);
-
-                let unstakeIlisMax = document.getElementById('unstake-ilis-amount');
-                unstakeIlisMax.textContent = "max. -";
-                var cloneUnstakeIlis = unstakeIlisMax.cloneNode(true);
-                unstakeIlisMax.parentNode.replaceChild(cloneUnstakeIlis, unstakeIlisMax);
-
-                let unstakeLpMax = document.getElementById('unstake-lp-amount');
-                unstakeLpMax.textContent = "max. -";
-                var cloneUnstakeLp = unstakeLpMax.cloneNode(true);
-                unstakeLpMax.parentNode.replaceChild(cloneUnstakeLp, unstakeLpMax);
-            }
-        }
-
-        if (window.location.pathname === '/borrow') {
-            document.getElementById('interest-rate').textContent = interestRate + "% APY";
-            var number1 = (1 * data[3].details.total_supply).toFixed(0);
-            document.getElementById('circulating-stab').textContent = Number(number1).toLocaleString('en-US');
-            document.getElementById('stab-internal-price').textContent = "$" + (xrdPrice * stabXrdRatio).toFixed(2);
-            document.getElementById('stab-market-price').textContent = "$" + (xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(2);
-            var number2 = (data[3].details.total_supply * xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(0);
-            document.getElementById('stab-mc').textContent = "$" + Number(number2).toLocaleString('en-US');
-
-            // Define the request payload
-            const requestPayload = {
-                key_value_store_address: collateralsKvs,
-                keys: [
-                    {
-                        key_hex: xrdKeyHex,
-                    },
-                    {
-                        key_json: {
-                            kind: "Tuple",
-                            fields: [
-                                {
-                                    kind: "U32",
-                                    value: "1"
-                                }
-                            ]
-                        }
-                    }
-                ]
-            };
-
-            // Make the API request
-            fetch('https://stokenet.radixdlt.com/state/key-value-store/data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestPayload)
-            })
-                .then(response => response.json())
-                .then(data => {
-                    // Extract minted_stab and collateral_amount from the response
-                    const entries = data.entries;
-                    let mintedStab, collateralAmountInProtocol;
-
-                    entries.forEach(entry => {
-                        const fields = entry.value.programmatic_json.fields;
-
-                        fields.forEach(field => {
-                            if (field.field_name === "minted_stab") {
-                                mintedStab = field.value;
-                            } else if (field.field_name === "collateral_amount") {
-                                collateralAmountInProtocol = field.value;
-                            }
-                        });
-                    });
-                    document.getElementById('stab-cr').textContent = (((collateralAmountInProtocol * xrdPrice) / (mintedStab * internalPrice)) * 100).toFixed(2) + "%";
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-
-        }
-
-        if (window.location.pathname === '/manage-loans') {
-            var dropdownContent = document.querySelector('.dropdown-custom-content');
-            dropdownContent.innerHTML = '';
-            var cdpExists = false;
-            var counter;
-            if (data.length > 5) {
-                counter = data[5].length - 1;
-            }
-            // Get the dropdown element
-            cdp_ids.forEach(id => {
-                if (cdpExists == false) {
-                    cdpExists = true;
-                }
-                var name = "Receipt " + id;
-                var logoUrl = 'images/receipt.png'
-                while (data[5][counter].is_burned == true && counter > 0) {
-                    counter -= 1;
-                }
-                const resource = acceptedResources.find(ar => ar[1] === data[5][counter].data.programmatic_json.fields[0].value);
-                validatorMultiplier = resource[4];
-                var cr = ((data[5][counter].data.programmatic_json.fields[3].value / data[5][counter].data.programmatic_json.fields[4].value) * xrdPrice * 100 / internalPrice / validatorMultiplier);
-                var status = data[5][counter].data.programmatic_json.fields[6].variant_name;
-
-                if (status != "Liquidated" && status != "ForceLiquidated") {
-                    var subtext = status + ", CR: " + (cr * 1).toFixed(2) + "%";
-                } else {
-                    var subtext = status;
-                }
-
-
-                // Create a new option
-                var option = document.createElement('div');
-                option.className = 'dropdown-custom-option';
-                if (cr < 150 || status === "Marked") {
-                    option.classList.add("extrawarning");
-                } else if (cr < 200) {
-                    option.classList.add("littlewarning");
-                }
-                option.dataset.logoUrl = logoUrl;
-                option.setAttribute('tabindex', '0'); // Make the option focusable
-
-                // Add the logo image to the option
-                var logoImage = document.createElement('img');
-                logoImage.src = logoUrl;
-                logoImage.alt = 'Logo';
-                logoImage.style.borderRadius = '0';
-                option.appendChild(logoImage);
-
-                // Add the text to the option
-                var optionText = document.createElement('div');
-                optionText.className = 'option-text';
-
-                var optionTitle = document.createElement('div');
-                optionTitle.className = 'option-title';
-                optionTitle.textContent = name;
-                optionText.appendChild(optionTitle);
-
-                var optionSubtext = document.createElement('div');
-                optionSubtext.className = 'option-subtext';
-                optionSubtext.textContent = subtext;
-                optionText.appendChild(optionSubtext);
-
-                option.appendChild(optionText);
-
-                // Attach the click event listener
-                option.addEventListener('click', function () {
-                    document.getElementById('amount-to-remove').value = "";
-                    // Remove the 'selected' class from all options
+                    validatorMultiplier = resource.multiplier;
                     var options = document.querySelectorAll('.dropdown-custom-option');
                     options.forEach(function (otherOption) {
                         otherOption.classList.remove('selected');
@@ -2564,83 +3412,1292 @@ function useWalletData(inputAccountAddress, onlyWallet) {
                     var dropdownContent = document.querySelector('.dropdown-custom-content');
                     dropdownContent.style.display = 'none';
                     setChevron(dropdownContent);
-                    selectedCdp = id;
-                    update_cdp();
+
+                    // Change the logo
+                    var logoImage = document.querySelector('.input-logo');
+                    logoImage.src = logoUrl;
+
+                    if (colToUse.value !== "") {
+                        let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
+                        mintAmount = result;
+                        collateralAmount = colToUse.value;
+                        document.getElementById("outputStab").innerHTML = customRound(result, 4);
+                    } else {
+                        let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
+                        mintAmount = result;
+                        collateralAmount = 0;
+                        document.getElementById("outputStab").innerHTML = customRound(result, 4);
+                    }
+
+                    if (colToUse.value !== "") {
+                        document.getElementById("ratio-suffix").innerHTML = "STAB";
+                    }
+                    else {
+                        document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
+                    }
+                    setBorrowButton();
                 });
+
+                if (firstOption) {
+                    option.click();
+                    firstOption = false;
+                }
 
                 // Append the new option to the dropdown content
                 var dropdownContent = document.querySelector('.dropdown-custom-content');
                 dropdownContent.appendChild(option);
-                counter -= 1;
             });
+        });
 
-            var dropdownButton = document.querySelector('.dropdown-custom-button');
+        if (firstOption) {
+            // Fetch the name, subtext, and logo
+            var name = "XRD";
+            var logoUrl = "images/radix-logo.svg";
+            var slider = document.getElementById('slider-single');
+            let colToUse = document.getElementById("colToUse");
+            document.getElementById('col-max').textContent = "max. 0";
+            availableCollateral = 0;
+            selectedCollateral = xrdAddress;
+            selectedText = "XRD";
+            var logoImage = document.querySelector('.input-logo');
+            logoImage.src = logoUrl;
+            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+            dropdownButton.textContent = name;
+            clickableButton.disabled = true;
 
-            if (cdpExists == false) {
-                dropdownButton.style.backgroundColor = "";
-                dropdownButton.disabled = true;
+            if (colToUse.value !== "") {
+                let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
+                mintAmount = result;
+                collateralAmount = colToUse.value;
+                document.getElementById("outputStab").innerHTML = customRound(result, 4);
             } else {
-                dropdownButton.disabled = false;
-                dropdownButton.style.backgroundColor = "";
+                let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
+                mintAmount = result;
+                collateralAmount = 0;
+                document.getElementById("outputStab").innerHTML = customRound(result, 4);
             }
 
-            if (selectedCdp !== undefined) {
-                update_cdp();
-            } else {
-                if (isConnected === false) {
-                    dropdownContent.innerHTML = '';
-                }
-                var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                dropdownButton.textContent = "select loan receipt";
-                var logoImage = document.querySelector('.input-logo');
-                logoImage.src = 'images/radix-logo.svg';
-                document.getElementById('status').textContent = "-";
-                document.getElementById('collateral').textContent = "-";
-                document.getElementById('collateralAmount').textContent = "";
-                document.getElementById('debtAmount').textContent = "-";
-                document.getElementById('cr').textContent = "-";
-            }
-            setCloseLoanButton();
-            if (addingCollateral) {
-                setAddColButton();
-            } else {
-                setRemoveColButton();
-            }
-            if (addingDebt) {
-                setAddDebtButton();
+            if (colToUse.value !== "") {
+                document.getElementById("ratio-suffix").innerHTML = "STAB";
             }
             else {
-                setRemoveDebtButton();
+                document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
             }
+        }
+
+        if (!isConnected) {
+            var dropdownContent = document.querySelector('.dropdown-custom-content');
+            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+            dropdownContent.innerHTML = '';
+            dropdownButton.textContent = 'XRD';
+            var logoImage = document.querySelector('.input-logo');
+            logoImage.src = 'images/radix-logo.svg';
+            clickableButton.disabled = true;
+        }
+
+        setBorrowButton();
+    }
+
+    data.forEach(item => {
+        if (item.non_fungible_resources) {
+            item.non_fungible_resources.items.forEach(nfrItem => {
+                if (nfrItem.resource_address === membershipIdAddress && nfrItem.vaults) {
+                    nfrItem.vaults.items.forEach(vault => {
+                        stab_ids = stab_ids.concat(vault.items.filter(item => !stab_ids.includes(item)));
+                    });
+                }
+                if (nfrItem.resource_address === cdpAddress && nfrItem.vaults) {
+                    nfrItem.vaults.items.forEach(vault => {
+                        cdp_ids = cdp_ids.concat(vault.items.filter(item => !cdp_ids.includes(item)));
+                    });
+                }
+                if (nfrItem.resource_address === markerAddress && nfrItem.vaults) {
+                    nfrItem.vaults.items.forEach(vault => {
+                        marker_ids = marker_ids.concat(vault.items.filter(item => !marker_ids.includes(item)));
+                    });
+                }
+                if (nfrItem.resource_address === membershipUnstakeAddress && nfrItem.vaults) {
+                    nfrItem.vaults.items.forEach(vault => {
+                        membership_unstake_receipts = membership_unstake_receipts.concat(vault.items);
+                    });
+                }
+                if (nfrItem.resource_address === incentiveIdAddress && nfrItem.vaults) {
+                    nfrItem.vaults.items.forEach(vault => {
+                        incentive_ids = incentive_ids.concat(vault.items);
+                    });
+                }
+                if (nfrItem.resource_address === incentiveUnstakeAddress && nfrItem.vaults) {
+                    nfrItem.vaults.items.forEach(vault => {
+                        incentive_unstake_receipts = incentive_unstake_receipts.concat(vault.items);
+                    });
+                }
+            });
+        }
+    });
+
+    console.log(data);
+    walletIlis = getResourceAmount(ilisAddress, data, 0);
+    walletResource = getResourceAmount(selectedResource, data, 0);
+    walletXrd = getResourceAmount(xrdAddress, data, 0);
+    walletLp = getResourceAmount(lpAddress, data, 0);
+    walletStab = getResourceAmount(stabAddress, data, 0);
+    xrdPoolAmount = getResourceAmount(xrdAddress, data, 4);
+    stabPoolAmount = getResourceAmount(stabAddress, data, 4);
+    if (lbpEnded == false) {
+        xrdLbpPoolAmount = getResourceAmount(xrdAddress, data, 6);
+        ilisLbpPoolAmount = getResourceAmount(ilisAddress, data, 6);
+    }
+    quorum = data[9].details.state.fields[9].fields[2].value;
+    interestRate = (100 * ((data[1].details.state.fields[15].fields[6].value ** (24 * 60 * 365)) - 1)).toFixed(2);
+    currentIncentivePeriod = data[8].details.state.fields[2].value;
+    maxProposals = data[9].details.state.fields[8].value - 1;
+    proposalsKvs = data[9].details.state.fields[7].value;
+
+    if (proposalToView == -1 && window.location.pathname === '/governance') {
+        document.getElementById('prop-id-counter').textContent = maxProposals;
+        proposalToView = maxProposals;
+    }
+
+    if (window.location.pathname === '/' || window.location.pathname === '/secret_index' || window.location.pathname === '/index') {
+        document.getElementById('interest-rate').textContent = interestRate;
+        document.getElementById('circulating-counter').textContent = (1 * data[3].details.total_supply).toFixed(0);
+        document.getElementById('price-counter').textContent = (xrdPrice * stabXrdRatio).toFixed(2);
+    }
+
+    if (window.location.pathname === '/swap') {
+        calculateChange();
+        setProvideButton();
+        setRemoveLpButton();
+        async function fetchData2() {
+            try {
+                const response = await fetch('https://stokenet.radixdlt.com/status/gateway-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    // Include any necessary body data in string format
+                });
+                const data = await response.json();
+                var now = new Date(data.ledger_state.proposer_round_timestamp);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+            const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+
+            const entityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
+            const entityPageUrl = 'https://stokenet.radixdlt.com/state/entity/page/fungibles';
+            const customEntityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
+
+            const entityDetailsPayload = (timestamp) => ({
+                addresses: [
+                    lpAddress,
+                ],
+                aggregation_level: "Vault",
+                at_ledger_state: {
+                    timestamp: timestamp
+                },
+                opt_ins: {
+                    ancestor_identities: true,
+                    component_royalty_config: true,
+                    component_royalty_vault_balance: true,
+                    package_royalty_vault_balance: true,
+                    non_fungible_include_nfids: true,
+                    explicit_metadata: [
+                        "name",
+                        "description"
+                    ]
+                }
+            });
+
+            const entityPagePayload = (timestamp) => ({
+                address: poolAddress,
+                at_ledger_state: {
+                    timestamp: timestamp
+                },
+            });
+
+            const customEntityDetailsPayload = (timestamp) => ({
+                addresses: [
+                    proxyComponentAddress
+                ],
+                aggregation_level: "Vault",
+                at_ledger_state: {
+                    timestamp: timestamp
+                },
+                opt_ins: {
+                    ancestor_identities: true,
+                    component_royalty_config: true,
+                    component_royalty_vault_balance: true,
+                    package_royalty_vault_balance: true,
+                    non_fungible_include_nfids: true,
+                    explicit_metadata: [
+                        "name",
+                        "description"
+                    ]
+                }
+            });
+
+            try {
+                // Determine the timestamp to use
+                const timestampToUse = earliestTimestamp > sevenDaysAgo ? earliestTimestamp : sevenDaysAgo;
+
+                // Perform API calls with both the chosen timestamp and the current timestamp (now)
+                const [detailsResponse1, pageResponse1, detailsResponse2, pageResponse2, customDetailsResponse] = await Promise.all([
+                    fetch(entityDetailsUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(entityDetailsPayload(timestampToUse.toISOString()))
+                    }),
+                    fetch(entityPageUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(entityPagePayload(timestampToUse.toISOString()))
+                    }),
+                    fetch(entityDetailsUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(entityDetailsPayload(now.toISOString()))
+                    }),
+                    fetch(entityPageUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(entityPagePayload(now.toISOString()))
+                    }),
+                    fetch(customEntityDetailsUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(customEntityDetailsPayload(timestampToUse.toISOString()))
+                    })
+                ]);
+
+                if (!detailsResponse1.ok || !pageResponse1.ok || !detailsResponse2.ok || !pageResponse2.ok || !customDetailsResponse.ok) {
+                    throw new Error(`Failed to fetch entity data`);
+                }
+
+                // Parse responses as JSON
+                const [detailsData1, pageData1, detailsData2, pageData2, customDetailsData] = await Promise.all([
+                    detailsResponse1.json(),
+                    pageResponse1.json(),
+                    detailsResponse2.json(),
+                    pageResponse2.json(),
+                    customDetailsResponse.json()
+                ]);
+
+                // Extract amounts and organize by resource_address
+                const amountsMap1 = new Map(pageData1.items.map(item => [item.resource_address, item.amount]));
+                const amountsMap2 = new Map(pageData2.items.map(item => [item.resource_address, item.amount]));
+
+                // Synchronize the order of amounts based on resource_address
+                const resourceAddresses = pageData1.items.map(item => item.resource_address);
+                const amounts1 = resourceAddresses.map(address => amountsMap1.get(address));
+                const amounts2 = resourceAddresses.map(address => amountsMap2.get(address));
+
+                // Extract total supply from entity details responses
+                const totalSupply1 = detailsData1.items[0]?.details?.total_supply;
+                const totalSupply2 = detailsData2.items[0]?.details?.total_supply;
+
+                var xrdInitial = amounts1[0];
+                var stabInitial = amounts1[1];
+                var xrdFinal = amounts2[0];
+                var stabFinal = amounts2[1];
+                var xrdPerStabInitial = xrdInitial / stabInitial;
+                var xrdPerStabFinal = xrdFinal / stabFinal;
+                var xrdPriceInitial = customDetailsData.items[0].details.state.fields[10].value;
+                var stabPriceInitial = xrdPerStabInitial * xrdPriceInitial;
+                var stabPriceFinal = xrdPerStabFinal * xrdPrice;
+
+                var dollarPerLpInitial = (xrdInitial * xrdPriceInitial + stabInitial * stabPriceInitial) / totalSupply1;
+                var dollarPerLpFinal = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
+
+                var dollarPerLpInitial2 = (xrdInitial * xrdPrice + stabInitial * stabPriceFinal) / totalSupply1;
+                var dollarPerLpFinal2 = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
+
+                //var dollarPerLpRatio = (Math.pow((dollarPerLpFinal / dollarPerLpInitial), 365 / 7) - 1) * 100;
+                var dollarPerLpRatio2 = (Math.pow((dollarPerLpFinal2 / dollarPerLpInitial2), 365 / 7) - 1) * 100;
+                var apyElement = document.getElementById('apy-real');
+                var liqElement = document.getElementById('pool-liq');
+                console.log(bigData);
+                xrdPoolAmount = getResourceAmount(xrdAddress, bigData, 4);
+                liqElement.textContent = "$" + Number((xrdPoolAmount * 2 * xrdPrice).toFixed(2)).toLocaleString('en-US');
+                apyElement.textContent = dollarPerLpRatio2.toFixed(2) + "%";
+                apyElement.style.color = dollarPerLpRatio2 > 0 ? 'green' : 'red';
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        fetchData2();
+
+        if (sell == true) {
+            formattedWallet = Math.floor(walletXrd * 10) / 10;
+            document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
+        } else {
+            if (walletIlis >= 0.1) {
+                formattedWallet = Math.floor((walletIlis) * 10) / 10;
+            } else {
+                formattedWallet = 0;
+            }
+            document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
+        }
+        document.getElementById('internal-price-xrd').innerHTML = stabXrdRatio.toFixed(2) + " XRD";
+        document.getElementById('internal-price-usd').innerHTML = "$" + (stabXrdRatio * xrdPrice).toFixed(3);
+        document.getElementById('market-price-xrd').innerHTML = (xrdPoolAmount / stabPoolAmount).toFixed(2) + " XRD";
+        document.getElementById('market-price-usd').innerHTML = "$" + ((xrdPoolAmount / stabPoolAmount) * xrdPrice).toFixed(3);
+        document.getElementById('interest-rate').innerHTML = interestRate + "% APY";
+        if (xrdPoolAmount / stabPoolAmount < 0.995 * stabXrdRatio) {
+            document.getElementById("recommendation").innerHTML = `<strong>Market price &lt; Internal price</strong>, sell XRD to arbitrage!`;
+        } else if (xrdPoolAmount / stabPoolAmount > 1.005 * stabXrdRatio) {
+            document.getElementById("recommendation").innerHTML = `<strong>Market price &gt; Internal price</strong>, sell STAB to arbitrage!`;
+        }
+        else {
+            document.getElementById("recommendation").innerHTML = `Price error is within acceptable bounds. Minimal arbitrage opportunities.`;
+        }
+        document.getElementById('provide-xrd-amount').textContent = "max. " + (Math.floor(walletXrd * 10) / 10).toLocaleString('en-US');
+        if (walletStab >= 0.1) {
+            document.getElementById('provide-stab-amount-second').textContent = "max. " + (Math.floor((walletStab) * 10) / 10).toLocaleString('en-US');
+            document.getElementById('provide-stab-amount').textContent = "max. " + (Math.floor((walletStab) * 10) / 10).toLocaleString('en-US');
+        } else {
+            document.getElementById('provide-stab-amount-second').textContent = "max. " + 0;
+            document.getElementById('provide-stab-amount').textContent = "max. " + 0;
+        }
+        document.getElementById('remove-lp-amount').textContent = "max. " + (Math.floor(walletLp * 10) / 10).toLocaleString('en-US');
+    }
+
+    if (window.location.pathname === '/lbp') {
+        calculateLbpChange();
+        document.getElementById('apy-real').textContent = (ilisWeight * 100).toFixed(1) + "/" + (xrdWeight * 100).toFixed(1);
+        document.getElementById('progress').textContent = ((lbpDuration / 60 / 60 / 24) * lbpProgress).toFixed(2) + "/" + (lbpDuration / 60 / 60 / 24).toFixed(2) + " days";
+        if (lbpEnded == false) {
+            document.getElementById('current-fdv').textContent = (((xrdLbpPoolAmount * ilisWeight) / (ilisLbpPoolAmount * xrdWeight)) * 100000000).toLocaleString('en-US', { maximumFractionDigits: 0 }) + " XRD";
+            document.getElementById('ilis-price').textContent = ((xrdLbpPoolAmount * ilisWeight) / (ilisLbpPoolAmount * xrdWeight)).toFixed(4) + " XRD";
+            document.getElementById('final-fdv').textContent = (((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5)) * 100000000).toLocaleString('en-US', { maximumFractionDigits: 0 }) + " XRD";
+            document.getElementById('ilis-price-final').textContent = (((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5))).toFixed(4) + " XRD";
+        } else {
+            document.getElementById('current-fdv-line').style.display = "none";
+            document.getElementById('ilis-price-line').style.display = "none";
+            document.getElementById('final-fdv-text').textContent = "Final ILIS FDV";
+            document.getElementById('ilis-price-final-text').textContent = "Final ILIS Price";
+        }
+        if (sell == true) {
+            formattedWallet = Math.floor(walletXrd * 10) / 10;
+            document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
+        } else {
+            if (walletStab >= 0.1) {
+                formattedWallet = Math.floor((walletStab) * 10) / 10;
+            } else {
+                formattedWallet = 0;
+            }
+            document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
         }
     }
 
-    fetchData().then(data => {
-        bigData = data;
-        if (onlyWallet === false) {
-            useData(data);
+    if (window.location.pathname === '/liquidations') {
+        var dropdownContent = document.querySelector('.dropdown-custom-content');
+        dropdownContent.innerHTML = '';
+        var marker_exists = false;
+        marker_ids.forEach(id => {
+            if (marker_exists == false) {
+                marker_exists = true;
+            }
+            var name = id;
+            var logoUrl = 'images/marker-receipt.png'
+            var subtext = "STAB Marker Receipt";
+
+            // Create a new option
+            var option = document.createElement('div');
+            option.className = 'dropdown-custom-option';
+            option.dataset.logoUrl = logoUrl;
+            option.setAttribute('tabindex', '0'); // Make the option focusable
+
+            // Add the logo image to the option
+            var logoImage = document.createElement('img');
+            logoImage.src = logoUrl;
+            logoImage.alt = 'Logo';
+            logoImage.style.borderRadius = '0';
+            option.appendChild(logoImage);
+
+            // Add the text to the option
+            var optionText = document.createElement('div');
+            optionText.className = 'option-text';
+
+            var optionTitle = document.createElement('div');
+            optionTitle.className = 'option-title';
+            optionTitle.textContent = name;
+            optionText.appendChild(optionTitle);
+
+            var optionSubtext = document.createElement('div');
+            optionSubtext.className = 'option-subtext';
+            optionSubtext.textContent = subtext;
+            optionText.appendChild(optionSubtext);
+
+            option.appendChild(optionText);
+
+            // Attach the click event listener
+            option.addEventListener('click', function () {
+                // Remove the 'selected' class from all options
+                var options = document.querySelectorAll('.dropdown-custom-option');
+                options.forEach(function (otherOption) {
+                    otherOption.classList.remove('selected');
+                });
+
+                // Add the 'selected' class to the clicked option
+                option.classList.add('selected');
+
+                // Set the button text to the option title
+                var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                dropdownButton.textContent = "Marker " + name;
+
+                // Hide the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.style.display = 'none';
+                setChevron(dropdownContent);
+
+                selectedMarker = id;
+
+                update_liq();
+                setMarkLiqButton();
+                setNoMarkLiqButton();
+            });
+
+            // Append the new option to the dropdown content
+            var dropdownContent = document.querySelector('.dropdown-custom-content');
+            dropdownContent.appendChild(option);
+        });
+        var dropdownButton = document.querySelector('.dropdown-custom-button');
+
+        if (marker_exists == false) {
+            dropdownButton.style.backgroundColor = "";
+            dropdownButton.disabled = true;
+        } else {
+            dropdownButton.disabled = false;
+            dropdownButton.style.backgroundColor = "";
         }
+
+        if (selectedMarker !== undefined) {
+            update_liq();
+        } else {
+            if (isConnected === false) {
+                dropdownContent.innerHTML = '';
+            }
+            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+            dropdownButton.textContent = "select a marker";
+            document.getElementById('liqwithmark').querySelector('.button-text').textContent = "LIQUIDATE";
+            document.getElementById('liqwithmark').style.color = "";
+            document.getElementById('marker-time').textContent = "-";
+            document.getElementById('status').style.color = "";
+            document.getElementById('marker-state').textContent = "-";
+            document.getElementById('marker-state').style.color = "";
+            document.getElementById('status').textContent = "-";
+            document.getElementById('collateralAmount').textContent = "-";
+            document.getElementById('debtAmount').textContent = "-";
+            document.getElementById('cr').textContent = "-";
+        }
+
+        checkLiquidation(parseInt(document.getElementById('liq-counter').textContent));
+        setNoMarkLiqButton();
+    }
+
+    if (window.location.pathname === '/membership') {
+        var dropdownContent = document.querySelector('.dropdown-custom-content');
+        dropdownContent.innerHTML = '';
+
+        stab_ids.forEach(id => {
+            var name = id;
+            var logoUrl = 'images/staking-id.png'
+            var subtext = "ILIS DAO Membership ID";
+
+            // Create a new option
+            var option = document.createElement('div');
+            option.className = 'dropdown-custom-option';
+            option.dataset.logoUrl = logoUrl;
+            option.setAttribute('tabindex', '0'); // Make the option focusable
+
+            // Add the logo image to the option
+            var logoImage = document.createElement('img');
+            logoImage.src = logoUrl;
+            logoImage.alt = 'Logo';
+            logoImage.style.borderRadius = '0';
+            option.appendChild(logoImage);
+
+            // Add the text to the option
+            var optionText = document.createElement('div');
+            optionText.className = 'option-text';
+
+            var optionTitle = document.createElement('div');
+            optionTitle.className = 'option-title';
+            optionTitle.textContent = name;
+            optionText.appendChild(optionTitle);
+
+            var optionSubtext = document.createElement('div');
+            optionSubtext.className = 'option-subtext';
+            optionSubtext.textContent = subtext;
+            optionText.appendChild(optionSubtext);
+
+            option.appendChild(optionText);
+
+            // Attach the click event listener
+            option.addEventListener('click', function () {
+                // Remove the 'selected' class from all options
+                var options = document.querySelectorAll('.dropdown-custom-option');
+                options.forEach(function (otherOption) {
+                    otherOption.classList.remove('selected');
+                });
+
+                // Add the 'selected' class to the clicked option
+                option.classList.add('selected');
+
+                // Set the button text to the option title
+                var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                dropdownButton.textContent = "Membership ID " + name;
+
+                // Hide the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.style.display = 'none';
+                setChevron(dropdownContent);
+
+                selectedId = id;
+
+                update_id();
+            });
+
+            // Append the new option to the dropdown content
+            var dropdownContent = document.querySelector('.dropdown-custom-content');
+            dropdownContent.appendChild(option);
+        });
+
+        if (selectedId !== undefined) {
+            update_id();
+        } else {
+            if (isConnected === false) {
+                dropdownContent.innerHTML = '';
+            }
+            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+            dropdownButton.textContent = "Select Membership ID";
+            document.getElementById('staked-ilis').textContent = "-";
+            document.getElementById('unstake-ready').textContent = "-";
+            document.getElementById('locked-until').textContent = "-";
+            document.getElementById('voting-until').textContent = "-";
+            
+            // set max stake and new stake to 0, and set locks to 0
+        }
+    }
+
+    if (window.location.pathname === '/governance') {
+        var dropdownContent = document.querySelector('.dropdown-custom-content');
+        dropdownContent.innerHTML = '';
+
+        stab_ids.forEach(id => {
+            var name = id;
+            var logoUrl = 'images/staking-id.png'
+            var subtext = "ILIS DAO Membership ID";
+
+            // Create a new option
+            var option = document.createElement('div');
+            option.className = 'dropdown-custom-option';
+            option.dataset.logoUrl = logoUrl;
+            option.setAttribute('tabindex', '0'); // Make the option focusable
+
+            // Add the logo image to the option
+            var logoImage = document.createElement('img');
+            logoImage.src = logoUrl;
+            logoImage.alt = 'Logo';
+            logoImage.style.borderRadius = '0';
+            option.appendChild(logoImage);
+
+            // Add the text to the option
+            var optionText = document.createElement('div');
+            optionText.className = 'option-text';
+
+            var optionTitle = document.createElement('div');
+            optionTitle.className = 'option-title';
+            optionTitle.textContent = name;
+            optionText.appendChild(optionTitle);
+
+            var optionSubtext = document.createElement('div');
+            optionSubtext.className = 'option-subtext';
+            optionSubtext.textContent = subtext;
+            optionText.appendChild(optionSubtext);
+
+            option.appendChild(optionText);
+
+            // Attach the click event listener
+            option.addEventListener('click', function () {
+                // Remove the 'selected' class from all options
+                var options = document.querySelectorAll('.dropdown-custom-option');
+                options.forEach(function (otherOption) {
+                    otherOption.classList.remove('selected');
+                });
+
+                // Add the 'selected' class to the clicked option
+                option.classList.add('selected');
+
+                // Set the button text to the option title
+                var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                dropdownButton.textContent = "Membership ID " + name;
+
+                // Hide the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.style.display = 'none';
+                setChevron(dropdownContent);
+
+                selectedId = id;
+
+                update_governance();
+            });
+
+            // Append the new option to the dropdown content
+            var dropdownContent = document.querySelector('.dropdown-custom-content');
+            dropdownContent.appendChild(option);
+        });
+
+        if (selectedId !== undefined) {
+            update_governance();
+        } else {
+            if (isConnected === false) {
+                dropdownContent.innerHTML = '';
+            }
+            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+            dropdownButton.textContent = "Select Membership ID";
+            document.getElementById('vote-power').textContent = "-";
+            poolIlisDelegatedToMe = 0;
+            amountStaked = 0;
+        }
+    }
+
+    if (window.location.pathname === '/incentives') {
+        var dropdownContent = document.querySelector('.dropdown-custom-content.id');
+        dropdownContent.innerHTML = '';
+
+        console.log(incentive_ids);
+
+        incentive_ids.forEach(id => {
+            var name = id;
+            var logoUrl = 'images/staking-id.png'
+            var subtext = "ILIS DAO Incentives ID";
+
+            // Create a new option
+            var option = document.createElement('div');
+            option.className = 'dropdown-custom-option id';
+            option.dataset.logoUrl = logoUrl;
+            option.setAttribute('tabindex', '0'); // Make the option focusable
+
+            // Add the logo image to the option
+            var logoImage = document.createElement('img');
+            logoImage.src = logoUrl;
+            logoImage.alt = 'Logo';
+            logoImage.style.borderRadius = '0';
+            option.appendChild(logoImage);
+
+            // Add the text to the option
+            var optionText = document.createElement('div');
+            optionText.className = 'option-text';
+
+            var optionTitle = document.createElement('div');
+            optionTitle.className = 'option-title';
+            optionTitle.textContent = name;
+            optionText.appendChild(optionTitle);
+
+            var optionSubtext = document.createElement('div');
+            optionSubtext.className = 'option-subtext';
+            optionSubtext.textContent = subtext;
+            optionText.appendChild(optionSubtext);
+
+            option.appendChild(optionText);
+
+            // Attach the click event listener
+            option.addEventListener('click', function () {
+                // Remove the 'selected' class from all options
+                var options = document.querySelectorAll('.dropdown-custom-option.id');
+                options.forEach(function (otherOption) {
+                    otherOption.classList.remove('selected');
+                });
+
+                // Add the 'selected' class to the clicked option
+                option.classList.add('selected');
+
+                // Set the button text to the option title
+                var dropdownButton = document.querySelector('.dropdown-custom-button.id b');
+                dropdownButton.textContent = "Incentives ID " + name;
+
+                // Hide the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content.id');
+                dropdownContent.style.display = 'none';
+                setChevron(dropdownContent);
+
+                selectedId = id;
+
+                update_incentives();
+            });
+
+            // Append the new option to the dropdown content
+            var dropdownContent = document.querySelector('.dropdown-custom-content.id');
+            dropdownContent.appendChild(option);
+        });
+
+        var dropdownContent2 = document.querySelector('.dropdown-custom-content.resource');
+        dropdownContent2.innerHTML = '';
+
+        console.log(incentive_ids);
+
+        incentive_resources.forEach(id => {
+            var name = id[0];
+            var logoUrl = id[1];
+            var subtext = "ILIS DAO Incentivized Resource";
+
+            // Create a new option
+            var option = document.createElement('div');
+            option.className = 'dropdown-custom-option resource';
+            option.dataset.logoUrl = logoUrl;
+            option.setAttribute('tabindex', '0'); // Make the option focusable
+
+            // Add the logo image to the option
+            var logoImage = document.createElement('img');
+            logoImage.src = logoUrl;
+            logoImage.alt = 'Logo';
+            logoImage.style.borderRadius = '0';
+            option.appendChild(logoImage);
+
+            // Add the text to the option
+            var optionText = document.createElement('div');
+            optionText.className = 'option-text';
+
+            var optionTitle = document.createElement('div');
+            optionTitle.className = 'option-title';
+            optionTitle.textContent = name;
+            optionText.appendChild(optionTitle);
+
+            var optionSubtext = document.createElement('div');
+            optionSubtext.className = 'option-subtext';
+            optionSubtext.textContent = subtext;
+            optionText.appendChild(optionSubtext);
+
+            option.appendChild(optionText);
+
+            // Attach the click event listener
+            option.addEventListener('click', function () {
+                // Remove the 'selected' class from all options
+                var options = document.querySelectorAll('.dropdown-custom-option.resource');
+                options.forEach(function (otherOption) {
+                    otherOption.classList.remove('selected');
+                });
+
+                // Add the 'selected' class to the clicked option
+                option.classList.add('selected');
+
+                // Set the button text to the option title
+                var dropdownButton = document.querySelector('.dropdown-custom-button.resource b');
+                dropdownButton.textContent = name;
+
+                // Hide the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content.resource');
+                dropdownContent.style.display = 'none';
+                setChevron(dropdownContent);
+
+                selectedResource = id[2];
+
+                update_incentives();
+            });
+
+            if (name === "LPSTAB") {
+                option.click();
+            }
+
+            // Append the new option to the dropdown content
+            var dropdownContent = document.querySelector('.dropdown-custom-content.resource');
+            dropdownContent.appendChild(option);
+        });
+
+        if (selectedId !== undefined) {
+            update_incentives();
+        } else {
+            if (isConnected === false) {
+                dropdownContent.innerHTML = '';
+            }
+            var dropdownButton = document.querySelector('.dropdown-custom-button.id b');
+            dropdownButton.textContent = "Select Incentives ID";
+            document.getElementById('staked').textContent = "-";
+            document.getElementById('unstake-ready').textContent = "-";
+            document.getElementById('locked-until').textContent = "-";
+            
+            // set max stake and new stake to 0, and set locks to 0
+        }
+    }
+
+    if (window.location.pathname === '/borrow') {
+        document.getElementById('interest-rate').textContent = interestRate + "% APY";
+        var number1 = (1 * data[3].details.total_supply).toFixed(0);
+        document.getElementById('circulating-stab').textContent = Number(number1).toLocaleString('en-US');
+        document.getElementById('stab-internal-price').textContent = "$" + (xrdPrice * stabXrdRatio).toFixed(2);
+        document.getElementById('stab-market-price').textContent = "$" + (xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(2);
+        var number2 = (data[3].details.total_supply * xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(0);
+        document.getElementById('stab-mc').textContent = "$" + Number(number2).toLocaleString('en-US');
+
+        // Define the request payload
+        const requestPayload = {
+            key_value_store_address: collateralsKvs,
+            keys: [
+                {
+                    key_hex: xrdKeyHex,
+                },
+                {
+                    key_json: {
+                        kind: "Tuple",
+                        fields: [
+                            {
+                                kind: "U32",
+                                value: "1"
+                            }
+                        ]
+                    }
+                }
+            ]
+        };
+
+        // Make the API request
+        fetch('https://stokenet.radixdlt.com/state/key-value-store/data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestPayload)
+        })
+            .then(response => response.json())
+            .then(data => {
+                // Extract minted_stab and collateral_amount from the response
+                const entries = data.entries;
+                let mintedStab, collateralAmountInProtocol;
+
+                entries.forEach(entry => {
+                    const fields = entry.value.programmatic_json.fields;
+
+                    fields.forEach(field => {
+                        if (field.field_name === "minted_stab") {
+                            mintedStab = field.value;
+                        } else if (field.field_name === "collateral_amount") {
+                            collateralAmountInProtocol = field.value;
+                        }
+                    });
+                });
+                document.getElementById('stab-cr').textContent = (((collateralAmountInProtocol * xrdPrice) / (mintedStab * internalPrice)) * 100).toFixed(2) + "%";
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+
+    }
+
+    // this has got to be the strangest code I've ever written
+    // idk what the fuck it does anymore but it works...
+    // this counter thing is moronic hahahaha
+    if (window.location.pathname === '/manage-loans') {
+        var dropdownContent = document.querySelector('.dropdown-custom-content');
+        dropdownContent.innerHTML = '';
+        var cdpExists = false;
+        var counter;
+        if (data.length > 13) {
+            counter = data[14].length - 1;
+        }
+        // Get the dropdown element
+        cdp_ids.forEach(id => {
+            if (cdpExists == false) {
+                cdpExists = true;
+            }
+            var name = "Receipt " + id;
+            var logoUrl = 'images/receipt.png'
+            while (data[14][counter].is_burned == true && counter > 0) {
+                counter -= 1;
+            }
+            const resource = acceptedResources.find(ar => ar[1] === data[14][counter].data.programmatic_json.fields[0].value);
+            validatorMultiplier = resource[4];
+            var cr = ((data[14][counter].data.programmatic_json.fields[3].value / data[14][counter].data.programmatic_json.fields[4].value) * xrdPrice * 100 / internalPrice / validatorMultiplier);
+            var status = data[14][counter].data.programmatic_json.fields[6].variant_name;
+
+            if (status != "Liquidated" && status != "ForceLiquidated") {
+                var subtext = status + ", CR: " + (cr * 1).toFixed(2) + "%";
+            } else {
+                var subtext = status;
+            }
+
+
+            // Create a new option
+            var option = document.createElement('div');
+            option.className = 'dropdown-custom-option';
+            if (cr < 150 || status === "Marked") {
+                option.classList.add("extrawarning");
+            } else if (cr < 200) {
+                option.classList.add("littlewarning");
+            }
+            option.dataset.logoUrl = logoUrl;
+            option.setAttribute('tabindex', '0'); // Make the option focusable
+
+            // Add the logo image to the option
+            var logoImage = document.createElement('img');
+            logoImage.src = logoUrl;
+            logoImage.alt = 'Logo';
+            logoImage.style.borderRadius = '0';
+            option.appendChild(logoImage);
+
+            // Add the text to the option
+            var optionText = document.createElement('div');
+            optionText.className = 'option-text';
+
+            var optionTitle = document.createElement('div');
+            optionTitle.className = 'option-title';
+            optionTitle.textContent = name;
+            optionText.appendChild(optionTitle);
+
+            var optionSubtext = document.createElement('div');
+            optionSubtext.className = 'option-subtext';
+            optionSubtext.textContent = subtext;
+            optionText.appendChild(optionSubtext);
+
+            option.appendChild(optionText);
+
+            // Attach the click event listener
+            option.addEventListener('click', function () {
+                document.getElementById('amount-to-remove').value = "";
+                // Remove the 'selected' class from all options
+                var options = document.querySelectorAll('.dropdown-custom-option');
+                options.forEach(function (otherOption) {
+                    otherOption.classList.remove('selected');
+                });
+
+                // Add the 'selected' class to the clicked option
+                option.classList.add('selected');
+
+                // Set the button text to the option title
+                var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                dropdownButton.textContent = name;
+
+                // Hide the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.style.display = 'none';
+                setChevron(dropdownContent);
+                selectedCdp = id;
+                update_cdp();
+            });
+
+            // Append the new option to the dropdown content
+            var dropdownContent = document.querySelector('.dropdown-custom-content');
+            dropdownContent.appendChild(option);
+            if (counter > 0) {
+                counter -= 1;
+            }
+        });
+
+        var dropdownButton = document.querySelector('.dropdown-custom-button');
+
+        if (cdpExists == false) {
+            dropdownButton.style.backgroundColor = "";
+            dropdownButton.disabled = true;
+        } else {
+            dropdownButton.disabled = false;
+            dropdownButton.style.backgroundColor = "";
+        }
+
+        if (selectedCdp !== undefined) {
+            update_cdp();
+        } else {
+            if (isConnected === false) {
+                dropdownContent.innerHTML = '';
+            }
+            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+            dropdownButton.textContent = "select loan receipt";
+            var logoImage = document.querySelector('.input-logo');
+            logoImage.src = 'images/radix-logo.svg';
+            document.getElementById('status').textContent = "-";
+            document.getElementById('collateral').textContent = "-";
+            document.getElementById('collateralAmount').textContent = "";
+            document.getElementById('debtAmount').textContent = "-";
+            document.getElementById('cr').textContent = "-";
+        }
+        setCloseLoanButton();
+        if (addingCollateral) {
+            setAddColButton();
+        } else {
+            setRemoveColButton();
+        }
+        if (addingDebt) {
+            setAddDebtButton();
+        }
+        else {
+            setRemoveDebtButton();
+        }
+    }
         update_cdp();
         update_liq();
         update_id();
+        update_incentives();
+        update_governance();
+}
+
+async function getFungibleResources(accountAddress) {
+    const response = await fetch('https://stokenet.radixdlt.com/state/entity/details', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            addresses: [accountAddress],
+            aggregation_level: 'Vault',
+            opt_ins: {
+                ancestor_identities: true,
+                component_royalty_vault_balance: true,
+                package_royalty_vault_balance: true,
+                non_fungible_include_nfids: true,
+                explicit_metadata: []
+            }
+        })
+    });
+
+    const data = await response.json();
+
+    // Iterate over each item in the response
+    const acceptedFungibleResources = data.items.flatMap(item => {
+        // Filter the fungible resources to only include those in the list of accepted resources
+        return item.fungible_resources.items.filter(resource => {
+            return acceptedResources.some(acceptedResource => acceptedResource[1] === resource.resource_address);
+        }).map(resource => {
+            // Find the corresponding accepted resource
+            const acceptedResource = acceptedResources.find(ar => ar[1] === resource.resource_address);
+
+            // Add the name of the accepted resource to the resource object
+            resource.name = acceptedResource ? acceptedResource[0] : '';
+            resource.logo = acceptedResource ? acceptedResource[3] : '';
+            resource.multiplier = acceptedResource ? acceptedResource[4] : 1;
+            resource.identifier = acceptedResource ? acceptedResource[5] : '';
+
+            return resource;
+        });
+    });
+
+    // Map each object to its name, resource_address and amount properties
+    const resourceAddressesAndAmounts = acceptedFungibleResources.map(resource => {
+        let amount = 0;
+        if (resource.vaults && resource.vaults.items && resource.vaults.items.length > 0) {
+            amount = parseFloat(resource.vaults.items[0].amount);
+        }
+
+        return {
+            name: resource.name,
+            resourceAddress: resource.resource_address,
+            amount: amount,
+            logo: resource.logo,
+            multiplier: resource.multiplier,
+            identifier: resource.identifier
+        };
+    });
+
+    // Sort the array by amount in descending order
+    resourceAddressesAndAmounts.sort((a, b) => b.amount - a.amount);
+
+    return resourceAddressesAndAmounts;
+}
+
+// Create a persistent subscription that updates addressSubject
+const walletSubscription = rdt.walletApi.walletData$.pipe(
+    distinctUntilChanged((prev, curr) => 
+        prev?.accounts?.[0]?.address === curr?.accounts?.[0]?.address
+    )
+).subscribe(walletData => {
+    const newAddress = walletData?.accounts?.[0]?.address || DEFAULT_ADDRESS;
+    console.log("Wallet changed. New address:", newAddress);
+    addressSubject.next(newAddress);
+    update(false);  // Trigger an update whenever the wallet changes
+});
+
+async function wrappedUseWalletData(address, onlyWallet) {
+    if (window.location.pathname === "/deployment") {
+        return;
+    }
+    const updateId = ++latestUpdateId;
+    try {
+        const data = await fetchData(address);
+        
+        // Check if this is still the latest update
+        if (updateId !== latestUpdateId) {
+            console.log(`Update ${updateId} results discarded`);
+            return;
+        }
+
+        console.log(`Update ${updateId} results applied`);
+        if (onlyWallet === false) {
+            await useData(data);
+        }
         if (window.location.pathname === '/liquidations') {
             setMarkLiqButton();
             setNoMarkLiqButton();
         }
-    }).catch(e => {
-        console.error('Error:', e);
-    });
+        if (window.location.pathname === '/lbp') {
+            createChart(lbpLength, ledgerData);
+            resizeChart();
+            setLbpSwapButton();
+        }
+    } catch (error) {
+        console.error(`Error in update ${updateId}:`, error);
+    }
 }
 
-function update(onlyWallet) {
-    useWalletData("account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec", onlyWallet);
-    rdt.walletApi.walletData$.subscribe((walletData) => {
-        accountAddress = walletData?.accounts?.[0]?.address || "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec";
-        useWalletData(accountAddress, onlyWallet);
-    });
+async function update(onlyWallet) {
+    const currentAddress = addressSubject.getValue();
+    console.log(`Update ${latestUpdateId + 1} - Address to be used:`, currentAddress);
+    await wrappedUseWalletData(currentAddress, onlyWallet);
 }
 
+// Initial update
 update(false);
+
+if (window.location.pathname === '/lbp') {
+    window.addEventListener('resize', resizeChart);
+
+    let swapMax = document.getElementById('swap-sell-amount');
+    let swapReceive = document.getElementById('amount-receive');
+    let inputFieldSwap = document.getElementById('amount-sell');
+
+    inputFieldSwap.oninput = function () {
+            calculateLbpChange();
+    }
+
+    document.getElementById("switch-button").onclick = function () {
+        let source1 = document.getElementById("swap-logo-1").getAttribute("src");
+        let source2 = document.getElementById("swap-logo-2").getAttribute("src");
+        let sell_suffix = document.getElementById("amount-sell-suffix");
+        let receive_suffix = document.getElementById("amount-receive-suffix");
+        if (sell_suffix.textContent === "XRD" && receive_suffix.textContent === "ILIS") {
+            sell_suffix.textContent = "ILIS";
+            receive_suffix.textContent = "XRD";
+        } else {
+            sell_suffix.textContent = "XRD";
+            receive_suffix.textContent = "ILIS";
+        }
+        document.getElementById("swap-logo-1").setAttribute("src", source2);
+        document.getElementById("swap-logo-2").setAttribute("src", source1);
+        lbpSell = !lbpSell;
+        inputFieldSwap.value = "0";
+        swapReceive.value = "0";
+        if (lbpSell == true) {
+            formattedWallet = Math.floor(walletXrd * 10) / 10;
+            swapMax.textContent = "max. " + formattedWallet.toLocaleString('en-US');
+        } else {
+            if (walletIlis >= 0.1) {
+                formattedWallet = Math.floor((walletIlis) * 10) / 10;
+            } else {
+                formattedWallet = 0;
+            }
+            swapMax.textContent = "max. " + formattedWallet.toLocaleString('en-US');
+        }
+        calculateLbpChange();
+    }
+    swapMax.addEventListener('click', function () {
+        if (lbpSell == true) {
+            inputFieldSwap.value = walletXrd;
+        }
+        else {
+            inputFieldSwap.value = walletIlis;
+        }
+        calculateLbpChange();
+    });
+    swapMax.style.cursor = "pointer";
+
+    // *********** Swap ***********
+    document.getElementById('sell').onclick = async function () {
+        update(true);
+        if (!isConnected) {
+            return;
+        }
+
+        if (document.getElementById("amount-sell").value === "") {
+            alert("Please enter an amount to swap.");
+            return;
+        }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
+        let sellAmount = document.getElementById("amount-sell").value;
+        let sellAddress;
+        let message;
+
+        if (lbpSell == true) {
+            sellAddress = xrdAddress;
+            message = "Selling XRD for ILIS using the ILIS Balancer-style Liquidity Bootstrapping Pool";
+        } else {
+            sellAddress = ilisAddress;
+            message = "Selling ILIS for XRD using the ILIS Balancer-style Liquidity Bootstrapping Pool";
+        }
+
+        let manifest = `
+                CALL_METHOD
+                Address("${accountAddress}")
+                "withdraw"    
+                Address("${sellAddress}")
+                Decimal("${sellAmount}");
+                TAKE_ALL_FROM_WORKTOP
+                Address("${sellAddress}")
+                Bucket("sell");
+                CALL_METHOD
+                Address("${lbpComponentAddress}")
+                "swap"
+                Bucket("sell");
+                CALL_METHOD
+                Address("${accountAddress}")
+                "deposit_batch"
+                Expression("ENTIRE_WORKTOP");
+                `
+        console.log('Swap manifest: ', manifest)
+        toastMe(0, "Swap", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message,
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Swap", 2);
+                console.log(result);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                update(false);
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                update(false);            
+            });
+    }
+}
 
 if (window.location.pathname === '/swap') {
     // Get all buttons with the class 'stake-button'
@@ -2817,10 +4874,10 @@ if (window.location.pathname === '/swap') {
 
         if (sell == true) {
             sellAddress = xrdAddress;
-            message = "Selling XRD for STAB using the Stabilis Protocol";
+            message = "Selling XRD for STAB using the STAB Protocol";
         } else {
             sellAddress = stabAddress;
-            message = "Selling STAB for XRD using the Stabilis Protocol";
+            message = "Selling STAB for XRD using the STAB Protocol";
         }
 
         let manifest = `
@@ -2872,8 +4929,7 @@ if (window.location.pathname === '/swap') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -2945,7 +5001,7 @@ if (window.location.pathname === '/swap') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
-                message: "Adding liquidity to the Stabilis Protocol",
+                message: "Adding liquidity to the STAB Protocol XRD/STAB pool",
             })
             .then(result => {
                 toastMe(result.value.transactionIntentHash, "Liquidity provision", 2);
@@ -2967,8 +5023,7 @@ if (window.location.pathname === '/swap') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -3025,7 +5080,7 @@ if (window.location.pathname === '/swap') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
-                message: "Removing liquidity from the Stabilis Protocol",
+                message: "Removing liquidity from the STAB Protocol XRD/STAB pool",
             })
             .then(result => {
                 toastMe(result.value.transactionIntentHash, "Liquidity removal", 2);
@@ -3047,8 +5102,7 @@ if (window.location.pathname === '/swap') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
 
     }
@@ -3200,7 +5254,7 @@ if (window.location.pathname === '/liquidations') {
         // Repeat the specified part of the manifest
         const repeatManifest = `
             CALL_METHOD
-                Address("${componentAddress}")
+                Address("${proxyComponentAddress}")
                 "mark_for_liquidation"
                 Address("${xrdAddress}")
                 ;
@@ -3250,8 +5304,7 @@ if (window.location.pathname === '/liquidations') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -3306,7 +5359,7 @@ if (window.location.pathname === '/liquidations') {
       Address("${stabAddress}")
       Bucket("stab");
     CALL_METHOD
-      Address("${componentAddress}")
+      Address("${proxyComponentAddress}")
       "liquidate_position_with_marker"
       Proof("marker_proof")
       Bucket("stab");
@@ -3336,7 +5389,7 @@ if (window.location.pathname === '/liquidations') {
         Bucket("marker_bucket");
   
     CALL_METHOD    
-        Address("${componentAddress}") #pool comp address
+        Address("${proxyComponentAddress}") #pool comp address
         "burn_marker"
         Bucket("marker_bucket");
       `
@@ -3378,8 +5431,7 @@ if (window.location.pathname === '/liquidations') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -3414,7 +5466,7 @@ if (window.location.pathname === '/liquidations') {
       Address("${stabAddress}")
       Bucket("stab");
     CALL_METHOD
-      Address("${componentAddress}")
+      Address("${proxyComponentAddress}")
       "liquidate_position_without_marker"
       Bucket("stab")
       true
@@ -3458,31 +5510,195 @@ if (window.location.pathname === '/liquidations') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 }
 
-if (window.location.pathname === '/incentives') {
-    // Get all buttons with the class 'stake-button'
-    const buttons = document.querySelectorAll('.stake-button');
+if (window.location.pathname === '/membership') {
+    var slider = document.getElementById("slider-stake");
+    var inputAmount = document.getElementById("amount-to-stake");
+    var maxButton = document.getElementById("max-new-stake");
+    var newStake = document.getElementById("new-stake");
+    var sliderLock = document.getElementById("slider-lock");
+    var inputAmountLock = document.getElementById("days-to-lock");
+    var maxButtonLock = document.getElementById("max-new-lock");
+    var newLock = document.getElementById("new-lock");
 
+    slider.addEventListener('input', function () {
+        updateSliderBackground(this);
+    });
+
+    sliderLock.addEventListener('input', function () {
+        updateSliderBackground(this);
+    });
+
+    slider.oninput = function () {
+        if (stake) {
+            stakingAmount = this.value;
+            newStake.textContent = "New stake: " + (parseFloat(this.value) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+            inputAmount.value = this.value;
+        } else {
+            stakingAmount = this.value;
+            newStake.textContent = "New stake: " + (-this.value + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+            inputAmount.value = this.value;
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+    }
+
+    inputAmount.oninput = function () {
+        if (stake) {
+            var input = this.value === '' ? 0 : parseFloat(this.value);
+            if (input > walletIlis) {
+                this.value = walletIlis;
+                input = walletIlis;
+            }
+            newStake.textContent = "New stake: " + (input + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+            slider.value = input;
+        } else {
+            var input = this.value === '' ? 0 : parseFloat(this.value);
+            if (input > parseFloat(amountStaked) * poolMultiplier) {
+                this.value = parseFloat(amountStaked) * poolMultiplier;
+                input = parseFloat(amountStaked) * poolMultiplier;
+            }
+            newStake.textContent = "New stake: " + (input).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+            slider.value = input;
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(slider);
+    }
+
+    maxButton.onclick = function () {
+        if (!maxButton.disabled) {
+            if (stake) {
+                slider.value = walletIlis;
+                newStake.textContent = "New stake: " + (parseFloat(walletIlis) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+                inputAmount.value = walletIlis;
+            } else {
+                newStake.textContent = "New stake: 0 ILIS";
+                slider.value = parseFloat(amountStaked) * poolMultiplier;
+                inputAmount.value = slider.value;
+            }
+        } 
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(slider);
+    }
+
+    sliderLock.oninput = function () {
+        if (lock) {
+            newLock.textContent = "New lock: " + (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            inputAmountLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, this.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        } else {
+            newLock.textContent = "New lock: " + (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            inputAmountLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(ilisLockPayment, ilisUnlockMultiplier, this.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+    }
+
+    inputAmountLock.oninput = function () {
+        if (lock) {
+            this.value = Math.min(this.value, maxLockDaysFloor);
+            newLock.textContent = "New lock: " + (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            sliderLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, sliderLock.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        } else {
+            this.value = Math.min(this.value, maxUnlockDaysCeil);
+            newLock.textContent = "New lock: " + (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            sliderLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(ilisLockPayment, ilisUnlockMultiplier, sliderLock.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(sliderLock);
+    }
+
+    maxButtonLock.onclick = function () {
+        if (!maxButtonLock.disabled) {
+            if (lock) {
+                sliderLock.value = maxLockDaysFloor;
+                newLock.textContent = "New lock: " + (Math.max(0, maxLockDaysFloor + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " days";
+                inputAmountLock.value = maxLockDaysFloor;
+                currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, sliderLock.value, amountStaked * poolMultiplier);
+                document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            } else {
+                sliderLock.value = maxUnlockDaysCeil;
+                newLock.textContent = "New lock: 0 days";
+                inputAmountLock.value = maxUnlockDaysCeil;
+                currentRequiredPayment = getRequiredPayment(ilisLockPayment, ilisUnlockMultiplier, sliderLock.value, amountStaked * poolMultiplier);
+                document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            }
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(sliderLock);
+    }
+
+    let buttonsStake = document.querySelectorAll('.stake-button.stake');
+    let buttonsLock = document.querySelectorAll('.stake-button.lock');
     // Add an event listener to each button
-    buttons.forEach(button => {
+    buttonsStake.forEach(button => {
         button.addEventListener('click', function () {
             // Perform different actions depending on the id of the clicked button
-            buttons.forEach(button => button.classList.remove('selected'));
+            buttonsStake.forEach(button => button.classList.remove('selected'));
             this.classList.add('selected');
-            if (this.id === 'stake-selector') {
-                console.log("showing stake section");
-                document.getElementById('stake-section').style.display = '';
-                document.getElementById('unstake-section').style.display = 'none';
-            } else {
-                console.log("showing unstake section");
-                document.getElementById('stake-section').style.display = 'none';
-                document.getElementById('unstake-section').style.display = '';
+            if (this.id === 'add-stake-selector') {
+                document.getElementById('add-stake-button').style.display = '';
+                document.getElementById('remove-stake-button').style.display = 'none';
+                stake = true;
+            } else if (this.id === 'remove-stake-selector') {
+                document.getElementById('add-stake-button').style.display = 'none';
+                document.getElementById('remove-stake-button').style.display = '';
+                stake = false;
             }
+            update_id();
+        });
+    });
+
+    buttonsLock.forEach(button => {
+        button.addEventListener('click', function () {
+            // Perform different actions depending on the id of the clicked button
+            buttonsLock.forEach(button => button.classList.remove('selected'));
+            this.classList.add('selected');
+            if (this.id === 'add-lock-selector') {
+                document.getElementById('remove-lock-button').style.display = 'none';
+                document.getElementById('add-lock-button').style.display = '';
+                document.getElementById('lock-reward-label').textContent= 'ILIS Reward';
+                lock = true;
+            } else if (this.id === 'remove-lock-selector') {
+                document.getElementById('remove-lock-button').style.display = '';
+                document.getElementById('add-lock-button').style.display = 'none';
+                document.getElementById('lock-reward-label').textContent= 'Necessary ILIS';
+                lock = false;
+            }
+            update_id();
         });
     });
 
@@ -3508,7 +5724,11 @@ if (window.location.pathname === '/incentives') {
         // Check if there are any options
         if (options.length === 0) {
             // If not, display a message
-            alert('No Stabilis Staking ID in wallet. Please create one.');
+            if (isConnected) {
+                alert('No Membership ID in wallet. Please create one.');
+            } else {
+                alert('Please connect your wallet.');
+            }
         }
     });
 
@@ -3546,8 +5766,8 @@ if (window.location.pathname === '/incentives') {
 
         let manifest = `
     CALL_METHOD    
-    Address("${componentAddress}") #proxy comp address
-    "create_stab_id";
+    Address("${stakingAddress}")
+    "create_id";
   
   CALL_METHOD
     Address("${accountAddress}") 
@@ -3562,7 +5782,7 @@ if (window.location.pathname === '/incentives') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
-                message: "Creating a new Stabilis Staking ID",
+                message: "Creating a new ILIS Membership ID",
             })
             .then(result => {
                 toastMe(result.value.transactionIntentHash, "ID creation", 2);
@@ -3586,164 +5806,15 @@ if (window.location.pathname === '/incentives') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
-            });
-    }
-
-    // *********** update ***********
-    document.getElementById('update').onclick = async function () {
-        update(true);
-        if (!isConnected) {
-            return;
-        }
-
-        const button = this;
-        const buttonText = button.querySelector('.button-text');
-        const buttonWaiting = button.querySelector('.button-waiting');
-        const spinner = button.querySelector('.spin');
-        const angleIcon = button.querySelector('.chevron');
-        spinner.style.display = 'inline-block';
-        angleIcon.style.display = 'none';
-        buttonText.style.display = 'none';
-        buttonWaiting.style.display = 'inline-block';
-        button.disabled = true;
-        button.style.backgroundColor = '#c6c6c6';
-
-        let manifest = `
-    CALL_METHOD
-      Address("${componentAddress}")
-      "update";
-    CALL_METHOD
-      Address("${accountAddress}")
-      "deposit_batch"
-      Expression("ENTIRE_WORKTOP");
-      `
-        console.log('update manifest: ', manifest)
-        toastMe(0, "Protocol update", 1);
-
-        // Send manifest to extension for signing
-        rdt.walletApi
-            .sendTransaction({
-                transactionManifest: manifest,
-                version: 1,
-                message: "Updating Stabilis Protocol",
-            })
-            .then(result => {
-                toastMe(result.value.transactionIntentHash, "Update", 2);
-                // Hide the spinner, show the angle icon, and change the button text back
-                spinner.style.display = 'none';
-                angleIcon.style.display = 'inline-block';
-                buttonText.style.display = 'inline-block';
-                buttonWaiting.style.display = 'none';
-                button.disabled = false;
-                button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value);
-                update_id();
-            })
-            .catch(error => {
-                // Hide the spinner, show the angle icon, and change the button text back
-                spinner.style.display = 'none';
-                angleIcon.style.display = 'inline-block';
-                buttonText.style.display = 'inline-block';
-                buttonWaiting.style.display = 'none';
-                button.disabled = false;
-                button.style.backgroundColor = '';
-
-                // Handle the error
-                console.error(error);
-            });
-    }
-
-    // *********** Claim ***********
-    document.getElementById('claim-button').onclick = async function () {
-        update(true);
-        if (!isConnected) {
-            return;
-        }
-
-        const button = this;
-        const buttonText = button.querySelector('.button-text');
-        const buttonWaiting = button.querySelector('.button-waiting');
-        const spinner = button.querySelector('.spin');
-        const angleIcon = button.querySelector('.chevron');
-        spinner.style.display = 'inline-block';
-        angleIcon.style.display = 'none';
-        buttonText.style.display = 'none';
-        buttonWaiting.style.display = 'inline-block';
-        button.disabled = true;
-        button.style.backgroundColor = '#c6c6c6';
-
-        let stabId = selectedId;
-        let manifest = `
-    CALL_METHOD
-      Address("${accountAddress}")
-      "create_proof_of_non_fungibles"
-      Address("${stabIdAddress}")
-      Array<NonFungibleLocalId>(
-        NonFungibleLocalId("${stabId}")
-      );
-  
-    POP_FROM_AUTH_ZONE
-      Proof("id_proof");
-  
-    CALL_METHOD    
-      Address("${componentAddress}")
-      "update_id"
-      Proof("id_proof")
-      false;
-  
-    CALL_METHOD
-      Address("${accountAddress}") 
-      "deposit_batch"
-      Expression("ENTIRE_WORKTOP");
-      `
-        console.log('claim manifest: ', manifest)
-        toastMe(0, "Reward claim", 1);
-
-        // Send manifest to extension for signing
-        rdt.walletApi
-            .sendTransaction({
-                transactionManifest: manifest,
-                version: 1,
-                message: "Claiming staking rewards from Stabilis Staking ID",
-            })
-            .then(result => {
-                toastMe(result.value.transactionIntentHash, "Reward claim", 2);
-                // Hide the spinner, show the angle icon, and change the button text back
-                spinner.style.display = 'none';
-                angleIcon.style.display = 'inline-block';
-                buttonText.style.display = 'inline-block';
-                buttonWaiting.style.display = 'none';
-                button.disabled = false;
-                button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value);
-                update_id();
-            })
-            .catch(error => {
-                // Hide the spinner, show the angle icon, and change the button text back
-                spinner.style.display = 'none';
-                angleIcon.style.display = 'inline-block';
-                buttonText.style.display = 'inline-block';
-                buttonWaiting.style.display = 'none';
-                button.disabled = false;
-                button.style.backgroundColor = '';
-
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
     // *********** Stake ***********
-    document.getElementById('stake-button').onclick = async function () {
-        update(true);
+    document.getElementById('add-stake-button').onclick = async function () {
         if (!isConnected) {
             return;
         }
-        let stabId = selectedId;
-        let lpAmount = document.getElementById('stake-lp-field').value;
-        let ilisAmount = document.getElementById('stake-ilis-field').value;
-        let manifest;
 
         const button = this;
         const buttonText = button.querySelector('.button-text');
@@ -3756,146 +5827,45 @@ if (window.location.pathname === '/incentives') {
         buttonWaiting.style.display = 'inline-block';
         button.disabled = true;
         button.style.backgroundColor = '#c6c6c6';
+        var stakeAmount = document.getElementById('amount-to-stake').value;
+        console.log(selectedId);
 
-        if (lpAmount !== "") {
-            if (ilisAmount == "") {
-                manifest = `
-            CALL_METHOD
-              Address("${accountAddress}")
-              "create_proof_of_non_fungibles"
-              Address("${stabIdAddress}")
-              Array<NonFungibleLocalId>(
-                NonFungibleLocalId("${stabId}")
-              );
-          
-            POP_FROM_AUTH_ZONE
-              Proof("id_proof");
-          
-              CALL_METHOD
-              Address("${accountAddress}") #Primary account 
-              "withdraw"
-              Address("${lpAddress}") # ILIS address
-              Decimal("${lpAmount}");
-          
-            TAKE_FROM_WORKTOP 
-                Address("${lpAddress}") # ILIS address
-                Decimal("${lpAmount}") 
-                Bucket("lp_bucket");
-          
-            CALL_METHOD    
-              Address("${componentAddress}") #proxy comp address
-              "stake"
-              Bucket("lp_bucket")
-              Proof("id_proof");
-          
-            CALL_METHOD
-              Address("${accountAddress}") 
-              "deposit_batch"
-              Expression("ENTIRE_WORKTOP");
-              `
-                console.log('stake manifest: ', manifest)
-            } else {
-                manifest = `
+        let manifest = `
         CALL_METHOD
-          Address("${accountAddress}")
-          "create_proof_of_non_fungibles"
-          Address("${stabIdAddress}")
-          Array<NonFungibleLocalId>(
-            NonFungibleLocalId("${stabId}")
-          );
-      
-        POP_FROM_AUTH_ZONE
-          Proof("id_proof");
-      
-          CALL_METHOD
-          Address("${accountAddress}") #Primary account 
-          "withdraw"
-          Address("${lpAddress}") # ILIS address
-          Decimal("${lpAmount}");
-      
-        TAKE_FROM_WORKTOP 
-            Address("${lpAddress}") # ILIS address
-            Decimal("${lpAmount}") 
-            Bucket("lp_bucket");
-      
-        CALL_METHOD    
-          Address("${componentAddress}") #proxy comp address
-          "stake"
-          Bucket("lp_bucket")
-          Proof("id_proof");
+            Address("${accountAddress}")
+            "withdraw"
+            Address("${ilisAddress}")
+            Decimal("${stakeAmount}")
+        ;
 
-          CALL_METHOD
-              Address("${accountAddress}") #Primary account 
-              "withdraw"
-              Address("${ilisAddress}") # ILIS address
-              Decimal("${ilisAmount}");
-          
-            TAKE_FROM_WORKTOP 
-                Address("${ilisAddress}") # ILIS address
-                Decimal("${ilisAmount}") 
-                Bucket("ilis_bucket");
+        TAKE_ALL_FROM_WORKTOP
+            Address("${ilisAddress}")
+            Bucket("ilis")
+        ;
 
-                CALL_METHOD
-          Address("${accountAddress}")
-          "create_proof_of_non_fungibles"
-          Address("${stabIdAddress}")
-          Array<NonFungibleLocalId>(
-            NonFungibleLocalId("${stabId}")
-          );
-      
-        POP_FROM_AUTH_ZONE
-          Proof("id_proof_2");
-          
-            CALL_METHOD    
-              Address("${componentAddress}") #proxy comp address
-              "stake"
-              Bucket("ilis_bucket")
-              Proof("id_proof_2");
-      
         CALL_METHOD
-          Address("${accountAddress}") 
-          "deposit_batch"
-          Expression("ENTIRE_WORKTOP");
-          `
-                console.log('stake manifest: ', manifest)
-            }
-        } else if (ilisAmount !== "") {
-            manifest = `
-            CALL_METHOD
-              Address("${accountAddress}")
-              "create_proof_of_non_fungibles"
-              Address("${stabIdAddress}")
-              Array<NonFungibleLocalId>(
-                NonFungibleLocalId("${stabId}")
-              );
-          
-            POP_FROM_AUTH_ZONE
-              Proof("id_proof");
-          
-              CALL_METHOD
-              Address("${accountAddress}") #Primary account 
-              "withdraw"
-              Address("${ilisAddress}") # ILIS address
-              Decimal("${ilisAmount}");
-          
-            TAKE_FROM_WORKTOP 
-                Address("${ilisAddress}") # ILIS address
-                Decimal("${ilisAmount}") 
-                Bucket("ilis_bucket");
-          
-            CALL_METHOD    
-              Address("${componentAddress}") #proxy comp address
-              "stake"
-              Bucket("ilis_bucket")
-              Proof("id_proof");
-          
-            CALL_METHOD
-              Address("${accountAddress}") 
-              "deposit_batch"
-              Expression("ENTIRE_WORKTOP");
-              `
-            console.log('stake manifest: ', manifest)
-        }
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${membershipIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${stakingAddress}")
+            "stake"
+            Bucket("ilis")
+            Enum<1u8>(
+                Proof("id")
+            )
+        ;
+      `
+        console.log('staking manifest: ', manifest)
         toastMe(0, "Staking request", 1);
 
         // Send manifest to extension for signing
@@ -3903,7 +5873,7 @@ if (window.location.pathname === '/incentives') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
-                message: "Staking to Stabilis Staking ID",
+                message: "Staking ILIS to your ILIS Membership ID",
             })
             .then(result => {
                 toastMe(result.value.transactionIntentHash, "Staking", 2);
@@ -3914,13 +5884,8 @@ if (window.location.pathname === '/incentives') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value);
-                if (lpAmount !== "") {
-                    walletLp -= lpAmount;
-                }
-                if (ilisAmount !== "") {
-                    walletIlis -= ilisAmount;
-                }
+                console.log("Staking Result: ", result.value);
+                update(false);
                 update_id();
             })
             .catch(error => {
@@ -3931,22 +5896,455 @@ if (window.location.pathname === '/incentives') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-
-                // Handle the error
-                console.error(error);
             });
     }
 
     // *********** Unstake ***********
-    document.getElementById('unstake-button').onclick = async function () {
+    document.getElementById('remove-stake-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var stakeAmount = document.getElementById('amount-to-stake').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${membershipIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${stakingAddress}")
+            "start_unstake"
+            Proof("id")
+            Decimal("${stakeAmount/poolMultiplier}")
+            false
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+        ;
+      `
+        console.log('staking manifest: ', manifest)
+        toastMe(0, "Staking request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: "Unstaking ILIS from your ILIS Membership ID",
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Unstaking", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+
+    // *********** Lock ***********
+    document.getElementById('add-lock-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+        
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var daysToLock = document.getElementById('days-to-lock').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${membershipIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${stakingAddress}")
+            "lock_stake"
+            Proof("id")
+            ${daysToLock}i64
+            true
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+        ;
+      `
+        console.log('locking manifest: ', manifest)
+        toastMe(0, "Locking request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: "Locking ILIS in your ILIS Membership ID",
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Locking", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+
+    // *********** Unlock ***********
+    document.getElementById('remove-lock-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+        
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var daysToUnlock = document.getElementById('days-to-lock').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "withdraw"
+            Address("${ilisAddress}")
+            Decimal("${(parseFloat(currentRequiredPayment) + 0.1)}")
+        ;
+
+        TAKE_ALL_FROM_WORKTOP
+            Address("${ilisAddress}")
+            Bucket("ilis")
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${membershipIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${stakingAddress}")
+            "unlock_stake"
+            Proof("id")
+            Bucket("ilis")
+            ${daysToUnlock}i64
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+        ;
+      `
+        console.log('unlocking manifest: ', manifest)
+        toastMe(0, "Unlocking request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: "Unlocking ILIS in your ILIS Membership ID",
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Unlocking", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+    // *********** Finish unstake ***********
+    document.getElementById('claim-unstaked-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+        
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        
+        // Take only the first 5 IDs from idsReadyToUnstake
+        const limitedIds = idsReadyToUnstake.slice(0, 5);
+
+        const nonFungibleIdsString = limitedIds
+            .map(id => `NonFungibleLocalId("${id}")`)
+            .join(',\n            ');
+
+        let manifest_first = `
+        CALL_METHOD
+        Address("${accountAddress}")
+        "withdraw_non_fungibles"
+        Address("${membershipUnstakeAddress}")
+        Array<NonFungibleLocalId>(
+            ${nonFungibleIdsString}
+        )
+        ;`
+
+        let manifest_second = limitedIds.map((id, index) => `
+        TAKE_NON_FUNGIBLES_FROM_WORKTOP
+        Address("${membershipUnstakeAddress}")
+        Array<NonFungibleLocalId>(
+            NonFungibleLocalId("${id}")
+        )
+        Bucket("unstake_nft_${index}")
+        ;
+
+        CALL_METHOD
+        Address("${stakingAddress}")
+        "finish_unstake"
+        Bucket("unstake_nft_${index}")
+        ;
+        `).join('\n');
+
+        let manifest_third = `
+        CALL_METHOD
+        Address("${accountAddress}")
+        "deposit_batch"
+        Expression("ENTIRE_WORKTOP")
+        ;
+        `
+
+        let manifest = manifest_first + manifest_second + manifest_third;
+        console.log('unstaking manifest: ', manifest)
+        toastMe(0, "Finishing unstake", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: "Finishing ILIS unstake",
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Finishing unstake", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+}
+
+if (window.location.pathname === '/governance') {
+
+    var proposalCounter = document.getElementById('prop-id-counter');
+    var plusSymbolProp = document.getElementById('plus-symbol-prop');
+    var minusSymbolProp = document.getElementById('minus-symbol-prop');
+
+    plusSymbolProp.onclick = function () {
+        if (parseInt(proposalCounter.textContent) < maxProposals) {
+            proposalCounter.textContent = parseInt(proposalCounter.textContent) + 1;
+            minusSymbolProp.disabled = false;
+            minusSymbolProp.style.backgroundColor = "";
+        } else {
+            plusSymbolProp.disabled = true;
+        }
+        proposalToView = parseInt(proposalCounter.textContent);
+        update_governance();
+    }
+    minusSymbolProp.onclick = function () {
+        if (parseInt(proposalCounter.textContent) > 0) {
+            proposalCounter.textContent = parseInt(proposalCounter.textContent) - 1;
+            plusSymbolProp.disabled = false;
+        }
+        if (parseInt(proposalCounter.textContent) == 0) {
+            minusSymbolProp.disabled = true;
+        }
+        proposalToView = parseInt(proposalCounter.textContent);
+        update_governance();
+    }
+
+    let buttonsVote = document.querySelectorAll('.stake-button.vote');
+    // Add an event listener to each button
+    buttonsVote.forEach(button => {
+        button.addEventListener('click', function () {
+            // Perform different actions depending on the id of the clicked button
+            buttonsVote.forEach(button => button.classList.remove('selected'));
+            this.classList.add('selected');
+            if (this.id === 'vote-for') {
+                vote = true;
+            } else if (this.id === 'vote-against') {
+                vote = false;
+            }
+            update_governance();
+        });
+    });
+
+    // Get the dropdown button and content
+    var dropdownButton = document.querySelector('.dropdown-custom-button');
+    var dropdownContent = document.querySelector('.dropdown-custom-content');
+
+    // Add click event listeners to each option
+    var options = document.querySelectorAll('.dropdown-custom-option');
+
+    // Show the dropdown content when the button is clicked
+    dropdownButton.addEventListener('click', function () {
+        if (dropdownButton.disabled) {
+            return;
+        }
+        if (dropdownContent !== undefined) {
+            var display = dropdownContent.style.display;
+            dropdownContent.style.display = display === 'block' ? 'none' : 'block';
+            setChevron(dropdownContent);
+        }
+        var options = document.querySelectorAll('.dropdown-custom-option');
+
+        // Check if there are any options
+        if (options.length === 0) {
+            // If not, display a message
+            if (isConnected) {
+                alert('No Membership ID in wallet. Please create one.');
+            } else {
+                alert('Please connect your wallet.');
+            }
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+        // Check if the clicked element is the dropdown button or one of the dropdown options
+        var isDropdownButton = dropdownButton.contains(event.target);
+        var isDropdownOption = Array.from(options).some(function (option) {
+            return option.contains(event.target);
+        });
+
+        // If the clicked element is not the dropdown button or one of the dropdown options, hide the dropdown content
+        if (!isDropdownButton && !isDropdownOption) {
+            dropdownContent.style.display = 'none';
+            setChevron(dropdownContent);
+        }
+    });
+    // *********** Vote ***********
+    document.getElementById('vote-button').onclick = async function () {
         update(true);
         if (!isConnected) {
             return;
         }
-        let stabId = selectedId;
-        let lpAmount = document.getElementById('unstake-lp-field').value;
-        let ilisAmount = document.getElementById('unstake-ilis-field').value;
-        let manifest;
 
         const button = this;
         const buttonText = button.querySelector('.button-text');
@@ -3960,121 +6358,382 @@ if (window.location.pathname === '/incentives') {
         button.disabled = true;
         button.style.backgroundColor = '#c6c6c6';
 
-        if (lpAmount !== "") {
-            if (ilisAmount == "") {
-                manifest = `
-                CALL_METHOD
-                  Address("${accountAddress}")
-                  "create_proof_of_non_fungibles"
-                  Address("${stabIdAddress}")
-                  Array<NonFungibleLocalId>(
-                    NonFungibleLocalId("${stabId}")
-                  );
-              
-                POP_FROM_AUTH_ZONE
-                  Proof("id_proof");
-              
-                CALL_METHOD    
-                  Address("${componentAddress}") #proxy comp address
-                  "unstake"
-                  Proof("id_proof")
-                  Address("${lpAddress}")
-                  Decimal("${lpAmount}")
-                  false;
-              
-                CALL_METHOD
-                  Address("${accountAddress}") 
-                  "deposit_batch"
-                  Expression("ENTIRE_WORKTOP");
-                  `
-                console.log('unstake manifest: ', manifest)
-            } else {
-                manifest = `
-            CALL_METHOD
-              Address("${accountAddress}")
-              "create_proof_of_non_fungibles"
-              Address("${stabIdAddress}")
-              Array<NonFungibleLocalId>(
-                NonFungibleLocalId("${stabId}")
-              );
-          
-            POP_FROM_AUTH_ZONE
-              Proof("id_proof");
-          
-              CALL_METHOD    
-              Address("${componentAddress}") #proxy comp address
-              "unstake"
-              Proof("id_proof")
-              Address("${lpAddress}")
-              Decimal("${lpAmount}")
-              false;
-    
-                    CALL_METHOD
-              Address("${accountAddress}")
-              "create_proof_of_non_fungibles"
-              Address("${stabIdAddress}")
-              Array<NonFungibleLocalId>(
-                NonFungibleLocalId("${stabId}")
-              );
-          
-            POP_FROM_AUTH_ZONE
-              Proof("id_proof_2");
-              
-              CALL_METHOD    
-              Address("${componentAddress}") #proxy comp address
-              "unstake"
-              Proof("id_proof_2")
-              Address("${ilisAddress}")
-              Decimal("${ilisAmount}")
-              false;
-          
-            CALL_METHOD
-              Address("${accountAddress}") 
-              "deposit_batch"
-              Expression("ENTIRE_WORKTOP");
-              `
-                console.log('unstake manifest: ', manifest)
-            }
-        } else if (ilisAmount !== "") {
-            manifest = `
-                CALL_METHOD
-                  Address("${accountAddress}")
-                  "create_proof_of_non_fungibles"
-                  Address("${stabIdAddress}")
-                  Array<NonFungibleLocalId>(
-                    NonFungibleLocalId("${stabId}")
-                  );
-              
-                POP_FROM_AUTH_ZONE
-                  Proof("id_proof");
-              
-                  CALL_METHOD    
-                  Address("${componentAddress}") #proxy comp address
-                  "unstake"
-                  Proof("id_proof")
-                  Address("${ilisAddress}")
-                  Decimal("${ilisAmount}")
-                  false;
-              
-                CALL_METHOD
-                  Address("${accountAddress}") 
-                  "deposit_batch"
-                  Expression("ENTIRE_WORKTOP");
-                  `
-            console.log('unstake manifest: ', manifest)
-        }
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${membershipIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
 
-        toastMe(0, "Unstaking request", 1);
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${governanceAddress}")
+            "vote_on_proposal"
+            ${proposalToView}u64
+            ${vote}
+            Proof("id")
+        ;
+      `
+        console.log('voting manifest: ', manifest)
+        toastMe(0, "Voting on proposal", 1);
+
+        var voteDescription = "for";
+
+        if (vote == false) {
+            voteDescription = "against";
+        }
 
         // Send manifest to extension for signing
         rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
-                message: "Unstaking from Stabilis Staking ID",
+                message: `Voting ${voteDescription} proposal ${proposalToView}`,
             })
             .then(result => {
-                toastMe(result.value.transactionIntentHash, "Unstaking", 2);
+                toastMe(result.value.transactionIntentHash, "Voting", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Voting Result: ", result.value);
+                update_governance();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';                
+            });
+    }
+}
+
+if (window.location.pathname === '/incentives') {
+    var slider = document.getElementById("slider-stake");
+    var inputAmount = document.getElementById("amount-to-stake");
+    var maxButton = document.getElementById("max-new-stake");
+    var newStake = document.getElementById("new-stake");
+    var sliderLock = document.getElementById("slider-lock");
+    var inputAmountLock = document.getElementById("days-to-lock");
+    var maxButtonLock = document.getElementById("max-new-lock");
+    var newLock = document.getElementById("new-lock");
+
+    slider.addEventListener('input', function () {
+        updateSliderBackground(this);
+    });
+
+    sliderLock.addEventListener('input', function () {
+        updateSliderBackground(this);
+    });
+
+    slider.oninput = function () {
+        if (stake) {
+            stakingAmount = this.value;
+            newStake.textContent = "New stake: " + (parseFloat(this.value) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
+            inputAmount.value = this.value;
+        } else {
+            stakingAmount = this.value;
+            newStake.textContent = "New stake: " + (-this.value + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
+            inputAmount.value = this.value;
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+    }
+
+    inputAmount.oninput = function () {
+        if (stake) {
+            var input = this.value === '' ? 0 : parseFloat(this.value);
+            if (input > walletResource) {
+                input = walletResource;
+                this.value = input;
+            }     
+            newStake.textContent = "New stake: " + (input + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
+            slider.value = input;
+        } else {
+            var input = this.value === '' ? 0 : parseFloat(this.value);
+            if (input > parseFloat(amountStaked) * poolMultiplier) {
+                input = parseFloat(amountStaked) * poolMultiplier;
+                this.value = input;
+            }
+            newStake.textContent = "New stake: " + (input).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
+            slider.value = input;
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(slider);
+    }
+
+    maxButton.onclick = function () {
+        if (!maxButton.disabled) {
+            if (stake) {
+                slider.value = walletResource;
+                newStake.textContent = "New stake: " + (parseFloat(walletResource) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+                inputAmount.value = walletResource;
+            } else {
+                newStake.textContent = "New stake: 0 ILIS";
+                slider.value = parseFloat(amountStaked) * poolMultiplier;
+                inputAmount.value = slider.value;
+            }
+        } 
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(slider);
+    }
+
+    sliderLock.oninput = function () {
+        if (lock) {
+            newLock.textContent = "New lock: " + (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            inputAmountLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, this.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        } else {
+            newLock.textContent = "New lock: " + (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            inputAmountLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(lbpLockPayment, lbpUnlockMultiplier, this.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+    }
+
+    inputAmountLock.oninput = function () {
+        if (lock) {
+            this.value = Math.min(this.value, maxLockDaysFloor);
+            newLock.textContent = "New lock: " + (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            sliderLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, sliderLock.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        } else {
+            this.value = Math.min(this.value, maxUnlockDaysCeil);
+            newLock.textContent = "New lock: " + (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            sliderLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(lbpLockPayment, lbpUnlockMultiplier, sliderLock.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(sliderLock);
+    }
+
+    maxButtonLock.onclick = function () {
+        if (!maxButtonLock.disabled) {
+            if (lock) {
+                sliderLock.value = maxLockDaysFloor;
+                newLock.textContent = "New lock: " + (Math.max(0, maxLockDaysFloor + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " days";
+                inputAmountLock.value = maxLockDaysFloor;
+                currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, sliderLock.value, amountStaked * poolMultiplier);
+                document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            } else {
+                sliderLock.value = maxUnlockDaysCeil;
+                newLock.textContent = "New lock: 0 days";
+                inputAmountLock.value = maxUnlockDaysCeil;
+                currentRequiredPayment = getRequiredPayment(lbpLockPayment, lbpUnlockMultiplier, sliderLock.value, amountStaked * poolMultiplier);
+                document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            }
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(sliderLock);
+    }
+
+    let buttonsStake = document.querySelectorAll('.stake-button.stake');
+    let buttonsLock = document.querySelectorAll('.stake-button.lock');
+    // Add an event listener to each button
+    buttonsStake.forEach(button => {
+        button.addEventListener('click', function () {
+            // Perform different actions depending on the id of the clicked button
+            buttonsStake.forEach(button => button.classList.remove('selected'));
+            this.classList.add('selected');
+            if (this.id === 'add-stake-selector') {
+                document.getElementById('add-stake-button').style.display = '';
+                document.getElementById('remove-stake-button').style.display = 'none';
+                stake = true;
+            } else if (this.id === 'remove-stake-selector') {
+                document.getElementById('add-stake-button').style.display = 'none';
+                document.getElementById('remove-stake-button').style.display = '';
+                stake = false;
+            }
+            update_incentives();
+        });
+    });
+
+    buttonsLock.forEach(button => {
+        button.addEventListener('click', function () {
+            // Perform different actions depending on the id of the clicked button
+            buttonsLock.forEach(button => button.classList.remove('selected'));
+            this.classList.add('selected');
+            if (this.id === 'add-lock-selector') {
+                document.getElementById('remove-lock-button').style.display = 'none';
+                document.getElementById('add-lock-button').style.display = '';
+                document.getElementById('lock-reward-label').textContent= 'ILIS Reward';
+                lock = true;
+            } else if (this.id === 'remove-lock-selector') {
+                document.getElementById('remove-lock-button').style.display = '';
+                document.getElementById('add-lock-button').style.display = 'none';
+                document.getElementById('lock-reward-label').textContent= 'Necessary ILIS';
+                lock = false;
+            }
+            update_incentives();
+        });
+    });
+    // Get the dropdown button and content
+    var dropdownButton = document.querySelector('.dropdown-custom-button.id');
+    var dropdownContent = document.querySelector('.dropdown-custom-content.id');
+
+    // Add click event listeners to each option
+    var options = document.querySelectorAll('.dropdown-custom-option.id');
+
+    // Show the dropdown content when the button is clicked
+    dropdownButton.addEventListener('click', function () {
+        if (dropdownButton.disabled) {
+            return;
+        }
+        if (dropdownContent !== undefined) {
+            var display = dropdownContent.style.display;
+            dropdownContent.style.display = display === 'block' ? 'none' : 'block';
+            setChevron(dropdownContent);
+        }
+        var options = document.querySelectorAll('.dropdown-custom-option.id');
+
+        // Check if there are any options
+        if (options.length === 0) {
+            // If not, display a message
+            if (isConnected) {
+                alert('No Incentives ID in wallet. Please create one.');
+            } else {
+                alert('Please connect your wallet.');
+            }
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+        // Check if the clicked element is the dropdown button or one of the dropdown options
+        var isDropdownButton = dropdownButton.contains(event.target);
+        var isDropdownOption = Array.from(options).some(function (option) {
+            return option.contains(event.target);
+        });
+
+        // If the clicked element is not the dropdown button or one of the dropdown options, hide the dropdown content
+        if (!isDropdownButton && !isDropdownOption) {
+            dropdownContent.style.display = 'none';
+            setChevron(dropdownContent);
+        }
+    });
+
+    // Get the dropdown button and content
+    var dropdownButton2 = document.querySelector('.dropdown-custom-button.resource');
+    var dropdownContent2 = document.querySelector('.dropdown-custom-content.resource');
+
+    // Add click event listeners to each option
+    var options2 = document.querySelectorAll('.dropdown-custom-option.resource');
+
+    // Show the dropdown content when the button is clicked
+    dropdownButton2.addEventListener('click', function () {
+        if (dropdownButton2.disabled) {
+            return;
+        }
+        if (dropdownContent2 !== undefined) {
+            var display = dropdownContent2.style.display;
+            dropdownContent2.style.display = display === 'block' ? 'none' : 'block';
+            setChevron(dropdownContent2);
+        }
+        var options2 = document.querySelectorAll('.dropdown-custom-option.resource');
+
+        // Check if there are any options
+        if (options2.length === 0) {
+            // If not, display a message
+            if (isConnected) {
+                alert('No Incentives ID in wallet. Please create one.');
+            } else {
+                alert('Please connect your wallet.');
+            }
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+        // Check if the clicked element is the dropdown button or one of the dropdown options
+        var isDropdownButton = dropdownButton2.contains(event.target);
+        var isDropdownOption = Array.from(options2).some(function (option) {
+            return option.contains(event.target);
+        });
+
+        // If the clicked element is not the dropdown button or one of the dropdown options, hide the dropdown content
+        if (!isDropdownButton && !isDropdownOption) {
+            dropdownContent2.style.display = 'none';
+            setChevron(dropdownContent2);
+        }
+    });
+    // *********** Create ID ***********
+    document.getElementById('new-id').onclick = async function () {
+        update(true);
+        if (!isConnected) {
+            return;
+        }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
+        let manifest = `
+    CALL_METHOD    
+    Address("${incentiveAddress}")
+    "create_id";
+  
+  CALL_METHOD
+    Address("${accountAddress}") 
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP");
+      `
+        console.log('create id manifest: ', manifest)
+        toastMe(0, "ID creation request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: "Creating a new ILIS Incentive ID",
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "ID creation", 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
@@ -4083,6 +6742,7 @@ if (window.location.pathname === '/incentives') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
                 console.log("Mint Result: ", result.value);
+                update(false);
                 update_id();
             })
             .catch(error => {
@@ -4094,20 +6754,532 @@ if (window.location.pathname === '/incentives') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
-
-        if (lpAmount !== "") {
-            let lpChange = Math.min(lpAmount, lpAmountId + lpWaitingAmount);
-            walletLp += lpChange;
-        }
-        if (ilisAmount !== "") {
-            let ilisChange = Math.min(ilisAmount, ilisAmountId + ilisWaitingAmount);
-            walletIlis += ilisChange;
-        }
     }
 
+    // *********** Stake ***********
+    document.getElementById('add-stake-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var stakeAmount = document.getElementById('amount-to-stake').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "withdraw"
+            Address("${selectedResource}")
+            Decimal("${stakeAmount}")
+        ;
+
+        TAKE_ALL_FROM_WORKTOP
+            Address("${selectedResource}")
+            Bucket("stake")
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${incentiveIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${incentiveAddress}")
+            "stake"
+            Bucket("stake")
+            Enum<1u8>(
+                Proof("id")
+            )
+        ;
+      `
+        console.log('staking manifest: ', manifest)
+        toastMe(0, "Staking request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: `Staking ${selectedResource} to your ILIS Incentives ID`,
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Staking", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Staking Result: ", result.value);
+                update(false);
+                update_incentives();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+
+    // *********** Unstake ***********
+    document.getElementById('remove-stake-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var stakeAmount = document.getElementById('amount-to-stake').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${incentiveIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${incentiveAddress}")
+            "start_unstake"
+            Proof("id")
+            Address("${selectedResource}")
+            Decimal("${stakeAmount}")
+            false
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+        ;
+      `
+        console.log('staking manifest: ', manifest)
+        toastMe(0, "Staking request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: `Unstaking ${selectedResource} from your ILIS Incentives ID`,
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Unstaking", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+
+    // *********** Lock ***********
+    document.getElementById('add-lock-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+        
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var daysToLock = document.getElementById('days-to-lock').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${incentiveIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${incentiveAddress}")
+            "lock_stake"
+            Address("${selectedResource}")
+            Proof("id")
+            ${daysToLock}i64
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+        ;
+      `
+        console.log('locking manifest: ', manifest)
+        toastMe(0, "Locking request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: `Locking ${selectedResource} in your ILIS Incentives ID`,
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Locking", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+
+    // *********** Unlock ***********
+    document.getElementById('remove-lock-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+        
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var daysToUnlock = document.getElementById('days-to-lock').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "withdraw"
+            Address("${ilisAddress}")
+            Decimal("${(parseFloat(currentRequiredPayment) + 0.001)}")
+        ;
+
+        TAKE_ALL_FROM_WORKTOP
+            Address("${ilisAddress}")
+            Bucket("ilis")
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${incentiveIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${incentiveAddress}")
+            "unlock_stake"
+            Address("${selectedResource}")
+            Proof("id")
+            Bucket("ilis")
+            ${daysToUnlock}i64
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+        ;
+      `
+        console.log('unlocking manifest: ', manifest)
+        toastMe(0, "Unlocking request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: `Unlocking ${selectedResource} in your ILIS Incentives ID`,
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Unlocking", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+
+    // *********** Claim periods ***********
+    document.getElementById('claim-periods-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+        
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var daysToUnlock = document.getElementById('days-to-lock').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${incentiveIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${incentiveAddress}")
+            "update_id"
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+        ;
+      `
+        console.log('claiming manifest: ', manifest)
+        toastMe(0, "Claiming request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: `Claiming rewards from your ILIS Incentives ID`,
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Claiming", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Claiming Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+
+    // *********** Finish unstake ***********
+    document.getElementById('claim-unstaked-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+        
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        
+        // Take only the first 5 IDs from idsReadyToUnstake
+        const limitedIds = idsReadyToUnstake.slice(0, 5);
+
+        const nonFungibleIdsString = limitedIds
+            .map(id => `NonFungibleLocalId("${id}")`)
+            .join(',\n            ');
+
+        let manifest_first = `
+        CALL_METHOD
+        Address("${accountAddress}")
+        "withdraw_non_fungibles"
+        Address("${incentiveUnstakeAddress}")
+        Array<NonFungibleLocalId>(
+            ${nonFungibleIdsString}
+        )
+        ;`
+
+        let manifest_second = limitedIds.map((id, index) => `
+        TAKE_NON_FUNGIBLES_FROM_WORKTOP
+        Address("${incentiveUnstakeAddress}")
+        Array<NonFungibleLocalId>(
+            NonFungibleLocalId("${id}")
+        )
+        Bucket("unstake_nft_${index}")
+        ;
+
+        CALL_METHOD
+        Address("${incentiveAddress}")
+        "finish_unstake"
+        Bucket("unstake_nft_${index}")
+        ;
+        `).join('\n');
+
+        let manifest_third = `
+        CALL_METHOD
+        Address("${accountAddress}")
+        "deposit_batch"
+        Expression("ENTIRE_WORKTOP")
+        ;
+        `
+
+        let manifest = manifest_first + manifest_second + manifest_third;
+        console.log('unstaking manifest: ', manifest)
+        toastMe(0, "Finishing unstake", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: `Finishing ${selectedResource} unstake`,
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Finishing unstake", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
 }
 
 if (window.location.pathname === '/manage-loans') {
@@ -4421,7 +7593,7 @@ if (window.location.pathname === '/manage-loans') {
             Bucket("xrd_bucket");
          
         CALL_METHOD    
-          Address("${componentAddress}")
+          Address("${proxyComponentAddress}")
           "top_up_cdp"
           Proof("cdp_proof")
           Bucket("xrd_bucket");
@@ -4459,8 +7631,7 @@ if (window.location.pathname === '/manage-loans') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -4507,7 +7678,7 @@ if (window.location.pathname === '/manage-loans') {
           Proof("cdp_proof");
          
         CALL_METHOD    
-          Address("${componentAddress}")
+          Address("${proxyComponentAddress}")
           "remove_collateral"
           Proof("cdp_proof")
           Decimal("${collateralAmount}");
@@ -4548,8 +7719,7 @@ if (window.location.pathname === '/manage-loans') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -4608,7 +7778,7 @@ if (window.location.pathname === '/manage-loans') {
         ;
          
         CALL_METHOD    
-          Address("${componentAddress}")
+          Address("${proxyComponentAddress}")
           "partial_close_cdp"
           Proof("cdp_proof")
           Bucket("stab");
@@ -4649,8 +7819,7 @@ if (window.location.pathname === '/manage-loans') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -4697,7 +7866,7 @@ if (window.location.pathname === '/manage-loans') {
           Proof("cdp_proof");
          
         CALL_METHOD    
-          Address("${componentAddress}")
+          Address("${proxyComponentAddress}")
           "borrow_more"
           Proof("cdp_proof")
           Decimal("${collateralAmount}");
@@ -4738,8 +7907,7 @@ if (window.location.pathname === '/manage-loans') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -4791,7 +7959,7 @@ if (window.location.pathname === '/manage-loans') {
                     Bucket("receipt_bucket");
             
                 CALL_METHOD    
-                    Address("${componentAddress}") #pool comp address
+                    Address("${proxyComponentAddress}") #pool comp address
                     "burn_loan_receipt"
                     Bucket("receipt_bucket");
                 `
@@ -4829,9 +7997,6 @@ if (window.location.pathname === '/manage-loans') {
                     buttonWaiting.style.display = 'none';
                     button.disabled = false;
                     button.style.backgroundColor = '';
-
-                    // Handle the error
-                    console.error(error);
                 });
 
         } else if (status == "Liquidated" || status == "ForceLiquidated") {
@@ -4848,7 +8013,7 @@ if (window.location.pathname === '/manage-loans') {
               Proof("cdp_proof");
              
             CALL_METHOD    
-              Address("${componentAddress}")
+              Address("${proxyComponentAddress}")
               "retrieve_leftover_collateral"
               Proof("cdp_proof");
              
@@ -4887,9 +8052,6 @@ if (window.location.pathname === '/manage-loans') {
                     buttonWaiting.style.display = 'none';
                     button.disabled = false;
                     button.style.backgroundColor = '';
-
-                    // Handle the error
-                    console.error(error);
                 });
 
         } else {
@@ -4919,7 +8081,7 @@ if (window.location.pathname === '/manage-loans') {
                 Bucket("repayment_bucket");
              
             CALL_METHOD    
-              Address("${componentAddress}")
+              Address("${proxyComponentAddress}")
               "close_cdp"
               Proof("cdp_proof")
               Bucket("repayment_bucket");
@@ -4960,9 +8122,6 @@ if (window.location.pathname === '/manage-loans') {
                     buttonWaiting.style.display = 'none';
                     button.disabled = false;
                     button.style.backgroundColor = '';
-
-                    // Handle the error
-                    console.error(error);
                 });
         }
     }
@@ -5199,7 +8358,7 @@ if (window.location.pathname === '/borrow') {
     Address("${selectedCollateral}")
     Bucket("collateral");
     CALL_METHOD
-    Address("${componentAddress}")
+    Address("${proxyComponentAddress}")
     "open_cdp"
     Bucket("collateral")
     Decimal("${mintAmount}")
@@ -5237,30 +8396,29 @@ if (window.location.pathname === '/borrow') {
                 buttonText.style.display = 'inline-block';
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
-                button.style.backgroundColor = '';
-
-                // Handle the error
-                console.error(error);
+                button.style.backgroundColor = '';             
             });
     }
 }
 
-if (window.location.pathname === '/lbp') {
+function createChart(lbpLength, initialDataWithoutNow) {
     // Example Data: [time, [XRD amount, ILIS amount]]
-    const lbpLength = 7;
+    //const lbpLength = 7;
 
-    const initialData = [
-        [0, [555.6, 1000]],
-        [0.05, [700, 950]],
-        [0.1, [900, 900]],
-        [0.2, [1100, 700]],
-        [0.23, [1100, 700]],
-    ];
+    const initialData = initialDataWithoutNow.concat([[lbpProgress, initialDataWithoutNow[initialDataWithoutNow.length - 1][1]]]);
     const dataExtrapolated = [
         [1, initialData[initialData.length - 1][1]],
     ];
     const cutoffPoint = (initialData[initialData.length - 1][0]) * lbpLength;
     const data = initialData.concat(dataExtrapolated);
+
+    if (lbpEnded == true) {
+        xrdLbpPoolAmount = data[data.length - 1][1][0];
+        ilisLbpPoolAmount = data[data.length - 1][1][1];
+        document.getElementById('final-fdv').textContent = (((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5)) * 100000000).toLocaleString('en-US', { maximumFractionDigits: 0 }) + " XRD";
+        document.getElementById('ilis-price-final').textContent = (((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5))).toLocaleString('en-US', { maximumFractionDigits: 4 }) + " XRD";
+        document.getElementById('lbp-end-text').textContent = "Thanks for participating in the ILIS LBP! The LBP has ended and the price progression can be seen in the chart below. The resulting liquidity has been added to the Ociswap ILIS/XRD pool, go there or to any other DEX to swap ILIS.";
+    }
 
     // Initial and final weights
     const initialWeightILIS = 0.99;
@@ -5309,7 +8467,6 @@ if (window.location.pathname === '/lbp') {
             // Calculate how much the weight should change in this interval
             const progress = data[i + 1][0] - data[i][0]; // Time difference
             var numStepsBetweenPoints = Math.round(1008 * progress);
-            console.log(numStepsBetweenPoints);
             const nextWeightILIS = currentWeightILIS - progress * totalWeightChange;
 
             // Interpolate between two points
@@ -5355,7 +8512,14 @@ if (window.location.pathname === '/lbp') {
 
     // Create a chart using Chart.js
     const ctx = document.getElementById('myChart').getContext('2d');
-    const realChart = new Chart(ctx, {
+
+    const existingChart = Chart.getChart(ctx);
+    if (existingChart) {
+        // Destroy the existing chart
+        existingChart.destroy();
+    }
+
+    realChart = new Chart(ctx, {
         type: 'line',
         data: {
             datasets: [
@@ -5380,6 +8544,8 @@ if (window.location.pathname === '/lbp') {
             ]
         },
         options: {
+            responsive: true,
+            maintainAspectRatio: false,
             scales: {
                 x: {
                     type: 'linear',  // Use linear scale for the x-axis
@@ -5389,7 +8555,7 @@ if (window.location.pathname === '/lbp') {
                         color: 'white'  // Change x-axis title color to white
                     },
                     min: 0, // Minimum value for x-axis
-                    max: 7, // Maximum value for x-axis
+                    max: lbpLength, // Maximum value for x-axis
                     ticks: {
                         color: 'white'  // Change x-axis ticks color to white
                     }

@@ -252,6 +252,12 @@ body.home-page {
 }
 
 @media (max-width: 820px) {
+    #chartContainer {
+        height: 70vh !important;
+    }
+}
+
+@media (max-width: 820px) {
     .nav-links {
         display: none;
     }
