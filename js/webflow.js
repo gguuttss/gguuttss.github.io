@@ -1464,6 +1464,8 @@ function setStakeButton() {
     var unstakeButton = document.getElementById('remove-stake-button');
     var enableButton = true;
     var enableInput = true;
+    var message = "";
+    var infoMessage = "";
     if (isConnected == false) {
         enableButton = false;
         enableInput = false;
@@ -1478,22 +1480,40 @@ function setStakeButton() {
     if (walletIlis == 0 && stake == true && window.location.pathname == "/membership") {
         enableButton = false;
         enableInput = false;
+        if (selectedId) {
+            message = "No ILIS to stake in wallet.";
+        }
     }
     if (walletResource == 0 && stake == true && window.location.pathname == "/incentives") {
         enableButton = false;
         enableInput = false;
+        if (selectedId) {
+            message = "No resource to stake in wallet.";
+        }
     }
     if ((amountStaked == 0 || amountStaked == undefined) && stake == false) {
         enableButton = false;
         enableInput = false;
+        if (selectedId) {
+            message = "No stake to remove.";
+        }
     }
     if (stake == false && lockedUntil > nowLbpTime) {
         enableButton = false;
         enableInput = false;
+        if (selectedId) {
+            message = "Stake is locked.";
+        }
     }
     if (stake == false && votingUntil > nowLbpTime && window.location.pathname == "/membership") {
         enableButton = false;
         enableInput = false;
+        if (selectedId) {
+            message = "ID is voting.";
+        }
+    }
+    if (stake == true && votingUntil > nowLbpTime && window.location.pathname == "/membership" && (document.getElementById('amount-to-stake').value != '' && parseFloat(document.getElementById('amount-to-stake').value) != 0)) {
+        infoMessage = "Be careful, this ID is currently voting. Proposals you have already voted on will NOT be affected by your increase in voting power, and votes are non-updatable!";
     }
     if (enableButton) {
         stakeButton.style.backgroundColor = "";
@@ -1510,12 +1530,26 @@ function setStakeButton() {
         document.getElementById('slider-stake').disabled = false;
         document.getElementById('amount-to-stake').disabled = false;
         document.getElementById('max-new-stake').classList.add("clickable");
+        document.getElementById('max-new-stake').style.cursor = 'pointer';
         document.getElementById('max-new-stake').disabled = false;
     } else {
         document.getElementById('slider-stake').disabled = true;
         document.getElementById('amount-to-stake').disabled = true;
         document.getElementById('max-new-stake').classList.remove("clickable");
+        document.getElementById('max-new-stake').style.cursor = 'default';
         document.getElementById('max-new-stake').disabled = true;
+    }
+    if (message != "") {
+        document.getElementById('warning-box-stake').style.display = 'block';
+        document.getElementById('warning-message-stake').textContent = message;
+    } else {
+        document.getElementById('warning-box-stake').style.display = 'none';
+    }
+    if (infoMessage != "") {
+        document.getElementById('info-box-stake').style.display = 'block';
+        document.getElementById('info-message-stake').textContent = infoMessage;
+    } else {
+        document.getElementById('info-box-stake').style.display = 'none';
     }
 }
 
@@ -1524,6 +1558,7 @@ function setLockButton() {
     var unlockButton = document.getElementById('remove-lock-button');
     var enableButton = true;
     var enableInput = true;
+    var message = "";
     if (isConnected == false) {
         enableButton = false;
         enableInput = false;
@@ -1538,17 +1573,29 @@ function setLockButton() {
     if (walletIlis == 0 && lock == false) {
         enableButton = false;
         enableInput = false;
+        if (selectedId) {
+            message = "No ILIS to pay unlock fee.";
+        }
     }
     if (walletIlis < currentRequiredPayment) {
         enableButton = false;
+        if (selectedId) {
+            message = "Insufficient ILIS in wallet.";
+        }
     }
     if ((amountStaked == 0 || amountStaked == undefined)) {
         enableButton = false;
         enableInput = false;
+        if (selectedId) {
+            message = "No stake to lock.";
+        }
     }
     if (lock == false && lockNow == 0) {
         enableButton = false;
         enableInput = false;
+        if (selectedId) {
+            message = "Stake not locked.";
+        }
     }
     if (enableButton) {
         lockButton.style.backgroundColor = "";
@@ -1565,12 +1612,20 @@ function setLockButton() {
         document.getElementById('slider-lock').disabled = false;
         document.getElementById('days-to-lock').disabled = false;
         document.getElementById('max-new-lock').classList.add("clickable");
+        document.getElementById('max-new-lock').style.cursor = 'pointer';
         document.getElementById('max-new-lock').disabled = false;
     } else {
         document.getElementById('slider-lock').disabled = true;
         document.getElementById('days-to-lock').disabled = true;
         document.getElementById('max-new-lock').classList.remove("clickable");
+        document.getElementById('max-new-lock').style.cursor = 'default';
         document.getElementById('max-new-lock').disabled = true;
+    }
+    if (message != "") {
+        document.getElementById('warning-message-lock').textContent = message;
+        document.getElementById('warning-box-lock').style.display = 'block';
+    } else {
+        document.getElementById('warning-box-lock').style.display = 'none';
     }
 }
 
@@ -2215,11 +2270,11 @@ async function update_id() {
             document.getElementById('ilis-reward').textContent = 0;
 
             if (stake == true) {
-                document.getElementById('max-new-stake').textContent = "Max: " + (parseFloat(walletIlis)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS";
-                document.getElementById('new-stake').textContent = "New stake: " + (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS";
+                document.getElementById('max-new-stake').textContent = "max. " + (parseFloat(walletIlis)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS";
+                document.getElementById('new-stake').textContent = (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 });
             } else {
                 document.getElementById('max-new-stake').textContent = "Unstake all";
-                document.getElementById('new-stake').textContent = "New stake: " + (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS";
+                document.getElementById('new-stake').textContent = (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 });
             }
 
             lockNow = Math.max(0, ((lockedUntil - nowLbpTime) / 60 / 60 / 24));
@@ -2227,13 +2282,13 @@ async function update_id() {
             if (lock == true) {
                 var maxLockDaysSeconds = (nowLbpTime + 365 * 24 * 60 * 60) - lockedUntil;
                 maxLockDaysFloor = Math.floor(maxLockDaysSeconds / (60 * 60 * 24));
-                document.getElementById('max-new-lock').textContent = "Max lock: " + maxLockDaysFloor + " days";
-                document.getElementById('new-lock').textContent = "New lock: " + lockNow.toFixed(2) + " days";
+                document.getElementById('max-new-lock').textContent = "max. " + maxLockDaysFloor + " days";
+                document.getElementById('new-lock').textContent = lockNow.toFixed(2);
             } else {
                 var maxUnlockDaysSeconds = lockedUntil - nowLbpTime;
                 maxUnlockDaysCeil = Math.ceil(maxUnlockDaysSeconds / (60 * 60 * 24));
-                document.getElementById('max-new-lock').textContent = "Max unlock: " + maxUnlockDaysCeil + " days";
-                document.getElementById('new-lock').textContent = "New lock: " + lockNow.toFixed(2) + " days";
+                document.getElementById('max-new-lock').textContent = "max. " + maxUnlockDaysCeil + " days";
+                document.getElementById('new-lock').textContent = lockNow.toFixed(2);
             }
         } else {
             document.getElementById('warning-message-id-select').style.display = 'block';
@@ -2694,11 +2749,11 @@ async function update_incentives() {
             document.getElementById('ilis-reward').textContent = 0;
 
             if (stake == true) {
-                document.getElementById('max-new-stake').textContent = "Max: " + (parseFloat(walletResource)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " LPSTAB";
-                document.getElementById('new-stake').textContent = "New stake: " + (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " LPSTAB";
+                document.getElementById('max-new-stake').textContent = "max. " + (parseFloat(walletResource)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " LPSTAB";
+                document.getElementById('new-stake').textContent = (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " LPSTAB";
             } else {
                 document.getElementById('max-new-stake').textContent = "Unstake all";
-                document.getElementById('new-stake').textContent = "New stake: " + (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " LPSTAB";
+                document.getElementById('new-stake').textContent = (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " LPSTAB";
             }
 
             lockNow = Math.max(0, ((lockedUntil - nowLbpTime) / 60 / 60 / 24));
@@ -2706,13 +2761,13 @@ async function update_incentives() {
             if (lock == true) {
                 var maxLockDaysSeconds = (nowLbpTime + 365 * 24 * 60 * 60) - lockedUntil;
                 maxLockDaysFloor = Math.floor(maxLockDaysSeconds / (60 * 60 * 24));
-                document.getElementById('max-new-lock').textContent = "Max lock: " + maxLockDaysFloor + " days";
-                document.getElementById('new-lock').textContent = "New lock: " + lockNow.toFixed(2) + " days";
+                document.getElementById('max-new-lock').textContent = "max. " + maxLockDaysFloor + " days";
+                document.getElementById('new-lock').textContent = lockNow.toFixed(2);
             } else {
                 var maxUnlockDaysSeconds = lockedUntil - nowLbpTime;
                 maxUnlockDaysCeil = Math.ceil(maxUnlockDaysSeconds / (60 * 60 * 24));
-                document.getElementById('max-new-lock').textContent = "Max unlock: " + maxUnlockDaysCeil + " days";
-                document.getElementById('new-lock').textContent = "New lock: " + lockNow.toFixed(2) + " days";
+                document.getElementById('max-new-lock').textContent = "max. " + maxUnlockDaysCeil + " days";
+                document.getElementById('new-lock').textContent = lockNow.toFixed(2);
             }
         } else {
             document.getElementById('warning-message-id-select').style.display = 'block';
@@ -5525,6 +5580,9 @@ if (window.location.pathname === '/membership') {
     var maxButtonLock = document.getElementById("max-new-lock");
     var newLock = document.getElementById("new-lock");
 
+    maxButtonLock.style.cursor = 'pointer';
+    maxButton.style.cursor = 'pointer';
+
     slider.addEventListener('input', function () {
         updateSliderBackground(this);
     });
@@ -5536,11 +5594,11 @@ if (window.location.pathname === '/membership') {
     slider.oninput = function () {
         if (stake) {
             stakingAmount = this.value;
-            newStake.textContent = "New stake: " + (parseFloat(this.value) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+            newStake.textContent = (parseFloat(this.value) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 });
             inputAmount.value = this.value;
         } else {
             stakingAmount = this.value;
-            newStake.textContent = "New stake: " + (-this.value + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+            newStake.textContent = (-this.value + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 });
             inputAmount.value = this.value;
         }
         setStakeButton();
@@ -5557,7 +5615,7 @@ if (window.location.pathname === '/membership') {
                 this.value = walletIlis;
                 input = walletIlis;
             }
-            newStake.textContent = "New stake: " + (input + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+            newStake.textContent = (input + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 });
             slider.value = input;
         } else {
             var input = this.value === '' ? 0 : parseFloat(this.value);
@@ -5565,7 +5623,7 @@ if (window.location.pathname === '/membership') {
                 this.value = parseFloat(amountStaked) * poolMultiplier;
                 input = parseFloat(amountStaked) * poolMultiplier;
             }
-            newStake.textContent = "New stake: " + (input).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+            newStake.textContent = (input).toLocaleString('en-US', { maximumFractionDigits: 1 });
             slider.value = input;
         }
         setStakeButton();
@@ -5580,7 +5638,7 @@ if (window.location.pathname === '/membership') {
         if (!maxButton.disabled) {
             if (stake) {
                 slider.value = walletIlis;
-                newStake.textContent = "New stake: " + (parseFloat(walletIlis) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+                newStake.textContent = (parseFloat(walletIlis) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 });
                 inputAmount.value = walletIlis;
             } else {
                 newStake.textContent = "New stake: 0 ILIS";
@@ -5598,12 +5656,12 @@ if (window.location.pathname === '/membership') {
 
     sliderLock.oninput = function () {
         if (lock) {
-            newLock.textContent = "New lock: " + (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            newLock.textContent = (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 });
             inputAmountLock.value = this.value;
             currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, this.value, amountStaked * poolMultiplier);
             document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
         } else {
-            newLock.textContent = "New lock: " + (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            newLock.textContent = (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 });
             inputAmountLock.value = this.value;
             currentRequiredPayment = getRequiredPayment(ilisLockPayment, ilisUnlockMultiplier, this.value, amountStaked * poolMultiplier);
             document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -5618,13 +5676,13 @@ if (window.location.pathname === '/membership') {
     inputAmountLock.oninput = function () {
         if (lock) {
             this.value = Math.min(this.value, maxLockDaysFloor);
-            newLock.textContent = "New lock: " + (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            newLock.textContent = (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 });
             sliderLock.value = this.value;
             currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, sliderLock.value, amountStaked * poolMultiplier);
             document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
         } else {
             this.value = Math.min(this.value, maxUnlockDaysCeil);
-            newLock.textContent = "New lock: " + (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            newLock.textContent = (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 });
             sliderLock.value = this.value;
             currentRequiredPayment = getRequiredPayment(ilisLockPayment, ilisUnlockMultiplier, sliderLock.value, amountStaked * poolMultiplier);
             document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -5641,7 +5699,7 @@ if (window.location.pathname === '/membership') {
         if (!maxButtonLock.disabled) {
             if (lock) {
                 sliderLock.value = maxLockDaysFloor;
-                newLock.textContent = "New lock: " + (Math.max(0, maxLockDaysFloor + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " days";
+                newLock.textContent = (Math.max(0, maxLockDaysFloor + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 1 });
                 inputAmountLock.value = maxLockDaysFloor;
                 currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, sliderLock.value, amountStaked * poolMultiplier);
                 document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -5672,10 +5730,12 @@ if (window.location.pathname === '/membership') {
             if (this.id === 'add-stake-selector') {
                 document.getElementById('add-stake-button').style.display = '';
                 document.getElementById('remove-stake-button').style.display = 'none';
+                document.getElementById('stake-descriptor').textContent = 'amount to stake';
                 stake = true;
             } else if (this.id === 'remove-stake-selector') {
                 document.getElementById('add-stake-button').style.display = 'none';
                 document.getElementById('remove-stake-button').style.display = '';
+                document.getElementById('stake-descriptor').textContent = 'amount to unstake';
                 stake = false;
             }
             update_id();
@@ -5691,11 +5751,13 @@ if (window.location.pathname === '/membership') {
                 document.getElementById('remove-lock-button').style.display = 'none';
                 document.getElementById('add-lock-button').style.display = '';
                 document.getElementById('lock-reward-label').textContent= 'ILIS Reward';
+                document.getElementById('lock-descriptor').textContent = 'days to add';
                 lock = true;
             } else if (this.id === 'remove-lock-selector') {
                 document.getElementById('remove-lock-button').style.display = '';
                 document.getElementById('add-lock-button').style.display = 'none';
                 document.getElementById('lock-reward-label').textContent= 'Necessary ILIS';
+                document.getElementById('lock-descriptor').textContent = 'days to remove';
                 lock = false;
             }
             update_id();
@@ -6430,6 +6492,9 @@ if (window.location.pathname === '/incentives') {
     var maxButtonLock = document.getElementById("max-new-lock");
     var newLock = document.getElementById("new-lock");
 
+    maxButtonLock.style.cursor = 'pointer';
+    maxButton.style.cursor = 'pointer';
+
     slider.addEventListener('input', function () {
         updateSliderBackground(this);
     });
@@ -6441,11 +6506,11 @@ if (window.location.pathname === '/incentives') {
     slider.oninput = function () {
         if (stake) {
             stakingAmount = this.value;
-            newStake.textContent = "New stake: " + (parseFloat(this.value) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
+            newStake.textContent = (parseFloat(this.value) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
             inputAmount.value = this.value;
         } else {
             stakingAmount = this.value;
-            newStake.textContent = "New stake: " + (-this.value + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
+            newStake.textContent = (-this.value + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
             inputAmount.value = this.value;
         }
         setStakeButton();
@@ -6462,7 +6527,7 @@ if (window.location.pathname === '/incentives') {
                 input = walletResource;
                 this.value = input;
             }     
-            newStake.textContent = "New stake: " + (input + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
+            newStake.textContent = (input + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
             slider.value = input;
         } else {
             var input = this.value === '' ? 0 : parseFloat(this.value);
@@ -6470,7 +6535,7 @@ if (window.location.pathname === '/incentives') {
                 input = parseFloat(amountStaked) * poolMultiplier;
                 this.value = input;
             }
-            newStake.textContent = "New stake: " + (input).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
+            newStake.textContent = (input).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
             slider.value = input;
         }
         setStakeButton();
@@ -6485,7 +6550,7 @@ if (window.location.pathname === '/incentives') {
         if (!maxButton.disabled) {
             if (stake) {
                 slider.value = walletResource;
-                newStake.textContent = "New stake: " + (parseFloat(walletResource) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+                newStake.textContent = (parseFloat(walletResource) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 });
                 inputAmount.value = walletResource;
             } else {
                 newStake.textContent = "New stake: 0 ILIS";
@@ -6503,12 +6568,12 @@ if (window.location.pathname === '/incentives') {
 
     sliderLock.oninput = function () {
         if (lock) {
-            newLock.textContent = "New lock: " + (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            newLock.textContent = (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 });
             inputAmountLock.value = this.value;
             currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, this.value, amountStaked * poolMultiplier);
             document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
         } else {
-            newLock.textContent = "New lock: " + (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            newLock.textContent = (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 });
             inputAmountLock.value = this.value;
             currentRequiredPayment = getRequiredPayment(lbpLockPayment, lbpUnlockMultiplier, this.value, amountStaked * poolMultiplier);
             document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -6523,13 +6588,13 @@ if (window.location.pathname === '/incentives') {
     inputAmountLock.oninput = function () {
         if (lock) {
             this.value = Math.min(this.value, maxLockDaysFloor);
-            newLock.textContent = "New lock: " + (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            newLock.textContent = (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 });
             sliderLock.value = this.value;
             currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, sliderLock.value, amountStaked * poolMultiplier);
             document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
         } else {
             this.value = Math.min(this.value, maxUnlockDaysCeil);
-            newLock.textContent = "New lock: " + (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            newLock.textContent = (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 });
             sliderLock.value = this.value;
             currentRequiredPayment = getRequiredPayment(lbpLockPayment, lbpUnlockMultiplier, sliderLock.value, amountStaked * poolMultiplier);
             document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -6546,7 +6611,7 @@ if (window.location.pathname === '/incentives') {
         if (!maxButtonLock.disabled) {
             if (lock) {
                 sliderLock.value = maxLockDaysFloor;
-                newLock.textContent = "New lock: " + (Math.max(0, maxLockDaysFloor + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " days";
+                newLock.textContent = (Math.max(0, maxLockDaysFloor + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 1 });
                 inputAmountLock.value = maxLockDaysFloor;
                 currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, sliderLock.value, amountStaked * poolMultiplier);
                 document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -6577,10 +6642,12 @@ if (window.location.pathname === '/incentives') {
             if (this.id === 'add-stake-selector') {
                 document.getElementById('add-stake-button').style.display = '';
                 document.getElementById('remove-stake-button').style.display = 'none';
+                document.getElementById('stake-descriptor').textContent = 'amount to stake';
                 stake = true;
             } else if (this.id === 'remove-stake-selector') {
                 document.getElementById('add-stake-button').style.display = 'none';
                 document.getElementById('remove-stake-button').style.display = '';
+                document.getElementById('stake-descriptor').textContent = 'amount to unstake';
                 stake = false;
             }
             update_incentives();
@@ -6596,11 +6663,13 @@ if (window.location.pathname === '/incentives') {
                 document.getElementById('remove-lock-button').style.display = 'none';
                 document.getElementById('add-lock-button').style.display = '';
                 document.getElementById('lock-reward-label').textContent= 'ILIS Reward';
+                document.getElementById('lock-descriptor').textContent = 'days to add';
                 lock = true;
             } else if (this.id === 'remove-lock-selector') {
                 document.getElementById('remove-lock-button').style.display = '';
                 document.getElementById('add-lock-button').style.display = 'none';
                 document.getElementById('lock-reward-label').textContent= 'Necessary ILIS';
+                document.getElementById('lock-descriptor').textContent = 'days to remove';
                 lock = false;
             }
             update_incentives();

@@ -138,8 +138,8 @@
                     </div>
                     <div class="input-group">
                         <div class="two-labels">
-                            <label class="left-label" id="new-stake">New stake: -</label>
-                            <label class="right-label clickable" id="max-new-stake">Max stake: -</label>
+                            <label class="left-label" id="stake-descriptor">amount to stake</label>
+                            <label class="right-label clickable" id="max-new-stake">max. -</label>
                         </div>
                         <input type="range" id="slider-stake" step="0.01" required
                             style="width: 100%; margin-bottom: 0px" class="slider start-at-zero">
@@ -149,6 +149,17 @@
                             <input id="amount-to-stake" class="full-input with-logo decimal-only" type="text"
                                 value="0" />
                             <label id="amount-to-remove-suffix" for="amount-to-remove" class="suffix">LPSTAB</label>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <div class="two-labels">
+                            <label class="left-label" id="lock-reward-label">New stake</label>
+                            <p class="right-label" style="display: flex; align-items: center; justify-content: center;">
+                                <span id="collateralAmount" style="margin-right:5px"></span> <span
+                                    id="new-stake">0</span><img src="images/ilislogo.png" alt="Logo" class="logo"
+                                    id="col-logo-upper" style="margin-left: 10px"/>
+                            </p>
                         </div>
                     </div>
 
@@ -173,7 +184,9 @@
                             class="button-warning" style="display:none">CONNECT
                             WALLET</b> <b class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
                     </button>
-
+                    <div class="warning-box" id="warning-box-stake" style="display: none; margin-top: 20px; text-align: center; cursor: auto">
+                        <p class="paragraph-2" id="warning-message-stake"></p>
+                    </div>
                 </div>
                 <div class="right-section">
                     <h2>Manage lock</h2>
@@ -183,8 +196,8 @@
                     </div>
                     <div class="input-group">
                         <div class="two-labels">
-                            <label class="left-label" id="new-lock">New lock: -</label>
-                            <label class="right-label clickable" id="max-new-lock">Max lock: -</label>
+                            <label class="left-label" id="lock-descriptor">days to add</label>
+                            <label class="right-label clickable" id="max-new-lock">max. -</label>
                         </div>
                         <input type="range" id="slider-lock" step="1" required
                             style="width: 100%; margin-bottom: 0px" class="slider start-at-zero">
@@ -196,11 +209,16 @@
 
                     <div class="input-group">
                         <div class="two-labels">
-                            <label class="left-label" id="lock-reward-label">ILIS Reward</label>
+                            <label class="left-label" id="lock-reward-label">ILIS reward</label>
                             <p class="right-label" style="display: flex; align-items: center; justify-content: center;">
-                                <span id="collateralAmount" style="margin-right:5px"></span> <span
-                                    id="ilis-reward">0</span><img src="images/ilislogo.png" alt="Logo" class="logo"
-                                    id="col-logo-upper" style="margin-left: 10px"/>
+                                <span id="ilis-reward">0</span>
+                                <img src="images/ilislogo.png" alt="Logo" class="logo" id="col-logo-upper" style="margin-left: 10px"/>
+                            </p>
+                        </div>
+                        <div class="two-labels">
+                            <label class="left-label" id="lock-reward-label">New lock</label>
+                            <p class="right-label" style="display: flex; align-items: center; justify-content: center;">
+                                <span id="new-lock" style="margin-right: 11px">0</span> <span style="margin-right: 10px">days</span>
                             </p>
                         </div>
                     </div>
@@ -225,6 +243,9 @@
                             style="display:none">CONNECT
                             WALLET</b> <b class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
                     </button>
+                    <div class="warning-box" id="warning-box-lock" style="display: none; margin-top: 20px; text-align: center; cursor: auto">
+                        <p class="paragraph-2" id="warning-message-lock"></p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -261,8 +282,8 @@
             navbarContainer.classList.toggle('scrolled', window.scrollY > 0);
         });
     </script>
-    <script src="dist/main.js?v=1.0.3"></script>
-    <script src="dist/784.main.js?v=1.0.3"></script>
+    <script src="dist/main.js?v=1.0.4"></script>
+    <script src="dist/784.main.js?v=1.0.4"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 </body>
 

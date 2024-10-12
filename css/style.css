@@ -400,6 +400,20 @@ h2 {
     user-select: none;
 }
 
+.info-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #989de8;
+    border-radius: 6px;
+    padding: 0px;
+    padding-left: 25px;
+    padding-right: 25px;
+    border: 2px solid #2a2f7c;
+    color: #2a2f7c;
+    user-select: none;
+}
+
 .happy-box {
     display: flex;
     justify-content: space-between;
