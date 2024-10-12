@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="images/favicon.ico" rel="shortcut icon" type="image/x-icon">
+    <link href="images/webclip.png" rel="apple-touch-icon">
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <title>STAB app - LBP</title>
+    <link href="css/style.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="navbar-container">
+            <header class="navbar">
+                <div class="navbar-content">
+                    <div class="logo-site"><img src="images/stab_gov_portal_small.png" alt="Stabilis logo" /></div>
+                    <button class="hamburger" id="hamburger">&#9776;</button>
+                    <nav id="navLinks" class="nav-links">
+                        <a class="selected" href="/lbp">LBP</a>
+                        <a href="/membership">Membership</a>
+                        <a href="/incentives">Incentives</a>
+                        <a href="/governance">Governance</a>
+                    </nav>
+                    <div class="cta">
+                        <radix-connect-button id="buggedElement" style="--radix-connect-button-border-radius: 6px;" />
+                    </div>
+                </div>
+            </header>
+            <nav id="navLinks-hamburger" class="nav-links-hamburger" style="display:none">
+                <a class="selected" href="/lbp">LBP</a>
+                <a href="/membership">Membership</a>
+                <a href="/incentives">Incentives</a>
+                <a href="/governance">Governance</a>
+            </nav>
+        </div>
+
+        <h1>ILIS LBP</h1>
+        <p class="subtitle">Swap your XRD for ILIS and vice versa through a Balancer-style Liquidity Bootstrapping Pool
+            (LBP).</p>
+        <p class="subtitle">Learn more about what an LBP is by reading the <a
+                href="https://docs.ilikeitstable.com/ilis-dao/using-ilis-dao/lbp" target="_blank"
+                style="color: #00a3cc;">relevant docs section</a>.</p>
+
+        <div class="total-content-wrapper">
+            <div class="main-content">
+                <div class="left-section">
+                    <h2 id="lbp-status" style="display: none;">LBP Ended!</h2>
+                    <p id="lbp-end-text" style="display: none;"></p>
+                    <div id="swap-widget">
+                        <h2>Swap ILIS</h2>
+                        <div class="input-group">
+                            <div class="two-labels">
+                                <label class="left-label">from</label>
+                                <label class="right-label clickable" id="swap-sell-amount">max. 100</label>
+                            </div>
+                            <div class="input-logo-wrapper">
+                                <img src="images/6266da23999171a63bcbb2a7_Radix-Icon-Round-200x200.svg" alt="Logo"
+                                    class="input-logo" id="swap-logo-1" />
+                                <input id="amount-sell" class="full-input with-logo decimal-only" type="text" value="0" />
+                                <label id="amount-sell-suffix" for="amount-sell" class="suffix">XRD</label>
+                            </div>
+                        </div>
+                        <div class="switch" id="switch-button"><i class="switch-button" data-feather="repeat"></i></div>
+                        <div class="input-group">
+                            <div class="two-labels">
+                                <label class="left-label">to</label>
+                                <label class="right-label" id="percentage-change">+0.5%</label>
+                            </div>
+                            <div class="input-logo-wrapper">
+                                <img src="images/ilislogo.png" alt="Logo" class="input-logo" id="swap-logo-2" />
+                                <input class="full-input with-logo decimal-only" value="0" type="text" id="amount-receive"
+                                    disabled />
+                                <label id="amount-receive-suffix" for="amount-receive" class="suffix">ILIS</label>
+                            </div>
+                        </div>
+                        <button class="wallet-necessary transaction-button bottom" id="sell">
+                            <i class="spin" data-feather="refresh-cw"
+                                style="margin-right: 5px; display: none; vertical-align: middle"></i>
+                            <i class="chevron" style="vertical-align: middle" data-feather="chevron-right"></i>
+                            <i class="warning" data-feather="alert-circle"
+                                style="margin-right: 5px; display: none; vertical-align: middle;"></i>
+                            <b class="button-text" style="vertical-align: middle;">SWAP</b> <b class="button-warning"
+                                style="display:none">CONNECT
+                                WALLET</b> <b class="button-waiting" style="display:none">CONFIRM IN
+                                WALLET...</b>
+                        </button>
+                        <div class="warning-box" id="swap-warning" style="display: none;">
+                            <p class="paragraph-2"><strong id="swap-warning-text"></strong></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="right-section">
+                    <h2>LBP Statistics</h2>
+                    <p class="stat-line">Current Weights <span class="stat-value-small" id="apy-real">-/-</span>
+                    </p>
+                    <p class="stat-line">LBP Progress <span class="stat-value-small" id="progress">-/- days</span>
+                    </p>
+                    <p class="stat-line" id="ilis-price-line">Current ILIS Price <span class="stat-value-small" id="ilis-price">- XRD</span>
+                    </p>
+                    <p class="stat-line" id="current-fdv-line">Current ILIS FDV <span class="stat-value-small" id="current-fdv">-
+                            XRD</span>
+                    </p>
+                    <p class="stat-line"><span id="ilis-price-final-text">Extrapolated ILIS Price</span></span> <span
+                            class="stat-value-small" id="ilis-price-final">-
+                            XRD</span>
+                    </p>
+                    <p class="stat-line"><span id="final-fdv-text">Extrapolated ILIS FDV</span> <span
+                            class="stat-value-small" id="final-fdv">-
+                            XRD</span>
+                    </p>
+                </div>
+            </div>
+
+            <h3 class="light-header">XRD/ILIS PRICE</h3>
+            <div id="chartContainer">
+                <canvas id="myChart"></canvas>
+            </div>
+        </div>
+
+        <footer>
+            <div class="footer-content">
+                <div class="footer-section logo-section">
+                    <img src="images/6591759c82a086a532a90d33_stabilis-1-p-130x130q80.png" alt="Logo 1">
+                </div>
+                <div class="footer-section">
+                    <h3>Socials</h3>
+                    <a href="https://twitter.com/stabilislabs" target="_blank">Twitter</a>
+                    <a href="https://t.me/stabilislabs" target="_blank">Telegram</a>
+                </div>
+                <div class="footer-section">
+                    <h3>Information</h3>
+                    <a href="terms-and-conditions.html" target="_blank">Terms & Conditions</a>
+                    <a href="https://docs.ilikeitstable.com" target="_blank">Documentation</a>
+                </div>
+                <div class="footer-section logo-section">
+                    <img src="images/runs-on-radix.png" alt="Logo 2">
+                </div>
+            </div>
+            <div class="copyright-section">
+                <p>Copyright &copy; 2024 I Like It Stable DAO LLC</p>
+            </div>
+        </footer>
+
+        <script>
+            feather.replace();
+            window.addEventListener('scroll', function () {
+                const navbarContainer = document.querySelector('.navbar-container');
+                navbarContainer.classList.toggle('scrolled', window.scrollY > 0);
+            });
+        </script>
+        <script src="dist/main.js?v=1.0.3"></script>
+        <script src="dist/784.main.js?v=1.0.3"></script>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+</body>
+
+</html>

@@ -1,70 +1,688 @@
 import { RadixDappToolkit, DataRequestBuilder, RadixNetwork } from '@radixdlt/radix-dapp-toolkit'
+import * as d3 from 'd3';
+import { Chart, registerables } from 'chart.js';
+import { BehaviorSubject, firstValueFrom, timeout, catchError, of } from 'rxjs';
+import { distinctUntilChanged, filter } from 'rxjs/operators';
+Chart.register(...registerables);
+
+
 // You can create a dApp definition in the dev console at https://stokenet-console.radixdlt.com/dapp-metadata 
 // then use that account for your dAppId
 
-const dAppId = 'account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd'
-let stabIdAddress = "resource_tdx_2_1ngnptx4ly75dwcv2knf6cp957qfjjprsz90kc8qmqh4ttamj4a2as3" //still need
-let componentAddress = "component_tdx_2_1cq9z3rpmt2vruwkqault43q640pshekt32tndn0dzkfrrwujhlhfgr"
-let stabComponentAddress = "component_tdx_2_1czdep00tnsy9js8atnc6u3v472nxgjmk5j6prtzfw56ttz9fdk9a8n"
-let poolComponentAddress = "component_tdx_2_1cqugvczcd8fpy84t3dn6rp799k37akrfzedarwxmdhfs5azhkyzefl"
-let poolAddress = "pool_tdx_2_1ckcazvgthuenzzgmg57ypu5np60n4z53gcfwgj97dzzzwk080zvyj7"
-let stabAddress = "resource_tdx_2_1t5tj80eezjkzeetr6y949u0zncef802n3nj89ufa9qudfuup48vfta"
-let cdpAddress = "resource_tdx_2_1n2w8fs9w8h2my3gk4ew9md27lsk9zqwfu3glh0gu2a9vfqza6v5f5f"
-let ctrlBadgeAddress = "resource_tdx_2_1t5nf9gq7gv4xu454dt7f2h8xvklq7kh4nastnvs3cheq9zjn3xm8lv"
+const DEFAULT_ADDRESS = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec";
+let accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec";
+
+let accountAddressForDeployment = "account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd"
+
+let hashToStore = "2e7eaac1752cb1971a01d876caef6c85b38654e4cbca547c0e690cdce44052d9"
+let storageKvs = "internal_keyvaluestore_tdx_2_1kpe22yzcpgxaxxk6nmcvyfut9lysj5lwttkdjstmz5a4uwfuyrxhc8"
+let storageComponent = "component_tdx_2_1cpd8dr5lza00jyk28npcu9qknn4j7ug26nmnhzwtsa6qhmr99enex6"
 let xrdAddress = "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc"
-let ilisAddress = "resource_tdx_2_1t4tsw7n2d0yfs27myw7x5khx00an2lwnvdsj9tyhkv3l8xvgn7mxdc" //still need
-let lpAddress = "resource_tdx_2_1th4dw07e73vrshnxpfjld740499unfdwwsdwqayp8n4qdm57ckc8h2"
-let liqAddress = "resource_tdx_2_1ntxtn0eemtwj0n5d2yjga4xtx7q3m8mspawt2c3j0t8dnypjtygv7n"
-let markerAddress = "resource_tdx_2_1n2yuvhnnl3sp8wmysvue3xfenh32zz23y45472m82vrzpps09y8pwg"
-let stakingAddress = "component_tdx_2_1cp3k6zm5xqgx0wcf0qtcndjzlxvpusdfpm4eq4838wuswn5h66j8px" // still need
-let accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec"
-let stakesKvs = "internal_keyvaluestore_tdx_2_1kzphr34g06wgtygn5eppvtavyt4qptp4xn9y0uzwgdesh324zrl7yu" // still need
-let collateralsKvs = "internal_keyvaluestore_tdx_2_1kp7gpwzhudc5xe96999ndnxyymzpcadwu78uanug2ses7wjq8qrmpf"
+let ilisAddress = "resource_tdx_2_1tk9urmuml7vfl6j5e30dtglex85wzz07pq3gdmkpdd7nypr0x2k4mh"
+let ilisCtrlBadgeAddress = "resource_tdx_2_1t4qmpev6pnjy2t76j7ydgfq3ay2xznnq5gr3yzmmzyj8xqwqf767xm"
+let ociDappDef = "account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd"
+let morpherComponentAddress = "component_tdx_2_1cryq46xl9jxej3v8dr6q0lpnzhs4knlg6x2en6gynahghxztdvdp74"
+let incentiveInterval = 1
+let bootstrapLength = 1
+
+let daoPackageAddress = "package_tdx_2_1p5fz3534hxypv4ftn2cun8r73ly5ugkxmyzf3qk8hesp3du24evc6h"
+
+let daoAddress = "component_tdx_2_1czr9gmaeqvtqae38kehdxu40y3j6fc643fdx7p9a7f0fc6q3sfyztn"
+let dAppIdDao = "account_tdx_2_1c8fadvp43lzn3t7cd07ln9j68wy0g3nu7xvsqdtq54497fruvyck7a"
+let accountLocker = "locker_tdx_2_1dzhsa0t4ptjgtyh8f6hned402duc05wjzsf0jvr725ujj7kzdgn5qp"
+let lbpComponentAddress = "component_tdx_2_1crra5tzyk2sqlg59l9wmda4x0xfxh90kgqka3mkdcsep989ftx9s5r"
+let lbpPoolAddress = "pool_tdx_2_1c5ka5ylujulqszv3c7u5axmpkcexxth4wh5ppwma8wvg4ftl9dnlzs"
+let stakingAddress = "component_tdx_2_1czakxq5ta95rry2n2pz927plfrvqn55c588qrnzyprhaw86zlsmq2q"
+let ilisPool = "pool_tdx_2_1cs8tnqvckummqujsnd6q8lx42qepcz67rwtzh8dq6v6wsf9nzsu7e5"
+let incentiveAddress = "component_tdx_2_1cr6pkmtvm2rdu86f5evshse3exxv366yexwqgfk4t06qdzp26awcn4"
+let governanceAddress = "component_tdx_2_1cpjdug2zrfpkeq0pflnw7eutkn30qvx45lsm4tt6yg0gmpwwx6xms3"
+let reentracyProxy = "component_tdx_2_1cpjdug2zrfpkeq0pflnw7eutkn30qvx45lsm4tt6yg0gmpwwx6xms3"
+let bootBadge = "resource_tdx_2_1thhfctt6xr2nc68c7rtqa0hfl9ws4xeule3j4vumhq0pqp7rtuu46c"
+let lbpPoolUnit = "resource_tdx_2_1th9r866524dwwepwxje5swplagd5gxqhpk4maaax0c3qwgwjyjh4q4"
+let poolIlisAddress = "resource_tdx_2_1tkzzwfgdgnajjc7fccqnq6lpuqrg77e70c9u32yj0f8lvzmly9wyca"
+let membershipIdAddress = "resource_tdx_2_1nt2sflp94mzge2l50qh7p3vxvsd66vwcpjr8nu38dwze67q3ks3yye"
+let membershipTransferAddress = "resource_tdx_2_1nfhksd7ag60e2p8s3w7ah73da7xhml7h6pqvqj0afr3rkk7erqfchk"
+let membershipUnstakeAddress = "resource_tdx_2_1n2w8ynyyjxnqjnt3mf33y9gy9x8qcem38h942dlfryrg90r2rrkyah"
+let incentiveIdAddress = "resource_tdx_2_1nfpq506lwsvfgxc3efa5lwtfhmwwwzvlzhr4d9lesncjyr9nfdxfd7"
+let incentiveTransferAddress = "resource_tdx_2_1nf4cdtflgq5ppddh5japddpm3fdx4tv0j06t7ld4v4c7zecnefy78t"
+let incentiveUnstakeAddress = "resource_tdx_2_1nfvhuyzxcmpky5tget66jtkzwnx4zkvwf97frz6rj54w702cr9z3sz"
+let proposalReceiptAddress = "resource_tdx_2_1nfcsf8shazua0tdeujzn3c2yl2tn07g3yveve7pzkx5p5603rhhnfz"
+
+let stabPackageAddress = "package_tdx_2_1pk60t9hhf25m4t4mrfdy9w6mhgul5jfx2w0k9kuz7mvnhxnz0n3dl7"
+
+let stabComponentAddress = "component_tdx_2_1crgrtkgwfq04l69y5emg9rvgx0y4uz8vd9ufmu3gzjm2tgqjdn356n"
+let ctrlBadgeAddress = "resource_tdx_2_1tkpaqe9t7e3gc2mzqnxsrg08vu5qyxfywm77u8z842s9l32rrajv29"
+let stabAddress = "resource_tdx_2_1tkj84nc5xy7rgrtq3mz6ugxf3ztqk7dpchc0kgs7u07s7ugy7rrytv"
+let cdpAddress = "resource_tdx_2_1ngxn3t4sle965cg4vw3t5mhzz0xayz4dm3vj746d9yaz7dyyc5cdmy"
+let markerAddress = "resource_tdx_2_1nft8duf7sqq75w9cesy7zex6wzm4yg0k5lq5yyjdxqfahh8fa3zegq"
+let liqAddress = "resource_tdx_2_1ngnexzywt0uyujtm3khghfr3rle237n5tyfz8svrk2gkq3xr4vf4f8"
+
+let proxyComponentAddress = "component_tdx_2_1cqgcrncu2edlkwc4ht68w4rmv0gdzwxv00y2d0xvzjygmgnag595r6"
+let dAppIdStab = "account_tdx_2_1c9ng02j7hkyv8t65tdhreh5ukdqf2xpfgrcz72l45x9upks0we92j7"
+let poolComponentAddress = "component_tdx_2_1cpqlrfv4xsnekzwpqgt5f00y5w75jq09qj0stes5nh09chzyywz9cm"
+let poolAddress = "pool_tdx_2_1c4wzvej460zx0yue35nclnkhcnwuhmez6gh5kjqkw6g3j7zq2ayl7a"
+let oracleComponent = "component_tdx_2_1czlqhe5zgr0c3t89l5asxm5z0lyw38qre8avhyca2vrjyzwphjhln6"
+let flashLoansComponent = 'component_tdx_2_1crk6srdg4v4fe32lv8525vrh04h6pjkdp47lc4sxewn8mzjmflcghr'
+let lpAddress = "resource_tdx_2_1t4nw3xcttpq3k3jkzfd0une3etmk7fynd7npugsm2meged27slc3x5"
+let flashLoanReceipt = "resource_tdx_2_1nttv0zur20a4narwgszrxyrksd9n2lkfszwjkggfwl2zsx6g33wg8y"
+let lpAddressForIncentives = xrdAddress
+let selectedResource = lpAddressForIncentives
+
+let lbpKvsHexes = ["5c0a0000000000000000", "5c0a0000000000000001", "5c0a0000000000000002"]
 let xrdKeyHex = "5c805da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6"
-let kvsHexes = ["5c805d78ab93fb11d006a1df76c2f432fc9e7db5f1c5d3931900a25ac8298ce3", "5c805d57077a6a6bc8982bdb23bc6a5ae67bfb357dd3636122ac97b323f39988"]
-const acceptedResources = [["XRD", "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc", "", "images/radix-logo.svg", 1, 'XRD', 0],
+const earliestTimestamp = new Date("2024-10-12T03:04:13.615Z");
+
+let ilisUnlockMultiplier = 2;
+let lbpUnlockMultiplier = 5;
+let lbpLockPayment = 1.001;
+let ilisLockPayment = 1.001;
+let feeLbp = 0.002;
+let initialIlisWeight = 0.99;
+let initialXrdWeight = 0.01;
+
+const acceptedResources = [["XRD", xrdAddress, "", "images/radix-logo.svg", 1, 'XRD', 0],
 ["Hermes LSU", "resource_tdx_2_1th9k30slgu9uekfu42llstgcq80dx8d59hxgexe5hdaqzyp8etc2dv", "validator_tdx_2_1s0l6946a2kx33vjmuuh3qrax3ueauznd2fc3d69md2exx29rcnjmnj", "https://hermesprotocol.io/assets/images/icon.svg", 1, 'LSU', 0],
 ["Radst0kes LSU", "resource_tdx_2_1thutwwmqwk6z4vyju8v0fhdlxdhgj2h7kgc8822cfsdeyjp7e5j3hd", "validator_tdx_2_1sdvnyupyl2atq72f5lsq7lcyw3cc4vnevf05yvtemn5c8fyncvv3xw", "images/radstokes-logo.png", 1, 'LSU', 0]]
+const incentive_resources = [["LPSTAB", "images/lplogo.png", lpAddressForIncentives]]
+
+const addressSubject = new BehaviorSubject(DEFAULT_ADDRESS);
+let latestUpdateId = 0;
+const baseLink = "https://radix-files.vercel.app/";
+let network = RadixNetwork.Stokenet;
+
+let dAppId = dAppIdDao;
+let dAppName = 'ILIS DAO'
+if (window.location.pathname === "/borrow" || window.location.pathname === "/swap" || window.location.pathname === "/manage-loans" || window.location.pathname === "/liquidations") {
+    dAppId = dAppIdStab;
+    dAppName = 'STAB Protocol'
+}
+
+if (window.location.pathname == "/deployment") {
+    dAppId = "account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd"
+    document.getElementById('instantiate-dao').onclick = async function () {
+        let manifest;
+        manifest = `
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${ilisAddress}")
+            Decimal("100000000")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${ilisAddress}")
+            Bucket("ilis")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${ilisCtrlBadgeAddress}")
+            Decimal("9")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${ilisCtrlBadgeAddress}")
+            Bucket("admin_badge")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${xrdAddress}")
+            Decimal("50000")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${xrdAddress}")
+            Bucket("bootstrap_xrd")
+            ;
+
+            CALL_FUNCTION
+            Address("${daoPackageAddress}")
+            "Dao"
+            "instantiate_dao"
+            Bucket("ilis")
+            Decimal("0.18")
+            Decimal("0.08")
+            Decimal("0.1")
+            Decimal("0.1")
+            Bucket("admin_badge")
+            "ILIS DAO"
+            "ILIS"
+            Bucket("bootstrap_xrd")
+            Address("${ociDappDef}")
+            true
+            ${bootstrapLength}i64
+            Decimal("1000")
+            ${incentiveInterval}i64
+            "https://ilikeitstable.com"
+            "https://ilikeitstable.com/images/proposal.png"
+            "https://ilikeitstable.com/images/staking-id.png"
+            "https://ilikeitstable.com/images/transfer.png"
+            "https://ilikeitstable.com/images/unstake.png"
+            "https://ilikeitstable.com/images/ilislogo.png"
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('change-ilis-metadata').onclick = async function () {
+        let manifest;
+        manifest = `
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "create_proof_of_amount"
+            Address("${ilisCtrlBadgeAddress}")
+            Decimal("1")
+            ;
+
+            SET_METADATA
+            Address("${ilisAddress}")
+            "stake_component"
+            Enum<8u8>(
+                Address("${stakingAddress}")
+            )
+            ;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('deposit-admin-badges-into-governance').onclick = async function () {
+        let manifest;
+        manifest = `
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${ilisCtrlBadgeAddress}")
+            Decimal("1")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${ilisCtrlBadgeAddress}")
+            Bucket("admin_badge")
+            ;
+
+            CALL_METHOD
+            Address("${governanceAddress}")
+            "put_tokens"
+            Bucket("admin_badge")
+;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('instantiate-stab-protocol').onclick = async function () {
+        let manifest;
+        manifest = `
+            CALL_FUNCTION
+            Address("${stabPackageAddress}")
+            "Stabilis"
+            "instantiate"
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+            ;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('instantiate-stab-protocol-after').onclick = async function () {
+        let manifest;
+        manifest = `
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "create_proof_of_amount"
+            Address("${ctrlBadgeAddress}")
+            Decimal("0.75")
+            ;
+
+            CALL_METHOD
+            Address("${stabComponentAddress}")
+            "add_collateral"
+            Address("${xrdAddress}")
+            Decimal("1.5")
+            Decimal("0.15")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${xrdAddress}")
+            Decimal("1000")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${xrdAddress}")
+            Bucket("xrd_bucket")
+            ;
+
+            CALL_METHOD
+            Address("${stabComponentAddress}")
+            "open_cdp"
+            Bucket("xrd_bucket")
+            Decimal("1")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+            ;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('instantiate-proxy').onclick = async function () {
+        let manifest;
+        manifest = `
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${xrdAddress}")
+            Decimal("75")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${xrdAddress}")
+            Bucket("xrd")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${stabAddress}")
+            Decimal("1")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${stabAddress}")
+            Bucket("stab")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${ctrlBadgeAddress}")
+            Decimal("9")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${ctrlBadgeAddress}")
+            Bucket("admin_badge")
+            ;
+
+            CALL_FUNCTION
+            Address("${stabPackageAddress}")
+            "Proxy"
+            "new"
+            Bucket("xrd")
+            Bucket("stab")
+            Bucket("admin_badge")
+            Enum<1u8>(
+                Enum<2u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                    Enum<1u8>(
+                        Address("${ilisCtrlBadgeAddress}")
+                    )
+                    )
+                )
+                )
+            )
+            Address("${morpherComponentAddress}")
+            Address("${cdpAddress}")
+            Address("${markerAddress}")
+            Address("${stabComponentAddress}")
+            Address("${ilisAddress}")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+            ;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('after-proxy-instantiation').onclick = async function () {
+        let manifest;
+        manifest = `
+           CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "create_proof_of_amount"
+            Address("${ctrlBadgeAddress}")
+            Decimal("0.75")
+            ;
+
+            CALL_METHOD
+            Address("${stabComponentAddress}")
+            "set_stops"
+            false
+            true
+            false
+            false
+            false
+            ;
+
+            SET_METADATA
+            Address("${lpAddress}")
+            "icon_url"
+            Enum<13u8>(
+                "https://ilikeitstable.com/images/lplogo.png"
+            )
+            ;
+
+            SET_METADATA
+            Address("${lpAddress}")
+            "stake_component"
+            Enum<8u8>(
+                Address("${incentiveAddress}")
+            )
+            ;
+
+            SET_METADATA
+            Address("${stabComponentAddress}")
+            "dapp_definition"
+            Enum<8u8>(
+                Address("${dAppIdStab}")
+            )
+            ;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('add-proposal-and-vote').onclick = async function () {
+        let manifest;
+        manifest = `
+           CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "withdraw"
+            Address("${ilisAddress}")
+            Decimal("10000")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${ilisAddress}")
+            Bucket("payment_for_proposal")
+            ;
+
+            CALL_METHOD
+            Address("${governanceAddress}")
+            "create_proposal"
+            "Deploy and govern STAB Protocol"
+            "This is the same proposal as the last one you dummy. Just testin here."
+            Enum<1u8>(
+                Array<Tuple>(
+                Tuple(
+                    "${storageKvs}",
+                    Address("${storageComponent}"),
+                    "${hashToStore}"
+                )
+                )
+            )
+            Address("${incentiveAddress}")
+            Address("${ilisCtrlBadgeAddress}")
+            "add_stakable"
+            Tuple(
+                Address("${lpAddress}"),
+                Decimal("200000"),
+                Decimal("1.001"),
+                365i64,
+                Decimal("5")
+            )
+            false
+            false
+            Bucket("payment_for_proposal")
+            ;
+
+            TAKE_ALL_FROM_WORKTOP
+            Address("${proposalReceiptAddress}")
+            Bucket("proposal_receipt")
+            ;
+
+            CREATE_PROOF_FROM_BUCKET_OF_ALL
+            Bucket("proposal_receipt")
+            Proof("proposal_proof")
+            ;
+
+            CALL_METHOD
+            Address("${governanceAddress}")
+            "add_proposal_step"
+            Proof("proposal_proof")
+            Address("${daoAddress}")
+            Address("${ilisCtrlBadgeAddress}")
+            "send_tokens"
+            Tuple(
+                Address("${ilisAddress}"),
+                Enum<0u8>(
+                Decimal("100000")
+                ),
+                Address("${proxyComponentAddress}"),
+                "put_reward_in_vault"
+            )
+            false
+            false
+            ;
+
+            CREATE_PROOF_FROM_BUCKET_OF_ALL
+            Bucket("proposal_receipt")
+            Proof("proposal_proof_2")
+            ;
+
+            CALL_METHOD
+            Address("${governanceAddress}")
+            "add_proposal_step"
+            Proof("proposal_proof_2")
+            Address("${governanceAddress}")
+            Address("${ilisCtrlBadgeAddress}")
+            "set_parameters"
+            Tuple(
+                Decimal("10000"),
+                7i64,
+                Decimal("10000"),
+                Decimal("0.5"),
+                7i64
+            )
+            false
+            true
+            ;
+
+            CREATE_PROOF_FROM_BUCKET_OF_ALL
+            Bucket("proposal_receipt")
+            Proof("proposal_proof_3")
+            ;
+
+            CALL_METHOD
+            Address("${governanceAddress}")
+            "submit_proposal"
+            Proof("proposal_proof_3")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "create_proof_of_non_fungibles"
+            Address("${membershipIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("#1#")
+            )
+            ;
+
+            POP_FROM_AUTH_ZONE
+            Proof("member_id_proof")
+            ;
+
+            CALL_METHOD
+            Address("${governanceAddress}")
+            "vote_on_proposal"
+            0u64
+            true
+            Proof("member_id_proof")
+            ;
+
+            CALL_METHOD
+            Address("${accountAddressForDeployment}")
+            "deposit"
+            Bucket("proposal_receipt")
+            ;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+
+    document.getElementById('start-bootstrap').onclick = async function () {
+        let manifest;
+        manifest = `
+            CALL_METHOD
+            Address("${lbpComponentAddress}")
+            "start_bootstrap"
+            ;
+        `
+        console.log('manifest: ', manifest)
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+            })
+            .then(result => {
+            })
+            .catch(error => {       
+            });
+    }
+}
+
+
 let selectedText;
 let xrdPrice;
 let interestRate;
 let stab_ids = [];
 let cdp_ids = [];
 let marker_ids = [];
-let cdpIds;
-let cdpWaitingAmount;
-let cdpWaitingIds;
-let lpAmountId;
-let lpWaitingAmount;
-let ilisAmountId;
-let ilisWaitingAmount;
-let nextClaim;
-let currentPeriod;
+let incentive_ids = [];
+let incentive_unstake_receipts = [];
+let membership_unstake_receipts = [];
+let currentIncentivePeriod;
 let stabXrdRatio;
 let internalPrice;
 let validatorMultiplier;
 let walletIlis;
+let walletResource;
 let walletXrd;
 let walletLp;
 let walletStab;
-let balance;
 let formattedWallet;
-let formattedRemoveLp;
-let formattedProvideStab;
 let xrdPoolAmount;
 let stabPoolAmount;
 let fee = 0.001;
 let sell = true;
+let stake = true;
+let lock = true;
+let lbpSell = true;
 let idSupplied = false;
-let stakeRewards;
-let lpRewards;
 let status;
 let resourceAddress;
 let debtAmount;
-let parentAddress;
 let collateralAmount;
 let cr;
-let markedId;
 let markedTime;
 let markerUsed;
 let markerDate;
@@ -73,9 +691,6 @@ let availableCollateral;
 let selectedCdp;
 let selectedId;
 let selectedMarker;
-let weekAgoXrdPrice;
-let weekAgoStabPrice;
-let weekAgoLpPrice;
 let mintAmount;
 let markerUsable = false;
 let upToDateCr;
@@ -91,27 +706,214 @@ let bigFail;
 let addingDebt = false;
 let realInputDebt;
 let realInputCol;
-
+let cantLiqWithSkips;
+let ilisLbpPoolAmount;
+let xrdLbpPoolAmount;
+let ilisWeight;
+let xrdWeight;
+let lbpProgress;
+let nowLbpTime;
+let lbpLength;
+let lbpDuration;
+let lbpStartTime;
+let ledgerData;
 let resourceAddresses = []
 let validatorAddresses = []
+let votingUntil;
+let lockedUntil;
+let ilisUndelegatingUntil;
+let ilisDelegatingTo;
+let amountStaked;
+let poolIlisDelegatedToMe;
+let poolMultiplier;
+let totalInUnstaking = 0;
+let totalReadyToUnstake = 0;
+let idsReadyToUnstake = [];
+let maxLockDaysFloor;
+let maxUnlockDaysCeil;
+let lockNow;
+let currentRequiredPayment;
+let claimablePeriods = 0;
+let vote = true;
+let maxProposals = 0;
+let proposalsKvs;
+let proposalToView = -1;
+let quorum;
+let parentAddress;
+let stakingAmount;
+let collateralsKvs;
+let lbpEnded = false;
+let realChart;
+
+function resizeChart() {
+    const chartContainer = document.getElementById('chartContainer');
+    chartContainer.style.height = '50vh';
+    realChart.resize();
+}
+
+function generateKey(value) {
+    // Ensure the value is treated as a BigInt
+    const bigIntValue = BigInt(value);
+    
+    // Convert to hex, remove '0x' prefix, pad to 16 characters
+    let hexValue = bigIntValue.toString(16).padStart(16, '0');
+    
+    // Reverse byte order (little-endian)
+    let littleEndian = '';
+    for (let i = 14; i >= 0; i -= 2) {
+        littleEndian += hexValue.substr(i, 2);
+    }
+    
+    // Prepend the prefix
+    return `5c0a${littleEndian}`;
+}
+
+function generateDownloadLinks(files, baseLink) {
+    return files.map(file => {
+      const kvsAddress = file.fields.find(field => field.field_name === 'kvs_address').value;
+      const fileHash = file.fields.find(field => field.field_name === 'file_hash').value;
+      return `${baseLink}file/${kvsAddress}/${fileHash}`;
+    });
+  }
+  
+  function displayAttachmentLinks(links) {
+    const attachmentsElement = document.getElementById('attachments');
+    attachmentsElement.innerHTML = ''; // Clear any existing content
+  
+    const maxLinks = Math.min(links.length, 10); // Display max 10 links
+  
+    for (let i = 0; i < maxLinks; i++) {
+      if (i > 0) {
+        attachmentsElement.appendChild(document.createTextNode(', '));
+      }
+  
+      const link = document.createElement('a');
+      link.href = links[i];
+      link.textContent = `[${i + 1}]`;
+      link.style.color = '#00a3cc'; // Style to match your existing links
+      link.style.textDecoration = 'none';
+      link.target = '_blank'; // Open in new tab
+  
+      attachmentsElement.appendChild(link);
+    }
+  
+    if (links.length > 10) {
+      attachmentsElement.appendChild(document.createTextNode(', ...'));
+    }
+  }
+
+function createStyledDownloadLink(data, filename) {
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename || 'data.json';
+    link.textContent = 'download .json';
+    link.target = '_blank';
+    link.style.color = '#00a3cc';
+    link.style.textDecoration = 'none'; // Add this if you want to remove the underline
+    
+    link.addEventListener('click', (e) => {
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+    });
+    
+    return link;
+}
 
 var inputs = document.querySelectorAll('.decimal-only');
-inputs.forEach(function (input) {
-    input.addEventListener('keypress', function (evt) {
-        var charCode = (evt.which) ? evt.which : event.keyCode;
-        var decimalPos = this.value.indexOf('.');
-        var cursorPos = this.selectionStart;
-        if (charCode != 46 && (charCode < 48 || charCode > 57)) {
-            evt.preventDefault();
-        } else if (decimalPos != -1 && cursorPos > decimalPos && this.value.split('.')[1].length >= 18 && charCode != 46) {
-            evt.preventDefault();
-        } else if (charCode == 46) {
-            if (decimalPos != -1 || this.value.length - cursorPos > 18) {
-                evt.preventDefault();
+
+window.onload = function () {
+    var inputs = document.getElementsByTagName('input');
+
+    for (var i = 0; i < inputs.length; i++) {
+        inputs[i].addEventListener('focus', function () {
+            if (this.value === '0') {
+                this.value = '';
             }
+        });
+
+        inputs[i].addEventListener('blur', function () {
+            if (this.value === '') {
+                this.value = '0';
+            }
+        });
+
+        inputs[i].addEventListener('dragover', function (event) {
+            event.preventDefault();
+        });
+
+        inputs[i].addEventListener('drop', function (event) {
+            event.preventDefault();
+        });
+    }
+}
+
+inputs.forEach(function (input) {
+    input.addEventListener('input', function (evt) {
+        var value = this.value;
+        var decimalPos = value.indexOf('.');
+        if (isNaN(value) || (decimalPos != -1 && value.split('.')[1].length > 18)) {
+            this.value = value.substring(0, value.length - 1);
         }
     });
 });
+
+document.getElementById('hamburger').addEventListener('click', function () {
+    var navLinksHamburger = document.getElementById('navLinks-hamburger');
+    if (navLinksHamburger.style.display === 'none') {
+        navLinksHamburger.style.display = 'flex';
+    } else {
+        navLinksHamburger.style.display = 'none';
+    }
+});
+
+/*window.addEventListener('resize', function () {
+    var navLinksHamburger = document.getElementById('navLinks-hamburger');
+    if (window.innerWidth > 820) {
+        navLinksHamburger.style.display = 'none';
+    }
+});*/
+
+function updateSliderBackground(slider) {
+    const value = slider.value;
+    // Calculate the percentage of the thumb position
+    const percentage = (value - slider.min) / (slider.max - slider.min) * 100;
+    // Update the slider background style
+    slider.style.background = `linear-gradient(to right, #1BA9A0 0%, #2B6CCC ${percentage}%, #f2f2f2 ${percentage}%)`;
+    if (slider.min == slider.max) {
+        slider.style.background = "#f2f2f2";
+    }
+}
+
+function dateToUnix(dateString) {
+    // Create a new Date object from the input date string
+    const date = new Date(dateString);
+    
+    // Get the Unix time in milliseconds, then convert it to seconds
+    const unixTimeInSeconds = Math.floor(date.getTime() / 1000);
+    
+    return unixTimeInSeconds;
+  }
+
+  function unixToDate(unixTimeInSeconds) {
+    // Convert seconds to milliseconds
+    const date = new Date(unixTimeInSeconds * 1000);
+    return date.toLocaleString();  // Returns the date in a human-readable format
+  }
+
+  function getRequiredPayment(payment, multiplier, duration, stakedAmount) {
+    var requiredPayment = (multiplier * (payment**(duration) * stakedAmount - (stakedAmount)));
+
+    if (requiredPayment > walletIlis && lock == false) {
+        document.getElementById('ilis-reward').style.color = "red";
+    } else {
+        document.getElementById('ilis-reward').style.color = "";
+    }
+
+    return requiredPayment;
+  }
 
 function toastMe(txId, action, kind) {
     if (kind === 1) {
@@ -187,6 +989,23 @@ function setChevron(customContent) {
     }
 }
 
+function setChevronNoButton(customContent) {
+    var customButton = customContent;
+    var chevronDown = customButton.querySelector('.chevron-down');
+    var chevronUp = customButton.querySelector('.chevron-up');
+    var text = customButton.querySelector('.info-text');
+
+    if (text.style.display === 'none') {
+        chevronDown.style.display = 'none';
+        chevronUp.style.display = 'block';
+        text.style.display = 'block';
+    } else {
+        chevronDown.style.display = 'block';
+        chevronUp.style.display = 'none';
+        text.style.display = 'none';
+    }
+}
+
 function setSwapButton() {
     var swapButton = document.getElementById('sell');
     var enable = true;
@@ -207,7 +1026,32 @@ function setSwapButton() {
         swapButton.style.backgroundColor = "";
         swapButton.disabled = false;
     } else {
-        swapButton.style.backgroundColor = "hsl(0, 0%, 78%)";
+        swapButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        swapButton.disabled = true;
+    }
+}
+
+function setLbpSwapButton() {
+    var swapButton = document.getElementById('sell');
+    var enable = true;
+    if (isConnected == false) {
+        enable = false;
+    } else if (sell == true && parseFloat(document.getElementById('amount-sell').value) > walletXrd) {
+        enable = false;
+    } else if (sell == false && parseFloat(document.getElementById('amount-sell').value) > walletIlis) {
+        enable = false;
+    } else if (document.getElementById('amount-sell').value == '') {
+        enable = false;
+    } else if (parseFloat(document.getElementById('amount-sell').value) == 0) {
+        enable = false;
+    }
+
+    if (enable) {
+        document.getElementById('swap-warning').style.display = 'none';
+        swapButton.style.backgroundColor = "";
+        swapButton.disabled = false;
+    } else {
+        swapButton.style.backgroundColor = "hsl(0, 0%, 0%)";
         swapButton.disabled = true;
     }
 }
@@ -231,7 +1075,7 @@ function setProvideButton() {
         provideButton.style.backgroundColor = "";
         provideButton.disabled = false;
     } else {
-        provideButton.style.backgroundColor = "hsl(0, 0%, 78%)";
+        provideButton.style.backgroundColor = "hsl(0, 0%, 0%)";
         provideButton.disabled = true;
     }
 }
@@ -253,7 +1097,7 @@ function setRemoveLpButton() {
         button.style.backgroundColor = "";
         button.disabled = false;
     } else {
-        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.style.backgroundColor = "hsl(0, 0%, 0%)";
         button.disabled = true;
     }
 }
@@ -277,7 +1121,7 @@ function setBorrowButton() {
         button.style.backgroundColor = "";
         button.disabled = false;
     } else {
-        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.style.backgroundColor = "hsl(0, 0%, 0%)";
         button.disabled = true;
     }
 }
@@ -303,7 +1147,7 @@ function setCloseLoanButton() {
         button.disabled = false;
         document.getElementById('warning-message-close').style.display = 'none';
     } else {
-        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.style.backgroundColor = "hsl(0, 0%, 0%)";
         button.disabled = true;
         if (message != "") {
             document.getElementById('message-close').textContent = message;
@@ -313,6 +1157,8 @@ function setCloseLoanButton() {
 }
 
 function setAddColButton() {
+    var sliderCol = document.getElementById('slider-col');
+    updateSliderBackground(sliderCol);
     var button = document.getElementById('add-col-button');
     var enable = true;
     var onlyButton = false;
@@ -345,7 +1191,7 @@ function setAddColButton() {
         document.getElementById('max-new-cr').style.cursor = "pointer";
         document.getElementById('max-new-cr').style.fontWeight = "";
     } else {
-        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.style.backgroundColor = "hsl(0, 0%, 0%)";
         button.disabled = true;
         if (onlyButton == false) {
             document.getElementById('new-cr').style.color = "";
@@ -373,6 +1219,8 @@ function setAddColButton() {
 }
 
 function setRemoveColButton() {
+    var sliderCol = document.getElementById('slider-col');
+    updateSliderBackground(sliderCol);
     document.getElementById('new-cr').style.color = "";
     var button = document.getElementById('remove-col-button');
     var enable = true;
@@ -385,9 +1233,10 @@ function setRemoveColButton() {
         enable = false;
     } else if (status == "Liquidated" || status == "ForceLiquidated" || status == "Closed") {
         enable = false;
-    } else if (realInputCol < 150) {
+    } else if (newCr < 150) {
         enable = false;
         onlyButton = true;
+        document.getElementById('new-cr').style.color = "red";
     } else if (document.getElementById('amount-to-remove').value == '' || parseFloat(document.getElementById('amount-to-remove').value) == 0) {
         enable = false;
         onlyButton = true;
@@ -403,7 +1252,7 @@ function setRemoveColButton() {
         document.getElementById('max-new-cr').style.cursor = "pointer";
         document.getElementById('max-new-cr').style.fontWeight = "";
     } else {
-        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.style.backgroundColor = "hsl(0, 0%, 0%)";
         button.disabled = true;
         if (onlyButton == false) {
             document.getElementById('new-cr').style.color = "";
@@ -424,13 +1273,21 @@ function setRemoveColButton() {
             document.getElementById('max-new-cr').style.cursor = "pointer";
             document.getElementById('max-new-cr').style.fontWeight = "";
             document.getElementById('slider-col').disabled = false;
-            document.getElementById('amount-to-remove').disabled = false;
+            if (newCr < 150) {
+                document.getElementById('amount-to-remove').disabled = true;
+            } else {
+                document.getElementById('amount-to-remove').disabled = false;
+            }
             document.getElementById('max-new-cr').disabled = false;
+            console.log("only button");
         }
     }
 }
 
 function setRemoveDebtButton() {
+    document.getElementById('new-cr-debt').style.color = "";
+    var sliderDebt = document.getElementById('slider-debt');
+    updateSliderBackground(sliderDebt);
     var button = document.getElementById('add-debt-button');
     var enable = true;
     var onlyButton = false;
@@ -447,6 +1304,7 @@ function setRemoveDebtButton() {
     } else if (newCrDebt < 150) {
         enable = false;
         onlyButton = true;
+        document.getElementById('new-cr-debt').style.color = "red";
     } else if (document.getElementById('amount-to-remove-debt').value == '' || parseFloat(document.getElementById('amount-to-remove-debt').value) == 0) {
         enable = false;
         onlyButton = true;
@@ -463,7 +1321,7 @@ function setRemoveDebtButton() {
         document.getElementById('max-new-cr-debt').style.cursor = "pointer";
         document.getElementById('max-new-cr-debt').style.fontWeight = "";
     } else {
-        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.style.backgroundColor = "hsl(0, 0%, 0%)";
         button.disabled = true;
         if (onlyButton == false) {
             document.getElementById('slider-debt').disabled = true;
@@ -485,10 +1343,12 @@ function setRemoveDebtButton() {
 }
 
 function setAddDebtButton() {
+    var sliderDebt = document.getElementById('slider-debt');
+    updateSliderBackground(sliderDebt);
     var button = document.getElementById('remove-debt-button');
     var enable = true;
     var onlyButton = false;
-    document.getElementById('new-cr-debt').style.color = "black";
+    document.getElementById('new-cr-debt').style.color = "";
     if (isConnected == false) {
         enable = false;
     } else if (selectedCdp == undefined) {
@@ -498,7 +1358,7 @@ function setAddDebtButton() {
     } else if (parseFloat(document.getElementById('amount-to-remove-debt').value) > walletStab) {
         enable = false;
         onlyButton = true;
-    } else if (parseFloat(realInputDebt) < 150) {
+    } else if (newCrDebt < 150) {
         enable = false;
         onlyButton = true;
         document.getElementById('new-cr-debt').style.color = "red";
@@ -516,7 +1376,7 @@ function setAddDebtButton() {
         document.getElementById('max-new-cr-debt').style.cursor = "pointer";
         document.getElementById('max-new-cr-debt').style.fontWeight = "";
     } else {
-        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.style.backgroundColor = "hsl(0, 0%, 0%)";
         button.disabled = true;
         if (onlyButton == false) {
             document.getElementById('slider-debt').disabled = true;
@@ -531,7 +1391,11 @@ function setAddDebtButton() {
             document.getElementById('max-new-cr-debt').style.cursor = "pointer";
             document.getElementById('max-new-cr-debt').style.fontWeight = "";
             document.getElementById('slider-debt').disabled = false;
-            document.getElementById('amount-to-remove-debt').disabled = false;
+            if (newCrDebt < 150) {
+                document.getElementById('amount-to-remove-debt').disabled = true;
+            } else {
+                document.getElementById('amount-to-remove-debt').disabled = false;
+            }
             document.getElementById('max-new-cr-debt').disabled = false;
         }
     }
@@ -557,7 +1421,7 @@ function setMarkLiqButton() {
         button.disabled = false;
         document.getElementById('warning-message-liq').style.display = 'none';
     } else {
-        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.style.backgroundColor = "hsl(0, 0%, 0%)";
         button.disabled = true;
         document.getElementById('warning-message-liq').style.display = 'none';
         if (message != "") {
@@ -578,6 +1442,8 @@ function setNoMarkLiqButton() {
     } else if (parseFloat(liqNextStab) > walletStab) {
         enable = false;
         message = "Insufficient STAB to liquidate loan.";
+    } else if (cantLiqWithSkips) {
+        enable = false;
     }
 
     if (enable) {
@@ -585,10 +1451,186 @@ function setNoMarkLiqButton() {
         button.disabled = false;
         document.getElementById('warning-liq-not-enough-stab').style.display = 'none';
     } else {
-        button.style.backgroundColor = "hsl(0, 0%, 78%)";
+        button.style.backgroundColor = "hsl(0, 0%, 0%)";
         button.disabled = true;
         if (message != "") {
             document.getElementById('warning-liq-not-enough-stab').style.display = 'block';
+        }
+    }
+}
+
+function setStakeButton() {
+    var stakeButton = document.getElementById('add-stake-button');
+    var unstakeButton = document.getElementById('remove-stake-button');
+    var enableButton = true;
+    var enableInput = true;
+    if (isConnected == false) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (selectedId == undefined) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (document.getElementById('amount-to-stake').value == '' || parseFloat(document.getElementById('amount-to-stake').value) == 0) {
+        enableButton = false;
+    }
+    if (walletIlis == 0 && stake == true && window.location.pathname == "/membership") {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (walletResource == 0 && stake == true && window.location.pathname == "/incentives") {
+        enableButton = false;
+        enableInput = false;
+    }
+    if ((amountStaked == 0 || amountStaked == undefined) && stake == false) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (stake == false && lockedUntil > nowLbpTime) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (stake == false && votingUntil > nowLbpTime && window.location.pathname == "/membership") {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (enableButton) {
+        stakeButton.style.backgroundColor = "";
+        stakeButton.disabled = false;
+        unstakeButton.style.backgroundColor = "";
+        unstakeButton.disabled = false;
+    } else {
+        stakeButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        stakeButton.disabled = true;
+        unstakeButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        unstakeButton.disabled = true;
+    }
+    if (enableInput) {
+        document.getElementById('slider-stake').disabled = false;
+        document.getElementById('amount-to-stake').disabled = false;
+        document.getElementById('max-new-stake').classList.add("clickable");
+        document.getElementById('max-new-stake').disabled = false;
+    } else {
+        document.getElementById('slider-stake').disabled = true;
+        document.getElementById('amount-to-stake').disabled = true;
+        document.getElementById('max-new-stake').classList.remove("clickable");
+        document.getElementById('max-new-stake').disabled = true;
+    }
+}
+
+function setLockButton() {
+    var lockButton = document.getElementById('add-lock-button');
+    var unlockButton = document.getElementById('remove-lock-button');
+    var enableButton = true;
+    var enableInput = true;
+    if (isConnected == false) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (selectedId == undefined) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (document.getElementById('days-to-lock').value == '' || parseFloat(document.getElementById('days-to-lock').value) == 0) {
+        enableButton = false;
+    }
+    if (walletIlis == 0 && lock == false) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (walletIlis < currentRequiredPayment) {
+        enableButton = false;
+    }
+    if ((amountStaked == 0 || amountStaked == undefined)) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (lock == false && lockNow == 0) {
+        enableButton = false;
+        enableInput = false;
+    }
+    if (enableButton) {
+        lockButton.style.backgroundColor = "";
+        lockButton.disabled = false;
+        unlockButton.style.backgroundColor = "";
+        unlockButton.disabled = false;
+    } else {
+        lockButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        lockButton.disabled = true;
+        unlockButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        unlockButton.disabled = true;
+    }
+    if (enableInput) {
+        document.getElementById('slider-lock').disabled = false;
+        document.getElementById('days-to-lock').disabled = false;
+        document.getElementById('max-new-lock').classList.add("clickable");
+        document.getElementById('max-new-lock').disabled = false;
+    } else {
+        document.getElementById('slider-lock').disabled = true;
+        document.getElementById('days-to-lock').disabled = true;
+        document.getElementById('max-new-lock').classList.remove("clickable");
+        document.getElementById('max-new-lock').disabled = true;
+    }
+}
+
+function setNewIdButton() {
+    var newIdButton = document.getElementById('new-id');
+    var enableButton = true;
+    if (isConnected == false) {
+        enableButton = false;
+    }
+    if (enableButton) {
+        newIdButton.style.backgroundColor = "";
+        newIdButton.disabled = false;
+    } else {
+        newIdButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        newIdButton.disabled = true;
+    }
+}
+
+function setUnstakeFinishButton() {
+    var unstakeFinishButton = document.getElementById('claim-unstaked-button');
+    var enableButton = true;
+    console.log("hello");
+    if (isConnected == false) {
+        enableButton = false;
+    }
+    if (totalReadyToUnstake == 0) {
+        enableButton = false;
+    }
+    if (enableButton) {
+        unstakeFinishButton.style.backgroundColor = "";
+        unstakeFinishButton.disabled = false;
+    } else {
+        unstakeFinishButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        unstakeFinishButton.disabled = true;
+    }
+}
+
+function setClaimButton() {
+    if (window.location.pathname == "/incentives") {
+        var claimButton = document.getElementById('claim-periods-button');
+        var enableButton = true;
+        console.log(selectedId);
+        if (isConnected == false) {
+            enableButton = false;
+        }
+        if (totalReadyToUnstake == 0) {
+            enableButton = false;
+        }
+        if (claimablePeriods == 0) {
+            enableButton = false;
+        }
+        if (selectedId == undefined) {
+            enableButton = false;
+        }
+        if (enableButton) {
+            claimButton.style.backgroundColor = "";
+            claimButton.disabled = false;
+        } else {
+            claimButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+            claimButton.disabled = true;
         }
     }
 }
@@ -639,14 +1681,85 @@ function calculateChange() {
     }
 }
 
-window.addEventListener('scroll', function () {
-    var navbar = document.querySelector('.navbar-logo-left-container');
-    if (window.pageYOffset > 100) { // Change this to the scroll position you want
-        navbar.classList.add('translucent');
-    } else {
-        navbar.classList.remove('translucent');
+function getWeights() {
+    lbpProgress = (nowLbpTime - lbpStartTime) / lbpDuration;
+    if (lbpProgress > 1) {
+        lbpProgress = 1;
     }
-});
+    ilisWeight = initialIlisWeight + (0.5 - initialIlisWeight) * lbpProgress;
+    xrdWeight = initialXrdWeight + (0.5 - initialXrdWeight) * lbpProgress;
+}
+
+function calculateLbpChange() {
+    getWeights();
+    if (lbpEnded == false) {
+        setLbpSwapButton();
+        var inputAmount = parseFloat(document.getElementById('amount-sell').value);
+        var parsedIlisPoolAmount = parseFloat(ilisLbpPoolAmount);
+        var parsedXrdPoolAmount = parseFloat(xrdLbpPoolAmount);
+        var percentage = document.getElementById('percentage-change');
+        let swapReceive = document.getElementById('amount-receive');
+        if (isNaN(inputAmount)) {
+            inputAmount = 0;
+        }
+        if (lbpSell == true) {
+            let outputAmount = (parsedIlisPoolAmount * (1 - feeLbp) * inputAmount * xrdWeight)
+                / (parsedXrdPoolAmount * ilisWeight + inputAmount * xrdWeight * (1 - feeLbp));
+            swapReceive.value = outputAmount;
+            var newparsedXrdPoolAmount = parsedXrdPoolAmount + inputAmount;
+            var newparsedIlisPoolAmount = parsedIlisPoolAmount - outputAmount;
+            var percentageChange = ((((newparsedXrdPoolAmount / newparsedIlisPoolAmount) - (parsedXrdPoolAmount / parsedIlisPoolAmount)) / (parsedXrdPoolAmount / parsedIlisPoolAmount))) * 100;
+            var idealRatio = internalPrice / xrdPrice;
+            percentage.style.color = "green";
+            document.getElementById('percentage-change').childNodes[0].nodeValue = "+" + percentageChange.toFixed(2) + "%";
+        } else {
+            console.log("buy side");
+            let outputAmount = (parsedXrdPoolAmount * (1 - feeLbp) * inputAmount * ilisWeight)
+                / (parsedIlisPoolAmount * xrdWeight + inputAmount * ilisWeight * (1 - feeLbp));
+            swapReceive.value = outputAmount;
+            var newparsedXrdPoolAmount = parseFloat(parsedXrdPoolAmount) - outputAmount;
+            var newparsedIlisPoolAmount = parseFloat(parsedIlisPoolAmount) + inputAmount;
+            var percentageChange = ((((newparsedIlisPoolAmount / newparsedXrdPoolAmount) - (parsedIlisPoolAmount / parsedXrdPoolAmount)) / (parsedIlisPoolAmount / parsedXrdPoolAmount))) * 100;
+            var idealRatio = internalPrice / xrdPrice;
+            percentage.style.color = "red";
+            document.getElementById('percentage-change').childNodes[0].nodeValue = "+" + percentageChange.toFixed(2) + "%";
+        }
+    } else {
+        document.getElementById('swap-widget').style.display = "none";
+        document.getElementById('lbp-status').style.display = "block";
+        document.getElementById('lbp-end-text').style.display = "block";
+    }
+}
+
+function parseLbpLedger(response) {
+    // Check if the response has the expected structure
+    if (!response.entries || !response.entries[0] || !response.entries[0].value || !response.entries[0].value.programmatic_json) {
+        console.error('Unexpected API response structure');
+        return [];
+    }
+
+    const elements = response.entries[0].value.programmatic_json.elements;
+
+    // Map each element to the desired format
+    return elements.map(element => {
+        if (element.fields && element.fields.length === 2) {
+            const [firstField, secondField] = element.fields;
+            
+            if (secondField.fields && secondField.fields.length === 2) {
+                return [
+                    parseFloat(firstField.value),
+                    [
+                        parseFloat(secondField.fields[0].value),
+                        parseFloat(secondField.fields[1].value)
+                    ]
+                ];
+            }
+        }
+        
+        console.error('Unexpected element structure', element);
+        return null;
+    }).filter(item => item !== null); // Remove any null items if parsing failed
+}
 
 async function checkMarking(amount) {
     // URL to get the gateway status
@@ -679,7 +1792,7 @@ async function checkMarking(amount) {
         // Repeat the specified part of the manifest
         const repeatManifest = `
             CALL_METHOD
-                Address("${componentAddress}")
+                Address("${proxyComponentAddress}")
                 "mark_for_liquidation"
                 Address("resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc")
                 ;
@@ -737,7 +1850,7 @@ async function checkMarking(amount) {
             bigFail = false;
         } else {
             document.getElementById('warning-mark').style.display = 'block';
-            document.getElementById('mark').style.backgroundColor = "hsl(0, 0%, 78%)";
+            document.getElementById('mark').style.backgroundColor = "hsl(0, 0%, 0%)";
             document.getElementById('mark').disabled = true;
             bigFail = true;
         }
@@ -792,7 +1905,7 @@ async function checkLiquidation(toSkip) {
             Bucket("stab");
 
         CALL_METHOD
-            Address("${componentAddress}")
+            Address("${proxyComponentAddress}")
             "liquidate_position_without_marker"
             Bucket("stab")
             true
@@ -836,8 +1949,12 @@ async function checkLiquidation(toSkip) {
         // Parse and save the response to a variable
         const responseData = await response.json();
 
+        console.log(manifest);
+        console.log(responseData);
+
         // Log the response data
         if (responseData.receipt.status === 'Succeeded') {
+            cantLiqWithSkips = false;
             document.getElementById('warning-liq').style.display = 'none';
 
             const resourceChanges = responseData.resource_changes;
@@ -881,13 +1998,13 @@ async function checkLiquidation(toSkip) {
                 } else if (liqNextStab > walletStab && isConnected == true) {
                     document.getElementById('warning-liq-not-enough-stab').style.display = 'block';
                     document.getElementById('warning-liq').style.display = 'none';
-                    document.getElementById('liqnextskip').style.backgroundColor = "hsl(0, 0%, 78%)";
-                    document.getElementById('liqnextskip').disabled = true;
+                    document.getElementById('liqnextskip').style.backgroundColor = "hsl(0, 0%, 0%)";
+                    cantLiqWithSkips = true;
                 } else if (isConnected == false) {
                     document.getElementById('warning-liq').style.display = 'none';
                     document.getElementById('warning-liq-not-enough-stab').style.display = 'none';
-                    document.getElementById('liqnextskip').style.backgroundColor = "hsl(0, 0%, 78%)";
-                    document.getElementById('liqnextskip').disabled = true;
+                    document.getElementById('liqnextskip').style.backgroundColor = "hsl(0, 0%, 0%)";
+                    cantLiqWithSkips = true;
                 }
                 liqRewardAddress = amounts.thirdResource.address;
                 document.getElementById("stab-debt").textContent = (1 * liqNextStab).toFixed(2) + " STAB";
@@ -898,8 +2015,8 @@ async function checkLiquidation(toSkip) {
         } else {
             document.getElementById('warning-liq').style.display = 'block';
             document.getElementById('warning-liq-not-enough-stab').style.display = 'none';
-            document.getElementById('liqnextskip').style.backgroundColor = "hsl(0, 0%, 78%)";
-            document.getElementById('liqnextskip').disabled = true;
+            document.getElementById('liqnextskip').style.backgroundColor = "hsl(0, 0%, 0%)";
+            cantLiqWithSkips = true;
             document.getElementById("stab-debt").textContent = "-";
             document.getElementById("col-reward").textContent = "-";
         }
@@ -913,69 +2030,772 @@ async function checkLiquidation(toSkip) {
     }
 }
 
+function extractErrorMessage(errorString) {
+    const regex = /PanicMessage\("([^@]+)@/;
+    const match = errorString.match(regex);
+    if (match && match[1]) {
+        return match[1].trim();
+    }
+    return "Unknown error";
+}
+
+async function checkVoting() {
+    var voteButton = document.getElementById('vote-button');
+
+    if (isConnected == false) {
+        voteButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        voteButton.disabled = true;
+        return;
+    }
+    if (selectedId == undefined) {
+        voteButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+        voteButton.disabled = true;
+        return;
+    }
+    // URL to get the gateway status
+    const statusUrl = "https://stokenet.radixdlt.com/status/gateway-status";
+
+    const headers = {
+        "Content-Type": "application/json"
+    };
+
+    try {
+        // Fetch the gateway status to get the current epoch
+        const statusResponse = await fetch(statusUrl, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({}) // Sending an empty body
+        });
+        const statusData = await statusResponse.json();
+
+        // Extract the current epoch
+        const currentEpoch = statusData.ledger_state.epoch;
+        const startEpochInclusive = currentEpoch;
+        const endEpochExclusive = currentEpoch + 2;
+
+        // URL to send the POST request to
+        const url = "https://stokenet.radixdlt.com/transaction/preview";
+
+        // Base manifest string
+        
+        let manifestString = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${membershipIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+            ;
+
+            POP_FROM_AUTH_ZONE
+            Proof("id_proof")
+            ;
+
+            CALL_METHOD
+            Address("${governanceAddress}")
+            "vote_on_proposal"
+            ${proposalToView}u64
+            ${vote}
+            Proof("id_proof")
+            ;
+        `;
+
+        // JSON payload
+        const payload = {
+            "manifest": manifestString,
+            "start_epoch_inclusive": startEpochInclusive,
+            "end_epoch_exclusive": endEpochExclusive,
+            "tip_percentage": 0,
+            "nonce": 1,
+            "signer_public_keys": [
+                {
+                    "key_type": "EcdsaSecp256k1",
+                    "key_hex": "0305684de356f5126befda977935827f6f74ca3b7865cd8516ca72ef7afc8c0e06"
+                }
+            ],
+            "flags": {
+                "use_free_credit": true,
+                "assume_all_signature_proofs": true,
+                "skip_epoch_check": true,
+                "disable_auth_checks": false,
+            }
+        };
+
+        // Send the POST request
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload)
+        });
+
+        // Parse and save the response to a variable
+        const responseData = await response.json();
+        console.log("let's go");
+        console.log(responseData);
+        if (responseData.receipt.status != "Succeeded") {
+            var errorMessage = extractErrorMessage(responseData.receipt.error_message);
+            console.log(errorMessage);
+            document.getElementById('warning-vote-text').textContent = errorMessage;
+            document.getElementById('warning-vote').style.display = 'block';
+            voteButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+            voteButton.disabled = true;
+        } else {
+            document.getElementById('warning-vote').style.display = 'none';
+            voteButton.style.backgroundColor = "";
+            voteButton.disabled = false;
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        throw error;
+    }
+}
+
 async function update_id() {
-    if (window.location.pathname === '/incentives') {
+    if (window.location.pathname === '/membership') {
         let request = {
-            "resource_address": stabIdAddress,
+            "resource_address": membershipIdAddress,
             "non_fungible_ids": [selectedId],
         };
-        if (selectedId === undefined) {
-            return;
-        }
-
-        await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(request)
-        })
+        if (selectedId != undefined) {
+            document.getElementById('warning-message-id-select').style.display = 'none';
+            await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request)
+            })
             .then(response => response.json())
             .then(data => {
-                lpAmountId = data.non_fungible_ids[0].data.programmatic_json.fields[0].elements[1].value;
-                lpWaitingAmount = data.non_fungible_ids[0].data.programmatic_json.fields[1].elements[1].value;
-                nextClaim = data.non_fungible_ids[0].data.programmatic_json.fields[2].value;
-                ilisAmountId = data.non_fungible_ids[0].data.programmatic_json.fields[0].elements[0].value;
-                ilisWaitingAmount = data.non_fungible_ids[0].data.programmatic_json.fields[1].elements[0].value;
+                console.log(data);
+                amountStaked = data.non_fungible_ids[0].data.programmatic_json.fields[0].value;
+                document.getElementById('staked-ilis').textContent = (amountStaked * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 });
+                poolIlisDelegatedToMe = data.non_fungible_ids[0].data.programmatic_json.fields[1].value;
+                var lockedUntilOption = data.non_fungible_ids[0].data.programmatic_json.fields[3].variant_name;
+                if (lockedUntilOption == "Some") {
+                    lockedUntil = data.non_fungible_ids[0].data.programmatic_json.fields[3].fields[0].value;
+                    if (lockedUntil > nowLbpTime) {
+                        document.getElementById('locked-until').textContent = new Date(lockedUntil * 1000).toLocaleString();
+                    } else {
+                        document.getElementById('locked-until').textContent = "Not locked";
+                    }
+                } else {
+                    document.getElementById('locked-until').textContent = "Not locked";
+                    lockedUntil = nowLbpTime;
+                }
+                var votingUntilOption = data.non_fungible_ids[0].data.programmatic_json.fields[4].variant_name;
+                if (votingUntilOption == "Some") {
+                    votingUntil = data.non_fungible_ids[0].data.programmatic_json.fields[4].fields[0].value;
+                    if (votingUntil > nowLbpTime) {
+                        document.getElementById('voting-until').textContent = new Date(votingUntil * 1000).toLocaleString();
+                    } else {
+                        document.getElementById('voting-until').textContent = "Not voting";
+                    }
+                } else {
+                    document.getElementById('voting-until').textContent = "Not voting";
+                }
+                var ilisUndelegatingUntilOption = data.non_fungible_ids[0].data.programmatic_json.fields[5].variant_name;
+                if (ilisUndelegatingUntilOption == "Some") {
+                    ilisUndelegatingUntil = data.non_fungible_ids[0].data.programmatic_json.fields[5].fields[0].value;
+                    if (ilisUndelegatingUntil > nowLbpTime) {
+                        document.getElementById('voting-until').textContent = new Date(ilisUndelegatingUntil * 1000).toLocaleString();
+                    }
+                }
+                var ilisDelegatingToOption = data.non_fungible_ids[0].data.programmatic_json.fields[2].variant_name;
+                if (ilisDelegatingToOption == "Some") {
+                    ilisDelegatingTo = data.non_fungible_ids[0].data.programmatic_json.fields[2].fields[0].value;
+                    document.getElementById('voting-until').textContent = "Delegating to " + ilisDelegatingTo;
+                }
             })
             .catch(error => console.error('Error:', error));
 
-        document.getElementById('lpAmountId').textContent = (1 * lpAmountId).toFixed(2) + ` (${(1 * lpWaitingAmount).toFixed(2)})`;
-        document.getElementById('ilisAmountId').textContent = (1 * ilisAmountId).toFixed(2) + ` (${(1 * ilisWaitingAmount).toFixed(2)})`;
-        document.getElementById('nextClaim').textContent = Math.min(currentPeriod - nextClaim + 1, 5);
+            document.getElementById('amount-to-stake').value = 0;
+            document.getElementById('days-to-lock').value = 0;
+            document.getElementById('ilis-reward').textContent = 0;
 
-        let stakeIlisMax = document.getElementById('stake-ilis-amount');
-        let formattedWalletIlis = (Math.floor(walletIlis * 10) / 10).toLocaleString('en-US');
-        stakeIlisMax.textContent = "max. " + formattedWalletIlis;
-        stakeIlisMax.style.cursor = "pointer";
-        stakeIlisMax.addEventListener('click', function () {
-            let inputField = document.getElementById('stake-ilis-field');
-            inputField.value = Math.floor(walletIlis * 10) / 10;
+            if (stake == true) {
+                document.getElementById('max-new-stake').textContent = "Max: " + (parseFloat(walletIlis)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS";
+                document.getElementById('new-stake').textContent = "New stake: " + (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS";
+            } else {
+                document.getElementById('max-new-stake').textContent = "Unstake all";
+                document.getElementById('new-stake').textContent = "New stake: " + (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS";
+            }
+
+            lockNow = Math.max(0, ((lockedUntil - nowLbpTime) / 60 / 60 / 24));
+
+            if (lock == true) {
+                var maxLockDaysSeconds = (nowLbpTime + 365 * 24 * 60 * 60) - lockedUntil;
+                maxLockDaysFloor = Math.floor(maxLockDaysSeconds / (60 * 60 * 24));
+                document.getElementById('max-new-lock').textContent = "Max lock: " + maxLockDaysFloor + " days";
+                document.getElementById('new-lock').textContent = "New lock: " + lockNow.toFixed(2) + " days";
+            } else {
+                var maxUnlockDaysSeconds = lockedUntil - nowLbpTime;
+                maxUnlockDaysCeil = Math.ceil(maxUnlockDaysSeconds / (60 * 60 * 24));
+                document.getElementById('max-new-lock').textContent = "Max unlock: " + maxUnlockDaysCeil + " days";
+                document.getElementById('new-lock').textContent = "New lock: " + lockNow.toFixed(2) + " days";
+            }
+        } else {
+            document.getElementById('warning-message-id-select').style.display = 'block';
+        }
+        let request2 = {
+            "resource_address": membershipUnstakeAddress,
+            "non_fungible_ids": membership_unstake_receipts,
+        };
+
+        totalInUnstaking = 0;
+        totalReadyToUnstake = 0;
+        idsReadyToUnstake = [];
+
+        if (membership_unstake_receipts.length > 0) {
+            await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request2)
+            })
+            .then(response => response.json())
+            .then(data => {
+                totalInUnstaking = 0;
+                totalReadyToUnstake = 0;
+                idsReadyToUnstake = [];
+                data.non_fungible_ids.forEach(receipt => {
+                    if (!receipt.is_burned && receipt.data && receipt.data.programmatic_json) {
+                        const fields = receipt.data.programmatic_json.fields;
+                        const amount = parseFloat(fields[0].value);
+                        const redemptionTime = parseInt(fields[1].value);
+
+                        totalInUnstaking += parseFloat(amount);
+
+                        if (redemptionTime < nowLbpTime) {
+                            totalReadyToUnstake += amount;
+                            idsReadyToUnstake.push(receipt.non_fungible_id);
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        document.getElementById('unstake-ready').textContent = totalReadyToUnstake.toLocaleString('en-US', { maximumFractionDigits: 1 }) +
+                                                                "/" +
+                                                                totalInUnstaking.toLocaleString('en-US', { maximumFractionDigits: 1 });
+        console.log(totalInUnstaking);
+
+        var sliderStake = document.getElementById('slider-stake');
+        var sliderLock = document.getElementById('slider-lock');
+
+        if (stake) {
+            var maxStake = parseFloat(walletIlis);
+            sliderStake.min = 0;
+            sliderStake.max = maxStake;
+            sliderStake.value = 0;
+        } else {
+            var maxUnstake = parseFloat(amountStaked) * poolMultiplier;
+            sliderStake.min = 0;
+            sliderStake.max = maxUnstake;
+            sliderStake.value = 0; // Set the value to the min value
+        }
+
+        if (lock) {
+            var maxLock = maxLockDaysFloor;
+            sliderLock.min = 0;
+            sliderLock.max = maxLock;
+            sliderLock.value = 0;
+        } else {
+            var maxUnlock = maxUnlockDaysCeil;
+            sliderLock.min = 0;
+            sliderLock.max = maxUnlock;
+            sliderLock.value = 0;
+        }
+
+        updateSliderBackground(sliderStake);
+        updateSliderBackground(sliderLock);
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+    }
+}
+
+async function fetchData(address) {
+    const url_fetch_ids = "https://stokenet.radixdlt.com/state/entity/details";
+    const addresses = [address, proxyComponentAddress, poolComponentAddress, stabAddress,
+                        poolAddress, stakingAddress, lbpPoolAddress, lbpComponentAddress,
+                        incentiveAddress, governanceAddress, daoAddress, ilisPool,
+                        poolIlisAddress, stabComponentAddress];
+
+    const requestBody = {
+        "addresses": addresses,
+        "aggregation_level": "Vault",
+        "opt_ins": {
+            "ancestor_identities": false,
+            "component_royalty_vault_balance": false,
+            "package_royalty_vault_balance": false,
+            "non_fungible_include_nfids": true,
+            "explicit_metadata": [
+                "name",
+                "description"
+            ]
+        }
+    };
+
+    if (address !== "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec") {
+        accountAddress = address;
+        if (window.location.pathname !== "/deployment") {
+            restoreButtonLabels();
+        }
+    } else {
+        isConnected = false;
+        walletStab = 0;
+        walletIlis = 0;
+        walletResource = 0;
+        walletXrd = 0;
+        walletLp = 0;
+        selectedCdp = undefined;
+        selectedMarker = undefined;
+        selectedId = undefined;
+        accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec"
+    }
+    stab_ids = []
+    cdp_ids = []
+    marker_ids = []
+    incentive_ids = []
+    membership_unstake_receipts = []
+    incentive_unstake_receipts = []
+    try {
+        // Start both fetch requests
+        /*const fetchPromise1 = fetch(url_kvs, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(params_kvs)
+        });*/
+
+        const fetchPromise2 = fetch(url_fetch_ids, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
         });
-        let stakeLpMax = document.getElementById('stake-lp-amount');
-        let formattedWalletLp = (Math.floor(walletLp * 10) / 10).toLocaleString('en-US');
-        stakeLpMax.textContent = "max. " + formattedWalletLp;
-        stakeLpMax.style.cursor = "pointer";
-        stakeLpMax.addEventListener('click', function () {
-            let inputField = document.getElementById('stake-lp-field');
-            inputField.value = Math.floor(walletLp * 10) / 10;
+
+        // Wait for both fetch requests to complete
+        const [/*response1,*/response2] = await Promise.all([/*fetchPromise1, */fetchPromise2]);
+
+        // Check the status of the responses
+        if (/*!response1.ok || */!response2.ok) {
+            throw new Error(`HTTP error! status: ${response2.status/*change this shit to 1*/}, ${response2.status}`);
+        }
+
+        // Parse the responses as JSON
+        const [/*data1, */data2] = await Promise.all([/*response1.json(), */response2.json()]);
+
+        // Extract the reward_amount values
+        /*const rewardAmounts = data1.entries
+            .map(entry => entry.value.programmatic_json.fields)
+            .flat()
+            .filter(field => field.field_name === 'reward_amount')
+            .map(field => field.value);
+
+        stakeRewards = rewardAmounts[0];
+        lpRewards = rewardAmounts[1];*/
+
+        // Process the second response
+        let sortedItems = [];
+        addresses.forEach(address => {
+            let item = data2.items.find(item => item.address === address);
+            if (item) {
+                sortedItems.push(item);
+            }
         });
-        let unstakeIlisMax = document.getElementById('unstake-ilis-amount');
-        let formattedWalletIlisUnstake = (Math.floor((ilisAmountId + ilisWaitingAmount) * 10) / 10).toLocaleString('en-US');
-        unstakeIlisMax.textContent = "max. " + formattedWalletIlisUnstake;
-        unstakeIlisMax.style.cursor = "pointer";
-        unstakeIlisMax.addEventListener('click', function () {
-            let inputField = document.getElementById('unstake-ilis-field');
-            inputField.value = Math.floor((ilisAmountId + ilisWaitingAmount) * 10) / 10;
+
+        sortedItems.forEach(item => {
+            if (item.non_fungible_resources) {
+                item.non_fungible_resources.items.forEach(nfrItem => {
+                    if (nfrItem.resource_address === membershipIdAddress && nfrItem.vaults) {
+                        nfrItem.vaults.items.forEach(vault => {
+                            stab_ids = stab_ids.concat(vault.items.filter(item => !stab_ids.includes(item)));
+                        });
+                    }
+                    if (nfrItem.resource_address === cdpAddress && nfrItem.vaults) {
+                        nfrItem.vaults.items.forEach(vault => {
+                            cdp_ids = cdp_ids.concat(vault.items.filter(item => !cdp_ids.includes(item)));
+                        });
+                    }
+                    if (nfrItem.resource_address === markerAddress && nfrItem.vaults) {
+                        nfrItem.vaults.items.forEach(vault => {
+                            marker_ids = marker_ids.concat(vault.items.filter(item => !marker_ids.includes(item)));
+                        });
+                    }
+                });
+            }
         });
-        let unstakeLpMax = document.getElementById('unstake-lp-amount');
-        let formattedWalletLpUnstake = (Math.floor((lpAmountId + lpWaitingAmount) * 10) / 10).toLocaleString('en-US');
-        unstakeLpMax.textContent = "max. " + formattedWalletLpUnstake;
-        unstakeLpMax.style.cursor = "pointer";
-        unstakeLpMax.addEventListener('click', function () {
-            let inputField = document.getElementById('unstake-lp-field');
-            inputField.value = Math.floor((lpAmountId + lpWaitingAmount) * 10) / 10;
+
+        if (cdp_ids.length > 0) {
+            // Define the data for the request
+            const requestDataCdp = {
+                "resource_address": cdpAddress,
+                "non_fungible_ids": cdp_ids
+            };
+
+            // Make the API request
+            await fetch('https://stokenet.radixdlt.com/state/non-fungible/data', {
+                method: 'POST', // Specify the HTTP method
+                headers: {
+                    'Content-Type': 'application/json', // Set the content type to JSON
+                },
+                body: JSON.stringify(requestDataCdp), // Convert the data to JSON string
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json(); // Parse the JSON from the response
+                })
+                .then(data => {
+                    sortedItems.push(data.non_fungible_ids); // Write the response data to the console
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error); // Handle any errors
+                });
+        }
+
+        const timeResponse = await fetch('https://stokenet.radixdlt.com/status/gateway-status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            // Include any necessary body data in string format
         });
+        const timeData = await timeResponse.json();
+        nowLbpTime = dateToUnix(timeData.ledger_state.proposer_round_timestamp);
+
+        if (window.location.pathname === '/lbp') {
+            let ledgerKvs = sortedItems[7].details.state.fields[19].value;
+            let ledgerCounter = parseInt(sortedItems[7].details.state.fields[20].value);
+            let kvsHexesToUse;
+
+            if (typeof ledgerCounter === 'number' && ledgerCounter >= 0 && Number.isInteger(ledgerCounter)) {
+                // Take ledgerCounter + 1 hexes, but not more than the total available
+                kvsHexesToUse = lbpKvsHexes.slice(0, Math.min(ledgerCounter + 1, lbpKvsHexes.length));
+            } else {
+                // Handle unexpected ledgerCounter values
+                console.error('Unexpected ledgerCounter value:', ledgerCounter);
+                kvsHexesToUse = [];
+            }
+
+            const ledgerKvsRequest = {
+                "key_value_store_address": ledgerKvs,
+                "keys": [
+                    ...kvsHexesToUse.map(hex => ({ "key_hex": hex })),
+                    {
+                        "key_json": {
+                            "kind": "Tuple",
+                            "fields": [
+                                {
+                                    "kind": "U32",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            };
+
+            const ledgerState = await fetch('https://stokenet.radixdlt.com/state/key-value-store/data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(ledgerKvsRequest)
+            });
+
+            const ledgerStateData = await ledgerState.json();
+            ledgerData = parseLbpLedger(ledgerStateData);
+        }
+        return sortedItems;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function update_governance() {
+    if (window.location.pathname === '/governance') {
+        let request = {
+            "resource_address": membershipIdAddress,
+            "non_fungible_ids": [selectedId],
+        };
+        if (selectedId != undefined) {
+            document.getElementById('warning-message-id-select').style.display = 'none';
+            await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                amountStaked = data.non_fungible_ids[0].data.programmatic_json.fields[0].value;
+                poolIlisDelegatedToMe = data.non_fungible_ids[0].data.programmatic_json.fields[1].value;
+                console.log(amountStaked);
+                console.log(poolIlisDelegatedToMe);
+                document.getElementById('vote-power').textContent = ((parseFloat(amountStaked) + parseFloat(poolIlisDelegatedToMe)) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 });
+                var ilisUndelegatingUntilOption = data.non_fungible_ids[0].data.programmatic_json.fields[5].variant_name;
+                if (ilisUndelegatingUntilOption == "Some") {
+                    ilisUndelegatingUntil = data.non_fungible_ids[0].data.programmatic_json.fields[5].fields[0].value;
+                    if (ilisUndelegatingUntil > nowLbpTime) {
+                        document.getElementById('vote-power').textContent = "Undelegating until " + new Date(ilisUndelegatingUntil * 1000).toLocaleString();
+                    }
+                }
+                var ilisDelegatingToOption = data.non_fungible_ids[0].data.programmatic_json.fields[2].variant_name;
+                if (ilisDelegatingToOption == "Some") {
+                    ilisDelegatingTo = data.non_fungible_ids[0].data.programmatic_json.fields[2].fields[0].value;
+                    document.getElementById('vote-power').textContent = "Delegating to " + ilisDelegatingTo;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+
+        } else {
+            document.getElementById('warning-message-id-select').style.display = 'block';
+        }
+
+        if (maxProposals >= 0) {
+            let request2 = {
+                "key_value_store_address": proposalsKvs,
+                "keys": [
+                {
+                    "key_hex": `${generateKey(proposalToView)}`
+                },
+                {
+                    "key_json": {
+                    "kind": "Tuple",
+                    "fields": [
+                        {
+                        "kind": "U32",
+                        "value": "1"
+                        }
+                    ]
+                    }
+                }
+                ]
+            };
+
+            await fetch("https://stokenet.radixdlt.com/state/key-value-store/data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request2)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                var proposalData = data.entries[0].value.programmatic_json.fields;
+                document.getElementById('proposal-title').textContent = "Proposal #" + proposalToView + ": " + proposalData[0].value;
+                document.getElementById('proposal-description').textContent = proposalData[1].value;
+                var status = proposalData[10].variant_name;
+                document.getElementById('status').textContent = status;
+                document.getElementById('deadline').textContent = new Date(parseInt(proposalData[7].value) * 1000).toLocaleString();
+                var votesFor = proposalData[4].value;
+                var votesAgainst = proposalData[5].value;
+                var totalVotes = parseFloat(votesFor) + parseFloat(votesAgainst);
+                if (status != "Building") {
+                    document.getElementById('votes-for').textContent = parseFloat(votesFor).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " (" + ((votesFor / totalVotes) * 100).toFixed(2) + "%)";
+                    document.getElementById('votes-against').textContent = parseFloat(votesAgainst).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " (" + ((votesAgainst / totalVotes) * 100).toFixed(2) + "%)";
+                } else {
+                    document.getElementById('votes-for').textContent = "-";
+                    document.getElementById('votes-against').textContent = "-";
+                }
+                document.getElementById('quorum').textContent = parseFloat(totalVotes).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " / " + parseFloat(quorum).toLocaleString('en-US', { maximumFractionDigits: 2 });
+            
+                if (proposalData[2].variant_name == "Some") {
+                    const attachmentList = proposalData[2].fields[0].elements;
+                    const downloadLinks = generateDownloadLinks(attachmentList, baseLink);
+                    displayAttachmentLinks(downloadLinks);
+                } else {
+                    document.getElementById('attachments').textContent = "-";
+                }
+
+                // Create download link
+                const downloadLink = createStyledDownloadLink(data, 'proposal_data.json');
+                const specificsElement = document.getElementById('specifics');
+                specificsElement.innerHTML = ''; // Clear any existing content
+                specificsElement.appendChild(downloadLink);
+            })
+            .catch(error => console.error('Error:', error));
+
+            checkVoting();
+        } else {
+            var voteButton = document.getElementById('vote-button');
+            voteButton.style.backgroundColor = "hsl(0, 0%, 0%)";
+            voteButton.disabled = true;
+        }
+    }
+}
+
+async function update_incentives() {
+    if (window.location.pathname === '/incentives') {
+        let request = {
+            "resource_address": incentiveIdAddress,
+            "non_fungible_ids": [selectedId],
+        };
+        if (selectedId != undefined) {
+            document.getElementById('warning-message-id-select').style.display = 'none';
+            await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                const nftData = data.non_fungible_ids[0].data.programmatic_json.fields[0];
+                var nextPeriod = data.non_fungible_ids[0].data.programmatic_json.fields[1].value;
+                claimablePeriods = Math.max(0, currentIncentivePeriod - nextPeriod + 1);
+                const resourceEntry = nftData.entries.find(entry => 
+                    entry.key.value.startsWith(selectedResource)
+                );
+                console.log(resourceEntry);
+                if (resourceEntry) {
+                    amountStaked = resourceEntry.value.fields[0].value;
+                    var lockedUntilOption = resourceEntry.value.fields[1].variant_name;
+                    if (lockedUntilOption == "Some") {
+                        lockedUntil = resourceEntry.value.fields[1].fields[0].value;
+                        if (lockedUntil > nowLbpTime) {
+                            document.getElementById('locked-until').textContent = new Date(lockedUntil * 1000).toLocaleString();
+                        } else {
+                            document.getElementById('locked-until').textContent = "Not locked";
+                        }
+                    } else {
+                        document.getElementById('locked-until').textContent = "Not locked";
+                        lockedUntil = nowLbpTime;
+                }
+                } else {
+                    amountStaked = 0;
+                    document.getElementById('locked-until').textContent = "-";
+                    lockedUntil = nowLbpTime;
+                }
+                document.getElementById('staked').textContent = (amountStaked * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 });
+                document.getElementById('periods-to-claim').textContent = claimablePeriods;
+                
+            })
+            .catch(error => console.error('Error:', error));
+
+            document.getElementById('amount-to-stake').value = 0;
+            document.getElementById('days-to-lock').value = 0;
+            document.getElementById('ilis-reward').textContent = 0;
+
+            if (stake == true) {
+                document.getElementById('max-new-stake').textContent = "Max: " + (parseFloat(walletResource)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " LPSTAB";
+                document.getElementById('new-stake').textContent = "New stake: " + (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " LPSTAB";
+            } else {
+                document.getElementById('max-new-stake').textContent = "Unstake all";
+                document.getElementById('new-stake').textContent = "New stake: " + (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " LPSTAB";
+            }
+
+            lockNow = Math.max(0, ((lockedUntil - nowLbpTime) / 60 / 60 / 24));
+
+            if (lock == true) {
+                var maxLockDaysSeconds = (nowLbpTime + 365 * 24 * 60 * 60) - lockedUntil;
+                maxLockDaysFloor = Math.floor(maxLockDaysSeconds / (60 * 60 * 24));
+                document.getElementById('max-new-lock').textContent = "Max lock: " + maxLockDaysFloor + " days";
+                document.getElementById('new-lock').textContent = "New lock: " + lockNow.toFixed(2) + " days";
+            } else {
+                var maxUnlockDaysSeconds = lockedUntil - nowLbpTime;
+                maxUnlockDaysCeil = Math.ceil(maxUnlockDaysSeconds / (60 * 60 * 24));
+                document.getElementById('max-new-lock').textContent = "Max unlock: " + maxUnlockDaysCeil + " days";
+                document.getElementById('new-lock').textContent = "New lock: " + lockNow.toFixed(2) + " days";
+            }
+        } else {
+            document.getElementById('warning-message-id-select').style.display = 'block';
+        }
+        let request2 = {
+            "resource_address": incentiveUnstakeAddress,
+            "non_fungible_ids": incentive_unstake_receipts,
+        };
+
+        totalInUnstaking = 0;
+        totalReadyToUnstake = 0;
+        idsReadyToUnstake = [];
+
+        if (incentive_unstake_receipts.length > 0) {
+            await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request2)
+            })
+            .then(response => response.json())
+            .then(data => {
+                totalInUnstaking = 0;
+                totalReadyToUnstake = 0;
+                idsReadyToUnstake = [];
+                data.non_fungible_ids.forEach(receipt => {
+                    if (!receipt.is_burned && receipt.data && receipt.data.programmatic_json) {
+                        const fields = receipt.data.programmatic_json.fields;
+                        const amount = parseFloat(fields[1].value);
+                        const redemptionTime = parseInt(fields[2].value);
+
+                        totalInUnstaking += parseFloat(amount);
+
+                        if (redemptionTime < nowLbpTime) {
+                            totalReadyToUnstake += amount;
+                            idsReadyToUnstake.push(receipt.non_fungible_id);
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        document.getElementById('unstake-ready').textContent = totalReadyToUnstake.toLocaleString('en-US', { maximumFractionDigits: 1 }) +
+                                                                "/" +
+                                                                totalInUnstaking.toLocaleString('en-US', { maximumFractionDigits: 1 });
+        console.log(totalInUnstaking);
+
+        var sliderStake = document.getElementById('slider-stake');
+        var sliderLock = document.getElementById('slider-lock');
+
+        if (stake) {
+            var maxStake = parseFloat(walletResource);
+            sliderStake.min = 0;
+            sliderStake.max = maxStake;
+            sliderStake.value = 0;
+        } else {
+            var maxUnstake = parseFloat(amountStaked) * poolMultiplier;
+            sliderStake.min = 0;
+            sliderStake.max = maxUnstake;
+            sliderStake.value = 0; // Set the value to the min value
+        }
+
+        if (lock) {
+            var maxLock = maxLockDaysFloor;
+            sliderLock.min = 0;
+            sliderLock.max = maxLock;
+            sliderLock.value = 0;
+        } else {
+            var maxUnlock = maxUnlockDaysCeil;
+            sliderLock.min = 0;
+            sliderLock.max = maxUnlock;
+            sliderLock.value = 0;
+        }
+
+        updateSliderBackground(sliderStake);
+        updateSliderBackground(sliderLock);
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
     }
 }
 
@@ -1036,9 +2856,13 @@ async function update_liq() {
                     parentAddress = data2.non_fungible_ids[0].data.programmatic_json.fields[1].value;
                     collateralAmount = data2.non_fungible_ids[0].data.programmatic_json.fields[3].value;
                     debtAmount = data2.non_fungible_ids[0].data.programmatic_json.fields[4].value;
-                    cr = data2.non_fungible_ids[0].data.programmatic_json.fields[5].value;
+                    console.log(collateralAmount);
+                    console.log(debtAmount);
+                    console.log(validatorMultiplier);
+                    upToDateCr = getUpToDateCr(collateralAmount, debtAmount, validatorMultiplier);
+                    cr = upToDateCr * 100;
                     status = data2.non_fungible_ids[0].data.programmatic_json.fields[6].variant_name;
-                    collateralName = getResourceName(resourceAddress);
+                    collateralName = getResourceName(resourceAddress);                    
                 } else {
                     parentAddress = "-";
                     collateralAmount = "-";
@@ -1050,18 +2874,18 @@ async function update_liq() {
 
                 document.getElementById('status').textContent = status;
                 if (collateralName == "XRD") {
-                    document.getElementById('collateralAmount').textContent = (1 * collateralAmount).toFixed(2) + " XRD";
+                    document.getElementById('collateralAmount').textContent = (1 * collateralAmount).toFixed(2) + " " + collateralName;;
                     document.getElementById('debtAmount').textContent = (1 * debtAmount).toFixed(2) + " STAB";
-                    document.getElementById('cr').textContent = (cr * xrdPrice * 100).toFixed(2) + "%";
+                    document.getElementById('cr').textContent = cr.toFixed(2) + "%";
                 } else if (collateralName == "-") {
-                    document.getElementById('collateralAmount').textContent = "-";
+                    document.getElementById('collateralAmount').textContent = "";
                     document.getElementById('debtAmount').textContent = "-";
                     document.getElementById('cr').textContent = "-";
                     document.getElementById('status').style.color = 'red';
                 } else {
-                    document.getElementById('collateralAmount').textContent = (1 * collateralAmount).toFixed(2) + " LSUs";
+                    document.getElementById('collateralAmount').textContent = (1 * collateralAmount).toFixed(2) + " " + collateralName;
                     document.getElementById('debtAmount').textContent = (1 * debtAmount).toFixed(2) + " STAB";
-                    document.getElementById('cr').textContent = (cr * xrdPrice * 100).toFixed(2) + "%";
+                    document.getElementById('cr').textContent = cr.toFixed(2) + "%";
                 }
                 if (markerUsed == true) {
                     document.getElementById('marker-state').style.color = 'red';
@@ -1106,6 +2930,19 @@ async function update_liq() {
 async function update_cdp() {
 
     if (window.location.pathname === '/manage-loans') {
+        var sliderCol = document.getElementById('slider-col');
+        var sliderDebt = document.getElementById('slider-debt');
+        updateSliderBackground(sliderCol);
+        updateSliderBackground(sliderDebt);
+
+        sliderCol.addEventListener('input', function () {
+            updateSliderBackground(this);
+        });
+
+        sliderDebt.addEventListener('input', function () {
+            updateSliderBackground(this);
+        });
+
         if (selectedCdp === undefined) {
             if (addingCollateral) {
                 setAddColButton();
@@ -1175,18 +3012,21 @@ async function update_cdp() {
                     slider.min = 0;
                     slider.max = maxCrDebt - 150;
                     slider.value = slider.min; // Set the value to the min value
-
                 }
 
-                document.getElementById('amount-to-remove').value = "";
-                document.getElementById('amount-to-remove-debt').value = "";
+                document.getElementById('amount-to-remove').value = "0";
+                document.getElementById('amount-to-remove-debt').value = "0";
 
                 // Round minValue to two decimal places before setting the value
 
 
                 acceptedResources.forEach(acceptedResource => {
                     if (acceptedResource[1] === resourceAddress) {
-                        var logoImage = document.querySelector('.stab-logo');
+                        if (window.location.pathname === '/manage-loans') {
+                            var secondLogoImage = document.getElementById('col-logo-upper');
+                            secondLogoImage.src = acceptedResource[3];
+                        }
+                        var logoImage = document.querySelector('.input-logo');
                         logoImage.src = acceptedResource[3];
                     }
                 });
@@ -1195,14 +3035,14 @@ async function update_cdp() {
 
         let collateralName = getResourceName(resourceAddress);
         document.getElementById('status').textContent = status;
-        document.getElementById('collateral').textContent = collateralName;
+        document.getElementById('collateral').textContent = " " + collateralName;
         var button = document.getElementById('close-entire-button');
         var buttonText = button.querySelector('.button-text');
 
         if (collateralName == "XRD") {
-            document.getElementById('collateralAmount').textContent = (1 * collateralAmount).toFixed(2) + " XRD";
+            document.getElementById('collateralAmount').textContent = (1 * collateralAmount).toFixed(2);
         } else {
-            document.getElementById('collateralAmount').textContent = (1 * collateralAmount).toFixed(2) + " LSUs";
+            document.getElementById('collateralAmount').textContent = (1 * collateralAmount).toFixed(2);
         }
         document.getElementById('debtAmount').textContent = (1 * debtAmount).toFixed(2) + " STAB";
         document.getElementById('cr').textContent = (upToDateCr * 100).toFixed(2) + "%";
@@ -1242,7 +3082,7 @@ async function update_cdp() {
             }
             document.getElementById('debtAmount').textContent = "-";
             document.getElementById('cr').textContent = "-";
-            document.getElementById('collateralAmount').textContent = "-";
+            document.getElementById('collateralAmount').textContent = "";
             button.backgroundColor = '';
             buttonText.color = '';
         } else if (status == "Healthy") {
@@ -1356,6 +3196,7 @@ for (var i = 0; i < buttons.length; i++) {
     });
 }
 
+
 // Function to restore the original text and color of the buttons
 function restoreButtonLabels() {
     if (isConnected) {
@@ -1374,8 +3215,8 @@ function restoreButtonLabels() {
 // Instantiate DappToolkit
 const rdt = RadixDappToolkit({
     dAppDefinitionAddress: dAppId,
-    networkId: RadixNetwork.Stokenet, // network ID 2 is for the stokenet test network 1 is for mainnet
-    applicationName: 'Stabilis',
+    networkId: network, // network ID 2 is for the stokenet test network 1 is for mainnet
+    applicationName: dAppName,
     applicationVersion: '1.0.0',
 })
 rdt.buttonApi.setTheme('white-with-outline')
@@ -1470,359 +3311,111 @@ if (window.location.pathname === '/borrow' || window.location.pathname === '/man
         });
 }
 
-function update(onlyWallet) {
-    // Subscribe to updates to the user's shared wallet data
-    rdt.walletApi.walletData$.subscribe((walletData) => {
-        console.log("subscription wallet data: ", walletData)
-        if (walletData && walletData.accounts && walletData.accounts.length > 0) {
-            accountAddress = walletData.accounts[0].address;
-            restoreButtonLabels();
-        } else {
-            isConnected = false;
-            walletStab = 0;
-            walletXrd = 0;
-            walletLp = 0;
-            selectedCdp = undefined;
-            selectedMarker = undefined;
-            selectedId = undefined;
-            accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec"
-        }
+function useData(data) {
+    if (window.location.pathname === "/deployment") {
+        return;
+    }
+    bigData = data;
+    console.log(data);
+    var lbpEndStatus = data[7].details.state.fields[12].variant_name;
+    if (lbpEndStatus === "Some") {
+        lbpEnded = true;
+    }
+    collateralsKvs = data[13].details.state.fields[0].value;
+    lbpLength = data[7].details.state.fields[8].value;
+    lbpDuration = lbpLength * 24 * 60 * 60;
+    lbpStartTime = data[7].details.state.fields[11].fields[0].value;
+    internalPrice = data[1].details.state.fields[15].fields[4].value;
+    console.log(data);
+    xrdPrice = data[1].details.state.fields[10].value;
+    if (window.location.pathname === '/membership' || window.location.pathname === '/governance') {
+        poolMultiplier = data[11].fungible_resources.items[0].vaults.items[0].amount / data[12].details.total_supply;
+    } else {
+        poolMultiplier = 1;
+    }
+    stabXrdRatio = internalPrice / xrdPrice;
+    validatorMultiplier = 1;
+    if (window.location.pathname === '/borrow') {
+        let firstOption = true;
+        var dropdownContent = document.querySelector('.dropdown-custom-content');
+        dropdownContent.innerHTML = '';
+        var dropdownButton = document.querySelector('.dropdown-custom-button b');
+        var clickableButton = document.querySelector('.dropdown-custom-button');
+        getFungibleResources(accountAddress).then(resourceAddressesAndAmounts => {
+            // Add new options
+            resourceAddressesAndAmounts.forEach(resource => {
+                clickableButton.disabled = false;
+                clickableButton.style.backgroundColor = "";
+                // Fetch the name, subtext, and logo
+                var name = resource.name;
+                var address = resource.resourceAddress;
+                var logoUrl = resource.logo;
+                var subtext = 'max. ' + resource.amount.toFixed(2);
+                var slider = document.getElementById('slider-single');
+                let colToUse = document.getElementById("colToUse");
 
-        async function getFungibleResources(accountAddress) {
-            const response = await fetch('https://stokenet.radixdlt.com/state/entity/details', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    addresses: [accountAddress],
-                    aggregation_level: 'Vault',
-                    opt_ins: {
-                        ancestor_identities: true,
-                        component_royalty_vault_balance: true,
-                        package_royalty_vault_balance: true,
-                        non_fungible_include_nfids: true,
-                        explicit_metadata: []
-                    }
-                })
-            });
-
-            const data = await response.json();
-
-            // Iterate over each item in the response
-            const acceptedFungibleResources = data.items.flatMap(item => {
-                // Filter the fungible resources to only include those in the list of accepted resources
-                return item.fungible_resources.items.filter(resource => {
-                    return acceptedResources.some(acceptedResource => acceptedResource[1] === resource.resource_address);
-                }).map(resource => {
-                    // Find the corresponding accepted resource
-                    const acceptedResource = acceptedResources.find(ar => ar[1] === resource.resource_address);
-
-                    // Add the name of the accepted resource to the resource object
-                    resource.name = acceptedResource ? acceptedResource[0] : '';
-                    resource.logo = acceptedResource ? acceptedResource[3] : '';
-                    resource.multiplier = acceptedResource ? acceptedResource[4] : 1;
-                    resource.identifier = acceptedResource ? acceptedResource[5] : '';
-
-                    return resource;
-                });
-            });
-
-            // Map each object to its name, resource_address and amount properties
-            const resourceAddressesAndAmounts = acceptedFungibleResources.map(resource => {
-                let amount = 0;
-                if (resource.vaults && resource.vaults.items && resource.vaults.items.length > 0) {
-                    amount = parseFloat(resource.vaults.items[0].amount);
+                if (address === selectedCollateral) {
+                    availableCollateral = resource.amount;
+                    document.getElementById('col-max').textContent = "max. " + availableCollateral.toFixed(2).toLocaleString('en-US');
                 }
 
-                return {
-                    name: resource.name,
-                    resourceAddress: resource.resource_address,
-                    amount: amount,
-                    logo: resource.logo,
-                    multiplier: resource.multiplier,
-                    identifier: resource.identifier
-                };
-            });
+                // Create a new option
+                var option = document.createElement('div');
+                option.className = 'dropdown-custom-option';
+                option.dataset.logoUrl = logoUrl;
+                option.setAttribute('tabindex', '0'); // Make the option focusable
 
-            // Sort the array by amount in descending order
-            resourceAddressesAndAmounts.sort((a, b) => b.amount - a.amount);
+                // Add the logo image to the option
+                var logoImage = document.createElement('img');
+                logoImage.src = logoUrl;
+                logoImage.alt = 'Logo';
+                option.appendChild(logoImage);
 
-            return resourceAddressesAndAmounts;
-        }
+                // Add the text to the option
+                var optionText = document.createElement('div');
+                optionText.className = 'option-text';
 
-        // Define the request URL and parameters
-        const url_kvs = "https://stokenet.radixdlt.com/state/key-value-store/data";
-        const params_kvs = {
-            "key_value_store_address": stakesKvs,
-            "keys": [
-                { "key_hex": kvsHexes[0] },
-                { "key_hex": kvsHexes[1] },
-                { "key_json": { "kind": "Tuple", "fields": [{ "kind": "U32", "value": "1" }] } }
-            ]
-        };
+                var optionTitle = document.createElement('div');
+                optionTitle.className = 'option-title';
+                optionTitle.textContent = name;
+                optionText.appendChild(optionTitle);
 
-        const url_fetch_ids = "https://stokenet.radixdlt.com/state/entity/details";
-        const addresses = [accountAddress, componentAddress, poolComponentAddress, stabAddress, poolAddress, stakingAddress]; // Replace with your addresses
+                var optionSubtext = document.createElement('div');
+                optionSubtext.className = 'option-subtext';
+                optionSubtext.textContent = subtext;
+                optionText.appendChild(optionSubtext);
 
-        const requestBody = {
-            "addresses": addresses,
-            "aggregation_level": "Vault",
-            "opt_ins": {
-                "ancestor_identities": false,
-                "component_royalty_vault_balance": false,
-                "package_royalty_vault_balance": false,
-                "non_fungible_include_nfids": true,
-                "explicit_metadata": [
-                    "name",
-                    "description"
-                ]
-            }
-        };
+                option.appendChild(optionText);
 
-        async function fetchData() {
-            try {
-                // Start both fetch requests
-                /*const fetchPromise1 = fetch(url_kvs, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(params_kvs)
-                });*/
-
-                const fetchPromise2 = fetch(url_fetch_ids, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                // Wait for both fetch requests to complete
-                const [/*response1,*/response2] = await Promise.all([/*fetchPromise1, */fetchPromise2]);
-
-                // Check the status of the responses
-                if (/*!response1.ok || */!response2.ok) {
-                    throw new Error(`HTTP error! status: ${response2.status/*change this shit to 1*/}, ${response2.status}`);
-                }
-
-                // Parse the responses as JSON
-                const [/*data1, */data2] = await Promise.all([/*response1.json(), */response2.json()]);
-
-                // Extract the reward_amount values
-                /*const rewardAmounts = data1.entries
-                    .map(entry => entry.value.programmatic_json.fields)
-                    .flat()
-                    .filter(field => field.field_name === 'reward_amount')
-                    .map(field => field.value);
-
-                stakeRewards = rewardAmounts[0];
-                lpRewards = rewardAmounts[1];*/
-
-                // Process the second response
-                let sortedItems = [];
-                addresses.forEach(address => {
-                    let item = data2.items.find(item => item.address === address);
-                    if (item) {
-                        sortedItems.push(item);
-                    }
-                });
-
-                sortedItems.forEach(item => {
-                    if (item.non_fungible_resources) {
-                        item.non_fungible_resources.items.forEach(nfrItem => {
-                            if (nfrItem.resource_address === stabIdAddress && nfrItem.vaults) {
-                                nfrItem.vaults.items.forEach(vault => {
-                                    stab_ids = stab_ids.concat(vault.items);
-                                });
-                            }
-                            if (nfrItem.resource_address === cdpAddress && nfrItem.vaults) {
-                                nfrItem.vaults.items.forEach(vault => {
-                                    cdp_ids = cdp_ids.concat(vault.items);
-                                });
-                            }
-                            if (nfrItem.resource_address === markerAddress && nfrItem.vaults) {
-                                nfrItem.vaults.items.forEach(vault => {
-                                    marker_ids = marker_ids.concat(vault.items);
-                                });
-                            }
-                        });
-                    }
-                });
-
-                if (cdp_ids.length > 0) {
-                    // Define the data for the request
-                    const requestDataCdp = {
-                        "resource_address": cdpAddress,
-                        "non_fungible_ids": cdp_ids
-                    };
-
-                    // Make the API request
-                    await fetch('https://stokenet.radixdlt.com/state/non-fungible/data', {
-                        method: 'POST', // Specify the HTTP method
-                        headers: {
-                            'Content-Type': 'application/json', // Set the content type to JSON
-                        },
-                        body: JSON.stringify(requestDataCdp), // Convert the data to JSON string
-                    })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok ' + response.statusText);
-                            }
-                            return response.json(); // Parse the JSON from the response
-                        })
-                        .then(data => {
-                            sortedItems.push(data.non_fungible_ids); // Write the response data to the console
-                        })
-                        .catch(error => {
-                            console.error('There was a problem with the fetch operation:', error); // Handle any errors
-                        });
-                }
-
-                return sortedItems;
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
-
-        function useData(data) {
-            stab_ids = []
-            cdp_ids = []
-            marker_ids = []
-            internalPrice = data[1].details.state.fields[12].value;
-            xrdPrice = data[1].details.state.fields[19].value;
-            stabXrdRatio = internalPrice / xrdPrice;
-            validatorMultiplier = 1;
-            if (window.location.pathname === '/borrow') {
-                let firstOption = true;
-                var dropdownContent = document.querySelector('.dropdown-custom-content');
-                dropdownContent.innerHTML = '';
-                var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                var clickableButton = document.querySelector('.dropdown-custom-button');
-                getFungibleResources(accountAddress).then(resourceAddressesAndAmounts => {
-                    // Add new options
-                    resourceAddressesAndAmounts.forEach(resource => {
-                        clickableButton.disabled = false;
-                        clickableButton.style.backgroundColor = "";
-                        // Fetch the name, subtext, and logo
-                        var name = resource.name;
-                        var address = resource.resourceAddress;
-                        var logoUrl = resource.logo;
-                        var subtext = 'max. ' + resource.amount.toFixed(2);
-                        var slider = document.getElementById('slider-single');
-                        let colToUse = document.getElementById("colToUse");
-
-                        if (address === selectedCollateral) {
-                            availableCollateral = resource.amount;
-                            document.getElementById('col-max').textContent = "max. " + availableCollateral.toFixed(2).toLocaleString('en-US');
-                        }
-
-                        // Create a new option
-                        var option = document.createElement('div');
-                        option.className = 'dropdown-custom-option';
-                        option.dataset.logoUrl = logoUrl;
-                        option.setAttribute('tabindex', '0'); // Make the option focusable
-
-                        // Add the logo image to the option
-                        var logoImage = document.createElement('img');
-                        logoImage.src = logoUrl;
-                        logoImage.alt = 'Logo';
-                        option.appendChild(logoImage);
-
-                        // Add the text to the option
-                        var optionText = document.createElement('div');
-                        optionText.className = 'option-text';
-
-                        var optionTitle = document.createElement('div');
-                        optionTitle.className = 'option-title';
-                        optionTitle.textContent = name;
-                        optionText.appendChild(optionTitle);
-
-                        var optionSubtext = document.createElement('div');
-                        optionSubtext.className = 'option-subtext';
-                        optionSubtext.textContent = subtext;
-                        optionText.appendChild(optionSubtext);
-
-                        option.appendChild(optionText);
-
-                        // Attach the click event listener
-                        option.addEventListener('click', function () {
-                            document.getElementById('col-max').textContent = "max. " + resource.amount.toLocaleString('en-US');
-                            availableCollateral = resource.amount;
-                            selectedCollateral = address;
-                            selectedText = resource.identifier;
-                            // Remove the 'selected' class from all options
-                            validatorMultiplier = resource.multiplier;
-                            var options = document.querySelectorAll('.dropdown-custom-option');
-                            options.forEach(function (otherOption) {
-                                otherOption.classList.remove('selected');
-                            });
-
-                            // Add the 'selected' class to the clicked option
-                            option.classList.add('selected');
-
-                            // Set the button text to the option title
-                            var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                            dropdownButton.textContent = name;
-
-                            // Hide the dropdown content
-                            var dropdownContent = document.querySelector('.dropdown-custom-content');
-                            dropdownContent.style.display = 'none';
-                            setChevron(dropdownContent);
-
-                            // Change the logo
-                            var logoImage = document.querySelector('.stab-logo');
-                            logoImage.src = logoUrl;
-
-                            if (colToUse.value !== "") {
-                                let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
-                                mintAmount = result;
-                                collateralAmount = colToUse.value;
-                                document.getElementById("outputStab").innerHTML = customRound(result, 4);
-                            } else {
-                                let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
-                                mintAmount = result;
-                                collateralAmount = 0;
-                                document.getElementById("outputStab").innerHTML = customRound(result, 4);
-                            }
-
-                            if (colToUse.value !== "") {
-                                document.getElementById("ratio-suffix").innerHTML = "STAB";
-                            }
-                            else {
-                                document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
-                            }
-                            setBorrowButton();
-                        });
-
-                        if (firstOption) {
-                            option.click();
-                            firstOption = false;
-                        }
-
-                        // Append the new option to the dropdown content
-                        var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        dropdownContent.appendChild(option);
+                // Attach the click event listener
+                option.addEventListener('click', function () {
+                    document.getElementById('col-max').textContent = "max. " + resource.amount.toLocaleString('en-US');
+                    document.getElementById('col-suffix').textContent = resource.identifier;
+                    availableCollateral = resource.amount;
+                    selectedCollateral = address;
+                    selectedText = resource.identifier;
+                    // Remove the 'selected' class from all options
+                    validatorMultiplier = resource.multiplier;
+                    var options = document.querySelectorAll('.dropdown-custom-option');
+                    options.forEach(function (otherOption) {
+                        otherOption.classList.remove('selected');
                     });
-                });
 
-                if (firstOption) {
-                    // Fetch the name, subtext, and logo
-                    var name = "XRD";
-                    var logoUrl = "images/radix-logo.svg";
-                    var slider = document.getElementById('slider-single');
-                    let colToUse = document.getElementById("colToUse");
-                    document.getElementById('col-max').textContent = "max. 0";
-                    availableCollateral = 0;
-                    selectedCollateral = xrdAddress;
-                    selectedText = "XRD";
-                    var logoImage = document.querySelector('.stab-logo');
-                    logoImage.src = logoUrl;
+                    // Add the 'selected' class to the clicked option
+                    option.classList.add('selected');
+
+                    // Set the button text to the option title
                     var dropdownButton = document.querySelector('.dropdown-custom-button b');
                     dropdownButton.textContent = name;
-                    clickableButton.disabled = true;
-                    clickableButton.style.backgroundColor = "hsl(0, 0%, 78%)";
+
+                    // Hide the dropdown content
+                    var dropdownContent = document.querySelector('.dropdown-custom-content');
+                    dropdownContent.style.display = 'none';
+                    setChevron(dropdownContent);
+
+                    // Change the logo
+                    var logoImage = document.querySelector('.input-logo');
+                    logoImage.src = logoUrl;
 
                     if (colToUse.value !== "") {
                         let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
@@ -1842,699 +3435,1269 @@ function update(onlyWallet) {
                     else {
                         document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
                     }
+                    setBorrowButton();
+                });
+
+                if (firstOption) {
+                    option.click();
+                    firstOption = false;
                 }
 
-                if (!isConnected) {
-                    var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                    dropdownContent.innerHTML = '';
-                    dropdownButton.textContent = 'XRD';
-                    var logoImage = document.querySelector('.stab-logo');
-                    logoImage.src = 'images/radix-logo.svg';
-                    clickableButton.disabled = true;
-                    clickableButton.style.backgroundColor = "hsl(0, 0%, 78%)";
-                }
+                // Append the new option to the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.appendChild(option);
+            });
+        });
 
-                setBorrowButton();
+        if (firstOption) {
+            // Fetch the name, subtext, and logo
+            var name = "XRD";
+            var logoUrl = "images/radix-logo.svg";
+            var slider = document.getElementById('slider-single');
+            let colToUse = document.getElementById("colToUse");
+            document.getElementById('col-max').textContent = "max. 0";
+            availableCollateral = 0;
+            selectedCollateral = xrdAddress;
+            selectedText = "XRD";
+            var logoImage = document.querySelector('.input-logo');
+            logoImage.src = logoUrl;
+            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+            dropdownButton.textContent = name;
+            clickableButton.disabled = true;
+
+            if (colToUse.value !== "") {
+                let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
+                mintAmount = result;
+                collateralAmount = colToUse.value;
+                document.getElementById("outputStab").innerHTML = customRound(result, 4);
+            } else {
+                let result = (1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100);
+                mintAmount = result;
+                collateralAmount = 0;
+                document.getElementById("outputStab").innerHTML = customRound(result, 4);
             }
 
-            data.forEach(item => {
-                if (item.non_fungible_resources) {
-                    item.non_fungible_resources.items.forEach(nfrItem => {
-                        if (nfrItem.resource_address === stabIdAddress && nfrItem.vaults) {
-                            nfrItem.vaults.items.forEach(vault => {
-                                stab_ids = stab_ids.concat(vault.items);
-                            });
-                        }
-                        if (nfrItem.resource_address === cdpAddress && nfrItem.vaults) {
-                            nfrItem.vaults.items.forEach(vault => {
-                                cdp_ids = cdp_ids.concat(vault.items);
-                            });
-                        }
-                        if (nfrItem.resource_address === markerAddress && nfrItem.vaults) {
-                            nfrItem.vaults.items.forEach(vault => {
-                                marker_ids = marker_ids.concat(vault.items);
-                            });
-                        }
+            if (colToUse.value !== "") {
+                document.getElementById("ratio-suffix").innerHTML = "STAB";
+            }
+            else {
+                document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
+            }
+        }
+
+        if (!isConnected) {
+            var dropdownContent = document.querySelector('.dropdown-custom-content');
+            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+            dropdownContent.innerHTML = '';
+            dropdownButton.textContent = 'XRD';
+            var logoImage = document.querySelector('.input-logo');
+            logoImage.src = 'images/radix-logo.svg';
+            clickableButton.disabled = true;
+        }
+
+        setBorrowButton();
+    }
+
+    data.forEach(item => {
+        if (item.non_fungible_resources) {
+            item.non_fungible_resources.items.forEach(nfrItem => {
+                if (nfrItem.resource_address === membershipIdAddress && nfrItem.vaults) {
+                    nfrItem.vaults.items.forEach(vault => {
+                        stab_ids = stab_ids.concat(vault.items.filter(item => !stab_ids.includes(item)));
+                    });
+                }
+                if (nfrItem.resource_address === cdpAddress && nfrItem.vaults) {
+                    nfrItem.vaults.items.forEach(vault => {
+                        cdp_ids = cdp_ids.concat(vault.items.filter(item => !cdp_ids.includes(item)));
+                    });
+                }
+                if (nfrItem.resource_address === markerAddress && nfrItem.vaults) {
+                    nfrItem.vaults.items.forEach(vault => {
+                        marker_ids = marker_ids.concat(vault.items.filter(item => !marker_ids.includes(item)));
+                    });
+                }
+                if (nfrItem.resource_address === membershipUnstakeAddress && nfrItem.vaults) {
+                    nfrItem.vaults.items.forEach(vault => {
+                        membership_unstake_receipts = membership_unstake_receipts.concat(vault.items);
+                    });
+                }
+                if (nfrItem.resource_address === incentiveIdAddress && nfrItem.vaults) {
+                    nfrItem.vaults.items.forEach(vault => {
+                        incentive_ids = incentive_ids.concat(vault.items);
+                    });
+                }
+                if (nfrItem.resource_address === incentiveUnstakeAddress && nfrItem.vaults) {
+                    nfrItem.vaults.items.forEach(vault => {
+                        incentive_unstake_receipts = incentive_unstake_receipts.concat(vault.items);
                     });
                 }
             });
-            //fix for gov: currentPeriod = data[3].details.state.fields[2].value;
-            //fix for gov: let updateRewards = data[1].details.state.fields[30].value;
-            walletIlis = getResourceAmount(ilisAddress, data, 0);
-            walletXrd = getResourceAmount(xrdAddress, data, 0);
-            walletLp = getResourceAmount(lpAddress, data, 0);
-            walletStab = getResourceAmount(stabAddress, data, 0);
-            xrdPoolAmount = getResourceAmount(xrdAddress, data, 4);
-            stabPoolAmount = getResourceAmount(stabAddress, data, 4);
-            interestRate = (100 * ((data[1].details.state.fields[14].value ** (24 * 60 * 365)) - 1)).toFixed(2);
+        }
+    });
 
-            if (window.location.pathname === '/incentives') {
-                document.getElementById('ilis-staking-rewards').textContent = stakeRewards + " ILIS/day";
-                document.getElementById('lpstab-staking-rewards').textContent = lpRewards + " ILIS/day";
-                document.getElementById('update-rewards').textContent = updateRewards + " ILIS/day";
-            }
+    console.log(data);
+    walletIlis = getResourceAmount(ilisAddress, data, 0);
+    walletResource = getResourceAmount(selectedResource, data, 0);
+    walletXrd = getResourceAmount(xrdAddress, data, 0);
+    walletLp = getResourceAmount(lpAddress, data, 0);
+    walletStab = getResourceAmount(stabAddress, data, 0);
+    xrdPoolAmount = getResourceAmount(xrdAddress, data, 4);
+    stabPoolAmount = getResourceAmount(stabAddress, data, 4);
+    if (lbpEnded == false) {
+        xrdLbpPoolAmount = getResourceAmount(xrdAddress, data, 6);
+        ilisLbpPoolAmount = getResourceAmount(ilisAddress, data, 6);
+    }
+    quorum = data[9].details.state.fields[9].fields[2].value;
+    interestRate = (100 * ((data[1].details.state.fields[15].fields[6].value ** (24 * 60 * 365)) - 1)).toFixed(2);
+    currentIncentivePeriod = data[8].details.state.fields[2].value;
+    maxProposals = data[9].details.state.fields[8].value - 1;
+    proposalsKvs = data[9].details.state.fields[7].value;
 
-            if (window.location.pathname === '/' || window.location.pathname === '/secret_index' || window.location.pathname === '/index') {
-                document.getElementById('interest-rate').textContent = interestRate;
-                document.getElementById('circulating-counter').textContent = (1 * data[3].details.total_supply).toFixed(0);
-                document.getElementById('price-counter').textContent = (xrdPrice * stabXrdRatio).toFixed(2);
-            }
+    if (proposalToView == -1 && window.location.pathname === '/governance') {
+        document.getElementById('prop-id-counter').textContent = maxProposals;
+        proposalToView = maxProposals;
+    }
 
-            if (window.location.pathname === '/swap') {
-                calculateChange();
-                setProvideButton();
-                setRemoveLpButton();
-                async function fetchData() {
-                    try {
-                        const response = await fetch('https://stokenet.radixdlt.com/status/gateway-status', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            // Include any necessary body data in string format
-                        });
-                        const data = await response.json();
-                        var now = new Date(data.ledger_state.proposer_round_timestamp);
-                    } catch (error) {
-                        console.error('Error:', error);
-                    }
-                    const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+    if (window.location.pathname === '/' || window.location.pathname === '/secret_index' || window.location.pathname === '/index') {
+        document.getElementById('interest-rate').textContent = interestRate;
+        document.getElementById('circulating-counter').textContent = (1 * data[3].details.total_supply).toFixed(0);
+        document.getElementById('price-counter').textContent = (xrdPrice * stabXrdRatio).toFixed(2);
+    }
 
-                    const entityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
-                    const entityPageUrl = 'https://stokenet.radixdlt.com/state/entity/page/fungibles';
-                    const customEntityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
-
-                    const entityDetailsPayload = (timestamp) => ({
-                        addresses: [
-                            lpAddress,
-                        ],
-                        aggregation_level: "Vault",
-                        at_ledger_state: {
-                            timestamp: timestamp
-                        },
-                        opt_ins: {
-                            ancestor_identities: true,
-                            component_royalty_config: true,
-                            component_royalty_vault_balance: true,
-                            package_royalty_vault_balance: true,
-                            non_fungible_include_nfids: true,
-                            explicit_metadata: [
-                                "name",
-                                "description"
-                            ]
-                        }
-                    });
-
-                    const entityPagePayload = (timestamp) => ({
-                        address: poolAddress,
-                        at_ledger_state: {
-                            timestamp: timestamp
-                        },
-                    });
-
-                    const customEntityDetailsPayload = (timestamp) => ({
-                        addresses: [
-                            componentAddress
-                        ],
-                        aggregation_level: "Vault",
-                        at_ledger_state: {
-                            timestamp: timestamp
-                        },
-                        opt_ins: {
-                            ancestor_identities: true,
-                            component_royalty_config: true,
-                            component_royalty_vault_balance: true,
-                            package_royalty_vault_balance: true,
-                            non_fungible_include_nfids: true,
-                            explicit_metadata: [
-                                "name",
-                                "description"
-                            ]
-                        }
-                    });
-
-                    try {
-                        const earliestTimestamp = new Date("2024-07-03T03:45:20.702Z");
-
-                        // Determine the timestamp to use
-                        const timestampToUse = earliestTimestamp > sevenDaysAgo ? earliestTimestamp : sevenDaysAgo;
-
-                        // Perform API calls with both the chosen timestamp and the current timestamp (now)
-                        const [detailsResponse1, pageResponse1, detailsResponse2, pageResponse2, customDetailsResponse] = await Promise.all([
-                            fetch(entityDetailsUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(entityDetailsPayload(timestampToUse.toISOString()))
-                            }),
-                            fetch(entityPageUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(entityPagePayload(timestampToUse.toISOString()))
-                            }),
-                            fetch(entityDetailsUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(entityDetailsPayload(now.toISOString()))
-                            }),
-                            fetch(entityPageUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(entityPagePayload(now.toISOString()))
-                            }),
-                            fetch(customEntityDetailsUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(customEntityDetailsPayload(timestampToUse.toISOString()))
-                            })
-                        ]);
-
-                        if (!detailsResponse1.ok || !pageResponse1.ok || !detailsResponse2.ok || !pageResponse2.ok || !customDetailsResponse.ok) {
-                            throw new Error(`Failed to fetch entity data`);
-                        }
-
-                        // Parse responses as JSON
-                        const [detailsData1, pageData1, detailsData2, pageData2, customDetailsData] = await Promise.all([
-                            detailsResponse1.json(),
-                            pageResponse1.json(),
-                            detailsResponse2.json(),
-                            pageResponse2.json(),
-                            customDetailsResponse.json()
-                        ]);
-
-                        // Extract amounts and organize by resource_address
-                        const amountsMap1 = new Map(pageData1.items.map(item => [item.resource_address, item.amount]));
-                        const amountsMap2 = new Map(pageData2.items.map(item => [item.resource_address, item.amount]));
-
-                        // Synchronize the order of amounts based on resource_address
-                        const resourceAddresses = pageData1.items.map(item => item.resource_address);
-                        const amounts1 = resourceAddresses.map(address => amountsMap1.get(address));
-                        const amounts2 = resourceAddresses.map(address => amountsMap2.get(address));
-
-                        // Extract total supply from entity details responses
-                        const totalSupply1 = detailsData1.items[0]?.details?.total_supply;
-                        const totalSupply2 = detailsData2.items[0]?.details?.total_supply;
-
-                        var xrdInitial = amounts1[0];
-                        var stabInitial = amounts1[1];
-                        var xrdFinal = amounts2[0];
-                        var stabFinal = amounts2[1];
-                        var xrdPerStabInitial = xrdInitial / stabInitial;
-                        var xrdPerStabFinal = xrdFinal / stabFinal;
-                        var xrdPriceInitial = customDetailsData.items[0].details.state.fields[19].value;
-                        var stabPriceInitial = xrdPerStabInitial * xrdPriceInitial;
-                        var stabPriceFinal = xrdPerStabFinal * xrdPrice;
-
-                        var dollarPerLpInitial = (xrdInitial * xrdPriceInitial + stabInitial * stabPriceInitial) / totalSupply1;
-                        var dollarPerLpFinal = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
-
-                        var dollarPerLpInitial2 = (xrdInitial * xrdPrice + stabInitial * stabPriceFinal) / totalSupply1;
-                        var dollarPerLpFinal2 = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
-
-                        //var dollarPerLpRatio = (Math.pow((dollarPerLpFinal / dollarPerLpInitial), 365 / 7) - 1) * 100;
-                        var dollarPerLpRatio2 = (Math.pow((dollarPerLpFinal2 / dollarPerLpInitial2), 365 / 7) - 1) * 100;
-                        var apyElement = document.getElementById('apy-real');
-                        var liqElement = document.getElementById('pool-liq');
-                        xrdPoolAmount = getResourceAmount(xrdAddress, bigData, 4);
-                        liqElement.textContent = "$" + Number((xrdPoolAmount * 2 * xrdPrice).toFixed(2)).toLocaleString('en-US');
-                        apyElement.textContent = dollarPerLpRatio2.toFixed(2) + "%";
-                        apyElement.style.color = dollarPerLpRatio2 > 0 ? 'green' : 'red';
-
-                    } catch (error) {
-                        console.error('Error fetching data:', error);
-                    }
-                }
-
-                fetchData();
-
-                if (sell == true) {
-                    formattedWallet = Math.floor(walletXrd * 10) / 10;
-                    document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
-                } else {
-                    if (walletStab >= 0.1) {
-                        formattedWallet = Math.floor((walletStab) * 10) / 10;
-                    } else {
-                        formattedWallet = 0;
-                    }
-                    document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
-                }
-                document.getElementById('internal-price-xrd').innerHTML = stabXrdRatio.toFixed(2) + " XRD";
-                document.getElementById('internal-price-usd').innerHTML = "$" + (stabXrdRatio * xrdPrice).toFixed(3);
-                document.getElementById('market-price-xrd').innerHTML = (xrdPoolAmount / stabPoolAmount).toFixed(2) + " XRD";
-                document.getElementById('market-price-usd').innerHTML = "$" + ((xrdPoolAmount / stabPoolAmount) * xrdPrice).toFixed(3);
-                document.getElementById('interest-rate').innerHTML = interestRate + "% APY";
-                if (xrdPoolAmount / stabPoolAmount < 0.995 * stabXrdRatio) {
-                    document.getElementById("recommendation").innerHTML = `<strong>Market price &lt; Internal price</strong>, sell XRD to arbitrage!`;
-                } else if (xrdPoolAmount / stabPoolAmount > 1.005 * stabXrdRatio) {
-                    document.getElementById("recommendation").innerHTML = `<strong>Market price &gt; Internal price</strong>, sell STAB to arbitrage!`;
-                }
-                else {
-                    document.getElementById("recommendation").innerHTML = `Price error is within acceptable bounds. Minimal arbitrage opportunities.`;
-                }
-                document.getElementById('provide-xrd-amount').textContent = "max. " + (Math.floor(walletXrd * 10) / 10).toLocaleString('en-US');
-                if (walletStab >= 0.1) {
-                    document.getElementById('provide-stab-amount').textContent = "max. " + (Math.floor((walletStab) * 10) / 10).toLocaleString('en-US');
-                } else {
-                    document.getElementById('provide-stab-amount').textContent = "max. " + 0;
-                }
-                document.getElementById('remove-lp-amount').textContent = "max. " + (Math.floor(walletLp * 10) / 10).toLocaleString('en-US');
-            }
-
-            if (window.location.pathname === '/liquidations') {
-                var dropdownContent = document.querySelector('.dropdown-custom-content');
-                dropdownContent.innerHTML = '';
-                var marker_exists = false;
-                marker_ids.forEach(id => {
-                    if (marker_exists == false) {
-                        marker_exists = true;
-                    }
-                    var name = id;
-                    var logoUrl = 'images/marker-receipt.png'
-                    var subtext = "Stabilis Marker Receipt";
-
-                    // Create a new option
-                    var option = document.createElement('div');
-                    option.className = 'dropdown-custom-option';
-                    option.dataset.logoUrl = logoUrl;
-                    option.setAttribute('tabindex', '0'); // Make the option focusable
-
-                    // Add the logo image to the option
-                    var logoImage = document.createElement('img');
-                    logoImage.src = logoUrl;
-                    logoImage.alt = 'Logo';
-                    logoImage.style.borderRadius = '0';
-                    option.appendChild(logoImage);
-
-                    // Add the text to the option
-                    var optionText = document.createElement('div');
-                    optionText.className = 'option-text';
-
-                    var optionTitle = document.createElement('div');
-                    optionTitle.className = 'option-title';
-                    optionTitle.textContent = name;
-                    optionText.appendChild(optionTitle);
-
-                    var optionSubtext = document.createElement('div');
-                    optionSubtext.className = 'option-subtext';
-                    optionSubtext.textContent = subtext;
-                    optionText.appendChild(optionSubtext);
-
-                    option.appendChild(optionText);
-
-                    // Attach the click event listener
-                    option.addEventListener('click', function () {
-                        // Remove the 'selected' class from all options
-                        var options = document.querySelectorAll('.dropdown-custom-option');
-                        options.forEach(function (otherOption) {
-                            otherOption.classList.remove('selected');
-                        });
-
-                        // Add the 'selected' class to the clicked option
-                        option.classList.add('selected');
-
-                        // Set the button text to the option title
-                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                        dropdownButton.textContent = "Marker " + name;
-
-                        // Hide the dropdown content
-                        var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        dropdownContent.style.display = 'none';
-                        setChevron(dropdownContent);
-
-                        selectedMarker = id;
-
-                        update_liq();
-                        setMarkLiqButton();
-                        setNoMarkLiqButton();
-                    });
-
-                    // Append the new option to the dropdown content
-                    var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    dropdownContent.appendChild(option);
-                });
-                var dropdownButton = document.querySelector('.dropdown-custom-button');
-
-                if (marker_exists == false) {
-                    dropdownButton.style.backgroundColor = "hsl(0, 0%, 78%)";
-                    dropdownButton.disabled = true;
-                } else {
-                    dropdownButton.disabled = false;
-                    dropdownButton.style.backgroundColor = "";
-                }
-
-                if (selectedMarker !== undefined) {
-                    update_liq();
-                } else {
-                    if (isConnected === false) {
-                        dropdownContent.innerHTML = '';
-                    }
-                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                    dropdownButton.textContent = "select a marker";
-                    document.getElementById('liqwithmark').querySelector('.button-text').textContent = "LIQUIDATE";
-                    document.getElementById('liqwithmark').style.color = "black";
-                    document.getElementById('marker-time').textContent = "-";
-                    document.getElementById('status').style.color = "black";
-                    document.getElementById('marker-state').textContent = "-";
-                    document.getElementById('marker-state').style.color = "black";
-                    document.getElementById('status').textContent = "-";
-                    document.getElementById('collateralAmount').textContent = "-";
-                    document.getElementById('debtAmount').textContent = "-";
-                    document.getElementById('cr').textContent = "-";
-                }
-
-                checkLiquidation(parseInt(document.getElementById('liq-counter').textContent));
-                setNoMarkLiqButton();
-            }
-
-            if (window.location.pathname === '/incentives') {
-                selectedId = undefined;
-                var dropdownContent = document.querySelector('.dropdown-custom-content');
-                dropdownContent.innerHTML = '';
-
-                stab_ids.forEach(id => {
-                    var name = id;
-                    var logoUrl = 'images/staking-id.png'
-                    var subtext = "Stabilis Staking ID";
-
-                    // Create a new option
-                    var option = document.createElement('div');
-                    option.className = 'dropdown-custom-option';
-                    option.dataset.logoUrl = logoUrl;
-                    option.setAttribute('tabindex', '0'); // Make the option focusable
-
-                    // Add the logo image to the option
-                    var logoImage = document.createElement('img');
-                    logoImage.src = logoUrl;
-                    logoImage.alt = 'Logo';
-                    logoImage.style.borderRadius = '0';
-                    option.appendChild(logoImage);
-
-                    // Add the text to the option
-                    var optionText = document.createElement('div');
-                    optionText.className = 'option-text';
-
-                    var optionTitle = document.createElement('div');
-                    optionTitle.className = 'option-title';
-                    optionTitle.textContent = name;
-                    optionText.appendChild(optionTitle);
-
-                    var optionSubtext = document.createElement('div');
-                    optionSubtext.className = 'option-subtext';
-                    optionSubtext.textContent = subtext;
-                    optionText.appendChild(optionSubtext);
-
-                    option.appendChild(optionText);
-
-                    // Attach the click event listener
-                    option.addEventListener('click', function () {
-                        // Remove the 'selected' class from all options
-                        var options = document.querySelectorAll('.dropdown-custom-option');
-                        options.forEach(function (otherOption) {
-                            otherOption.classList.remove('selected');
-                        });
-
-                        // Add the 'selected' class to the clicked option
-                        option.classList.add('selected');
-
-                        // Set the button text to the option title
-                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                        dropdownButton.textContent = "ID " + name;
-
-                        // Hide the dropdown content
-                        var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        dropdownContent.style.display = 'none';
-                        setChevron(dropdownContent);
-
-                        selectedId = id;
-
-                        update_id();
-                    });
-
-                    // Append the new option to the dropdown content
-                    var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    dropdownContent.appendChild(option);
-                });
-
-                if (selectedId !== undefined) {
-                    update_id();
-                } else {
-                    if (isConnected === false) {
-                        dropdownContent.innerHTML = '';
-                    }
-                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                    dropdownButton.textContent = "Select ID";
-                    document.getElementById('ilisAmountId').textContent = "-";
-                    document.getElementById('lpAmountId').textContent = "-";
-                    document.getElementById('nextClaim').textContent = "-";
-                    let stakeIlisMax = document.getElementById('stake-ilis-amount');
-                    stakeIlisMax.textContent = "max. -";
-                    var cloneIlis = stakeIlisMax.cloneNode(true);
-                    stakeIlisMax.parentNode.replaceChild(cloneIlis, stakeIlisMax);
-
-                    let stakeLpMax = document.getElementById('stake-lp-amount');
-                    stakeLpMax.textContent = "max. -";
-                    var cloneLp = stakeLpMax.cloneNode(true);
-                    stakeLpMax.parentNode.replaceChild(cloneLp, stakeLpMax);
-
-                    let unstakeIlisMax = document.getElementById('unstake-ilis-amount');
-                    unstakeIlisMax.textContent = "max. -";
-                    var cloneUnstakeIlis = unstakeIlisMax.cloneNode(true);
-                    unstakeIlisMax.parentNode.replaceChild(cloneUnstakeIlis, unstakeIlisMax);
-
-                    let unstakeLpMax = document.getElementById('unstake-lp-amount');
-                    unstakeLpMax.textContent = "max. -";
-                    var cloneUnstakeLp = unstakeLpMax.cloneNode(true);
-                    unstakeLpMax.parentNode.replaceChild(cloneUnstakeLp, unstakeLpMax);
-                }
-            }
-
-            if (window.location.pathname === '/borrow' || window.location.pathname === '/manage-loans') {
-                document.getElementById('interest-rate').textContent = interestRate + "% APY";
-                var number1 = (1 * data[3].details.total_supply).toFixed(0);
-                document.getElementById('circulating-stab').textContent = Number(number1).toLocaleString('en-US');
-                document.getElementById('stab-internal-price').textContent = "$" + (xrdPrice * stabXrdRatio).toFixed(2);
-                document.getElementById('stab-market-price').textContent = "$" + (xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(2);
-                var number2 = (data[3].details.total_supply * xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(0);
-                document.getElementById('stab-mc').textContent = "$" + Number(number2).toLocaleString('en-US');
-
-                // Define the request payload
-                const requestPayload = {
-                    key_value_store_address: collateralsKvs,
-                    keys: [
-                        {
-                            key_hex: xrdKeyHex,
-                        },
-                        {
-                            key_json: {
-                                kind: "Tuple",
-                                fields: [
-                                    {
-                                        kind: "U32",
-                                        value: "1"
-                                    }
-                                ]
-                            }
-                        }
-                    ]
-                };
-
-                // Make the API request
-                fetch('https://stokenet.radixdlt.com/state/key-value-store/data', {
+    if (window.location.pathname === '/swap') {
+        calculateChange();
+        setProvideButton();
+        setRemoveLpButton();
+        async function fetchData2() {
+            try {
+                const response = await fetch('https://stokenet.radixdlt.com/status/gateway-status', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(requestPayload)
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        // Extract minted_stab and collateral_amount from the response
-                        const entries = data.entries;
-                        let mintedStab, collateralAmountInProtocol;
-
-                        entries.forEach(entry => {
-                            const fields = entry.value.programmatic_json.fields;
-
-                            fields.forEach(field => {
-                                if (field.field_name === "minted_stab") {
-                                    mintedStab = field.value;
-                                } else if (field.field_name === "collateral_amount") {
-                                    collateralAmountInProtocol = field.value;
-                                }
-                            });
-                        });
-                        document.getElementById('stab-cr').textContent = (((collateralAmountInProtocol * xrdPrice) / (mintedStab * internalPrice)) * 100).toFixed(2) + "%";
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                    });
-
-            }
-
-            if (window.location.pathname === '/manage-loans') {
-                var dropdownContent = document.querySelector('.dropdown-custom-content');
-                dropdownContent.innerHTML = '';
-                var cdpExists = false;
-                var counter;
-                if (data.length > 5) {
-                    counter = data[5].length - 1;
-                }
-                // Get the dropdown element
-                cdp_ids.forEach(id => {
-                    if (cdpExists == false) {
-                        cdpExists = true;
-                    }
-                    var name = "Receipt " + id;
-                    var logoUrl = 'images/receipt.png'
-                    while (data[5][counter].is_burned == true && counter > 0) {
-                        counter -= 1;
-                    }
-                    const resource = acceptedResources.find(ar => ar[1] === data[5][counter].data.programmatic_json.fields[0].value);
-                    validatorMultiplier = resource[4];
-                    var cr = ((data[5][counter].data.programmatic_json.fields[3].value / data[5][counter].data.programmatic_json.fields[4].value) * xrdPrice * 100 / internalPrice / validatorMultiplier);
-                    var status = data[5][counter].data.programmatic_json.fields[6].variant_name;
-
-                    if (status != "Liquidated" && status != "ForceLiquidated") {
-                        var subtext = status + ", CR: " + (cr * 1).toFixed(2) + "%";
-                    } else {
-                        var subtext = status;
-                    }
-
-
-                    // Create a new option
-                    var option = document.createElement('div');
-                    option.className = 'dropdown-custom-option';
-                    if (cr < 150 || status === "Marked") {
-                        option.classList.add("extrawarning");
-                    } else if (cr < 200) {
-                        option.classList.add("littlewarning");
-                    }
-                    option.dataset.logoUrl = logoUrl;
-                    option.setAttribute('tabindex', '0'); // Make the option focusable
-
-                    // Add the logo image to the option
-                    var logoImage = document.createElement('img');
-                    logoImage.src = logoUrl;
-                    logoImage.alt = 'Logo';
-                    logoImage.style.borderRadius = '0';
-                    option.appendChild(logoImage);
-
-                    // Add the text to the option
-                    var optionText = document.createElement('div');
-                    optionText.className = 'option-text';
-
-                    var optionTitle = document.createElement('div');
-                    optionTitle.className = 'option-title';
-                    optionTitle.textContent = name;
-                    optionText.appendChild(optionTitle);
-
-                    var optionSubtext = document.createElement('div');
-                    optionSubtext.className = 'option-subtext';
-                    optionSubtext.textContent = subtext;
-                    optionText.appendChild(optionSubtext);
-
-                    option.appendChild(optionText);
-
-                    // Attach the click event listener
-                    option.addEventListener('click', function () {
-                        document.getElementById('amount-to-remove').value = "";
-                        // Remove the 'selected' class from all options
-                        var options = document.querySelectorAll('.dropdown-custom-option');
-                        options.forEach(function (otherOption) {
-                            otherOption.classList.remove('selected');
-                        });
-
-                        // Add the 'selected' class to the clicked option
-                        option.classList.add('selected');
-
-                        // Set the button text to the option title
-                        var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                        dropdownButton.textContent = name;
-
-                        // Hide the dropdown content
-                        var dropdownContent = document.querySelector('.dropdown-custom-content');
-                        dropdownContent.style.display = 'none';
-                        setChevron(dropdownContent);
-                        selectedCdp = id;
-                        update_cdp();
-                    });
-
-                    // Append the new option to the dropdown content
-                    var dropdownContent = document.querySelector('.dropdown-custom-content');
-                    dropdownContent.appendChild(option);
-                    counter -= 1;
+                    // Include any necessary body data in string format
                 });
+                const data = await response.json();
+                var now = new Date(data.ledger_state.proposer_round_timestamp);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+            const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
 
-                var dropdownButton = document.querySelector('.dropdown-custom-button');
+            const entityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
+            const entityPageUrl = 'https://stokenet.radixdlt.com/state/entity/page/fungibles';
+            const customEntityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
 
-                if (cdpExists == false) {
-                    dropdownButton.style.backgroundColor = "hsl(0, 0%, 78%)";
-                    dropdownButton.disabled = true;
-                } else {
-                    dropdownButton.disabled = false;
-                    dropdownButton.style.backgroundColor = "";
+            const entityDetailsPayload = (timestamp) => ({
+                addresses: [
+                    lpAddress,
+                ],
+                aggregation_level: "Vault",
+                at_ledger_state: {
+                    timestamp: timestamp
+                },
+                opt_ins: {
+                    ancestor_identities: true,
+                    component_royalty_config: true,
+                    component_royalty_vault_balance: true,
+                    package_royalty_vault_balance: true,
+                    non_fungible_include_nfids: true,
+                    explicit_metadata: [
+                        "name",
+                        "description"
+                    ]
+                }
+            });
+
+            const entityPagePayload = (timestamp) => ({
+                address: poolAddress,
+                at_ledger_state: {
+                    timestamp: timestamp
+                },
+            });
+
+            const customEntityDetailsPayload = (timestamp) => ({
+                addresses: [
+                    proxyComponentAddress
+                ],
+                aggregation_level: "Vault",
+                at_ledger_state: {
+                    timestamp: timestamp
+                },
+                opt_ins: {
+                    ancestor_identities: true,
+                    component_royalty_config: true,
+                    component_royalty_vault_balance: true,
+                    package_royalty_vault_balance: true,
+                    non_fungible_include_nfids: true,
+                    explicit_metadata: [
+                        "name",
+                        "description"
+                    ]
+                }
+            });
+
+            try {
+                // Determine the timestamp to use
+                const timestampToUse = earliestTimestamp > sevenDaysAgo ? earliestTimestamp : sevenDaysAgo;
+
+                // Perform API calls with both the chosen timestamp and the current timestamp (now)
+                const [detailsResponse1, pageResponse1, detailsResponse2, pageResponse2, customDetailsResponse] = await Promise.all([
+                    fetch(entityDetailsUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(entityDetailsPayload(timestampToUse.toISOString()))
+                    }),
+                    fetch(entityPageUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(entityPagePayload(timestampToUse.toISOString()))
+                    }),
+                    fetch(entityDetailsUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(entityDetailsPayload(now.toISOString()))
+                    }),
+                    fetch(entityPageUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(entityPagePayload(now.toISOString()))
+                    }),
+                    fetch(customEntityDetailsUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(customEntityDetailsPayload(timestampToUse.toISOString()))
+                    })
+                ]);
+
+                if (!detailsResponse1.ok || !pageResponse1.ok || !detailsResponse2.ok || !pageResponse2.ok || !customDetailsResponse.ok) {
+                    throw new Error(`Failed to fetch entity data`);
                 }
 
-                if (selectedCdp !== undefined) {
-                    update_cdp();
-                } else {
-                    if (isConnected === false) {
-                        dropdownContent.innerHTML = '';
-                    }
-                    var dropdownButton = document.querySelector('.dropdown-custom-button b');
-                    dropdownButton.textContent = "select loan receipt";
-                    var logoImage = document.querySelector('.stab-logo');
-                    logoImage.src = 'images/radix-logo.svg';
-                    document.getElementById('status').textContent = "-";
-                    document.getElementById('collateral').textContent = "-";
-                    document.getElementById('collateralAmount').textContent = "-";
-                    document.getElementById('debtAmount').textContent = "-";
-                    document.getElementById('cr').textContent = "-";
-                }
-                setCloseLoanButton();
-                if (addingCollateral) {
-                    setAddColButton();
-                } else {
-                    setRemoveColButton();
-                }
-                if (addingDebt) {
-                    setAddDebtButton();
-                }
-                else {
-                    setRemoveDebtButton();
-                }
+                // Parse responses as JSON
+                const [detailsData1, pageData1, detailsData2, pageData2, customDetailsData] = await Promise.all([
+                    detailsResponse1.json(),
+                    pageResponse1.json(),
+                    detailsResponse2.json(),
+                    pageResponse2.json(),
+                    customDetailsResponse.json()
+                ]);
+
+                // Extract amounts and organize by resource_address
+                const amountsMap1 = new Map(pageData1.items.map(item => [item.resource_address, item.amount]));
+                const amountsMap2 = new Map(pageData2.items.map(item => [item.resource_address, item.amount]));
+
+                // Synchronize the order of amounts based on resource_address
+                const resourceAddresses = pageData1.items.map(item => item.resource_address);
+                const amounts1 = resourceAddresses.map(address => amountsMap1.get(address));
+                const amounts2 = resourceAddresses.map(address => amountsMap2.get(address));
+
+                // Extract total supply from entity details responses
+                const totalSupply1 = detailsData1.items[0]?.details?.total_supply;
+                const totalSupply2 = detailsData2.items[0]?.details?.total_supply;
+
+                var xrdInitial = amounts1[0];
+                var stabInitial = amounts1[1];
+                var xrdFinal = amounts2[0];
+                var stabFinal = amounts2[1];
+                var xrdPerStabInitial = xrdInitial / stabInitial;
+                var xrdPerStabFinal = xrdFinal / stabFinal;
+                var xrdPriceInitial = customDetailsData.items[0].details.state.fields[10].value;
+                var stabPriceInitial = xrdPerStabInitial * xrdPriceInitial;
+                var stabPriceFinal = xrdPerStabFinal * xrdPrice;
+
+                var dollarPerLpInitial = (xrdInitial * xrdPriceInitial + stabInitial * stabPriceInitial) / totalSupply1;
+                var dollarPerLpFinal = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
+
+                var dollarPerLpInitial2 = (xrdInitial * xrdPrice + stabInitial * stabPriceFinal) / totalSupply1;
+                var dollarPerLpFinal2 = (xrdFinal * xrdPrice + stabFinal * stabPriceFinal) / totalSupply2;
+
+                //var dollarPerLpRatio = (Math.pow((dollarPerLpFinal / dollarPerLpInitial), 365 / 7) - 1) * 100;
+                var dollarPerLpRatio2 = (Math.pow((dollarPerLpFinal2 / dollarPerLpInitial2), 365 / 7) - 1) * 100;
+                var apyElement = document.getElementById('apy-real');
+                var liqElement = document.getElementById('pool-liq');
+                console.log(bigData);
+                xrdPoolAmount = getResourceAmount(xrdAddress, bigData, 4);
+                liqElement.textContent = "$" + Number((xrdPoolAmount * 2 * xrdPrice).toFixed(2)).toLocaleString('en-US');
+                apyElement.textContent = dollarPerLpRatio2.toFixed(2) + "%";
+                apyElement.style.color = dollarPerLpRatio2 > 0 ? 'green' : 'red';
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
             }
         }
 
-        fetchData().then(data => {
-            bigData = data;
-            if (onlyWallet === false) {
-                useData(data);
+        fetchData2();
+
+        if (sell == true) {
+            formattedWallet = Math.floor(walletXrd * 10) / 10;
+            document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
+        } else {
+            if (walletIlis >= 0.1) {
+                formattedWallet = Math.floor((walletIlis) * 10) / 10;
+            } else {
+                formattedWallet = 0;
             }
-            update_cdp();
-            update_liq();
-            update_id();
-            if (window.location.pathname === '/liquidations') {
+            document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
+        }
+        document.getElementById('internal-price-xrd').innerHTML = stabXrdRatio.toFixed(2) + " XRD";
+        document.getElementById('internal-price-usd').innerHTML = "$" + (stabXrdRatio * xrdPrice).toFixed(3);
+        document.getElementById('market-price-xrd').innerHTML = (xrdPoolAmount / stabPoolAmount).toFixed(2) + " XRD";
+        document.getElementById('market-price-usd').innerHTML = "$" + ((xrdPoolAmount / stabPoolAmount) * xrdPrice).toFixed(3);
+        document.getElementById('interest-rate').innerHTML = interestRate + "% APY";
+        if (xrdPoolAmount / stabPoolAmount < 0.995 * stabXrdRatio) {
+            document.getElementById("recommendation").innerHTML = `<strong>Market price &lt; Internal price</strong>, sell XRD to arbitrage!`;
+        } else if (xrdPoolAmount / stabPoolAmount > 1.005 * stabXrdRatio) {
+            document.getElementById("recommendation").innerHTML = `<strong>Market price &gt; Internal price</strong>, sell STAB to arbitrage!`;
+        }
+        else {
+            document.getElementById("recommendation").innerHTML = `Price error is within acceptable bounds. Minimal arbitrage opportunities.`;
+        }
+        document.getElementById('provide-xrd-amount').textContent = "max. " + (Math.floor(walletXrd * 10) / 10).toLocaleString('en-US');
+        if (walletStab >= 0.1) {
+            document.getElementById('provide-stab-amount-second').textContent = "max. " + (Math.floor((walletStab) * 10) / 10).toLocaleString('en-US');
+            document.getElementById('provide-stab-amount').textContent = "max. " + (Math.floor((walletStab) * 10) / 10).toLocaleString('en-US');
+        } else {
+            document.getElementById('provide-stab-amount-second').textContent = "max. " + 0;
+            document.getElementById('provide-stab-amount').textContent = "max. " + 0;
+        }
+        document.getElementById('remove-lp-amount').textContent = "max. " + (Math.floor(walletLp * 10) / 10).toLocaleString('en-US');
+    }
+
+    if (window.location.pathname === '/lbp') {
+        calculateLbpChange();
+        document.getElementById('apy-real').textContent = (ilisWeight * 100).toFixed(1) + "/" + (xrdWeight * 100).toFixed(1);
+        document.getElementById('progress').textContent = ((lbpDuration / 60 / 60 / 24) * lbpProgress).toFixed(2) + "/" + (lbpDuration / 60 / 60 / 24).toFixed(2) + " days";
+        if (lbpEnded == false) {
+            document.getElementById('current-fdv').textContent = (((xrdLbpPoolAmount * ilisWeight) / (ilisLbpPoolAmount * xrdWeight)) * 100000000).toLocaleString('en-US', { maximumFractionDigits: 0 }) + " XRD";
+            document.getElementById('ilis-price').textContent = ((xrdLbpPoolAmount * ilisWeight) / (ilisLbpPoolAmount * xrdWeight)).toFixed(4) + " XRD";
+            document.getElementById('final-fdv').textContent = (((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5)) * 100000000).toLocaleString('en-US', { maximumFractionDigits: 0 }) + " XRD";
+            document.getElementById('ilis-price-final').textContent = (((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5))).toFixed(4) + " XRD";
+        } else {
+            document.getElementById('current-fdv-line').style.display = "none";
+            document.getElementById('ilis-price-line').style.display = "none";
+            document.getElementById('final-fdv-text').textContent = "Final ILIS FDV";
+            document.getElementById('ilis-price-final-text').textContent = "Final ILIS Price";
+        }
+        if (sell == true) {
+            formattedWallet = Math.floor(walletXrd * 10) / 10;
+            document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
+        } else {
+            if (walletStab >= 0.1) {
+                formattedWallet = Math.floor((walletStab) * 10) / 10;
+            } else {
+                formattedWallet = 0;
+            }
+            document.getElementById('swap-sell-amount').textContent = "max. " + formattedWallet.toLocaleString('en-US');
+        }
+    }
+
+    if (window.location.pathname === '/liquidations') {
+        var dropdownContent = document.querySelector('.dropdown-custom-content');
+        dropdownContent.innerHTML = '';
+        var marker_exists = false;
+        marker_ids.forEach(id => {
+            if (marker_exists == false) {
+                marker_exists = true;
+            }
+            var name = id;
+            var logoUrl = 'images/marker-receipt.png'
+            var subtext = "STAB Marker Receipt";
+
+            // Create a new option
+            var option = document.createElement('div');
+            option.className = 'dropdown-custom-option';
+            option.dataset.logoUrl = logoUrl;
+            option.setAttribute('tabindex', '0'); // Make the option focusable
+
+            // Add the logo image to the option
+            var logoImage = document.createElement('img');
+            logoImage.src = logoUrl;
+            logoImage.alt = 'Logo';
+            logoImage.style.borderRadius = '0';
+            option.appendChild(logoImage);
+
+            // Add the text to the option
+            var optionText = document.createElement('div');
+            optionText.className = 'option-text';
+
+            var optionTitle = document.createElement('div');
+            optionTitle.className = 'option-title';
+            optionTitle.textContent = name;
+            optionText.appendChild(optionTitle);
+
+            var optionSubtext = document.createElement('div');
+            optionSubtext.className = 'option-subtext';
+            optionSubtext.textContent = subtext;
+            optionText.appendChild(optionSubtext);
+
+            option.appendChild(optionText);
+
+            // Attach the click event listener
+            option.addEventListener('click', function () {
+                // Remove the 'selected' class from all options
+                var options = document.querySelectorAll('.dropdown-custom-option');
+                options.forEach(function (otherOption) {
+                    otherOption.classList.remove('selected');
+                });
+
+                // Add the 'selected' class to the clicked option
+                option.classList.add('selected');
+
+                // Set the button text to the option title
+                var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                dropdownButton.textContent = "Marker " + name;
+
+                // Hide the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.style.display = 'none';
+                setChevron(dropdownContent);
+
+                selectedMarker = id;
+
+                update_liq();
                 setMarkLiqButton();
                 setNoMarkLiqButton();
-            }
-        }).catch(e => {
-            console.error('Error:', e);
+            });
+
+            // Append the new option to the dropdown content
+            var dropdownContent = document.querySelector('.dropdown-custom-content');
+            dropdownContent.appendChild(option);
         });
-    })
+        var dropdownButton = document.querySelector('.dropdown-custom-button');
+
+        if (marker_exists == false) {
+            dropdownButton.style.backgroundColor = "";
+            dropdownButton.disabled = true;
+        } else {
+            dropdownButton.disabled = false;
+            dropdownButton.style.backgroundColor = "";
+        }
+
+        if (selectedMarker !== undefined) {
+            update_liq();
+        } else {
+            if (isConnected === false) {
+                dropdownContent.innerHTML = '';
+            }
+            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+            dropdownButton.textContent = "select a marker";
+            document.getElementById('liqwithmark').querySelector('.button-text').textContent = "LIQUIDATE";
+            document.getElementById('liqwithmark').style.color = "";
+            document.getElementById('marker-time').textContent = "-";
+            document.getElementById('status').style.color = "";
+            document.getElementById('marker-state').textContent = "-";
+            document.getElementById('marker-state').style.color = "";
+            document.getElementById('status').textContent = "-";
+            document.getElementById('collateralAmount').textContent = "-";
+            document.getElementById('debtAmount').textContent = "-";
+            document.getElementById('cr').textContent = "-";
+        }
+
+        checkLiquidation(parseInt(document.getElementById('liq-counter').textContent));
+        setNoMarkLiqButton();
+    }
+
+    if (window.location.pathname === '/membership') {
+        var dropdownContent = document.querySelector('.dropdown-custom-content');
+        dropdownContent.innerHTML = '';
+
+        stab_ids.forEach(id => {
+            var name = id;
+            var logoUrl = 'images/staking-id.png'
+            var subtext = "ILIS DAO Membership ID";
+
+            // Create a new option
+            var option = document.createElement('div');
+            option.className = 'dropdown-custom-option';
+            option.dataset.logoUrl = logoUrl;
+            option.setAttribute('tabindex', '0'); // Make the option focusable
+
+            // Add the logo image to the option
+            var logoImage = document.createElement('img');
+            logoImage.src = logoUrl;
+            logoImage.alt = 'Logo';
+            logoImage.style.borderRadius = '0';
+            option.appendChild(logoImage);
+
+            // Add the text to the option
+            var optionText = document.createElement('div');
+            optionText.className = 'option-text';
+
+            var optionTitle = document.createElement('div');
+            optionTitle.className = 'option-title';
+            optionTitle.textContent = name;
+            optionText.appendChild(optionTitle);
+
+            var optionSubtext = document.createElement('div');
+            optionSubtext.className = 'option-subtext';
+            optionSubtext.textContent = subtext;
+            optionText.appendChild(optionSubtext);
+
+            option.appendChild(optionText);
+
+            // Attach the click event listener
+            option.addEventListener('click', function () {
+                // Remove the 'selected' class from all options
+                var options = document.querySelectorAll('.dropdown-custom-option');
+                options.forEach(function (otherOption) {
+                    otherOption.classList.remove('selected');
+                });
+
+                // Add the 'selected' class to the clicked option
+                option.classList.add('selected');
+
+                // Set the button text to the option title
+                var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                dropdownButton.textContent = "Membership ID " + name;
+
+                // Hide the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.style.display = 'none';
+                setChevron(dropdownContent);
+
+                selectedId = id;
+
+                update_id();
+            });
+
+            // Append the new option to the dropdown content
+            var dropdownContent = document.querySelector('.dropdown-custom-content');
+            dropdownContent.appendChild(option);
+        });
+
+        if (selectedId !== undefined) {
+            update_id();
+        } else {
+            if (isConnected === false) {
+                dropdownContent.innerHTML = '';
+            }
+            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+            dropdownButton.textContent = "Select Membership ID";
+            document.getElementById('staked-ilis').textContent = "-";
+            document.getElementById('unstake-ready').textContent = "-";
+            document.getElementById('locked-until').textContent = "-";
+            document.getElementById('voting-until').textContent = "-";
+            
+            // set max stake and new stake to 0, and set locks to 0
+        }
+    }
+
+    if (window.location.pathname === '/governance') {
+        var dropdownContent = document.querySelector('.dropdown-custom-content');
+        dropdownContent.innerHTML = '';
+
+        stab_ids.forEach(id => {
+            var name = id;
+            var logoUrl = 'images/staking-id.png'
+            var subtext = "ILIS DAO Membership ID";
+
+            // Create a new option
+            var option = document.createElement('div');
+            option.className = 'dropdown-custom-option';
+            option.dataset.logoUrl = logoUrl;
+            option.setAttribute('tabindex', '0'); // Make the option focusable
+
+            // Add the logo image to the option
+            var logoImage = document.createElement('img');
+            logoImage.src = logoUrl;
+            logoImage.alt = 'Logo';
+            logoImage.style.borderRadius = '0';
+            option.appendChild(logoImage);
+
+            // Add the text to the option
+            var optionText = document.createElement('div');
+            optionText.className = 'option-text';
+
+            var optionTitle = document.createElement('div');
+            optionTitle.className = 'option-title';
+            optionTitle.textContent = name;
+            optionText.appendChild(optionTitle);
+
+            var optionSubtext = document.createElement('div');
+            optionSubtext.className = 'option-subtext';
+            optionSubtext.textContent = subtext;
+            optionText.appendChild(optionSubtext);
+
+            option.appendChild(optionText);
+
+            // Attach the click event listener
+            option.addEventListener('click', function () {
+                // Remove the 'selected' class from all options
+                var options = document.querySelectorAll('.dropdown-custom-option');
+                options.forEach(function (otherOption) {
+                    otherOption.classList.remove('selected');
+                });
+
+                // Add the 'selected' class to the clicked option
+                option.classList.add('selected');
+
+                // Set the button text to the option title
+                var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                dropdownButton.textContent = "Membership ID " + name;
+
+                // Hide the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.style.display = 'none';
+                setChevron(dropdownContent);
+
+                selectedId = id;
+
+                update_governance();
+            });
+
+            // Append the new option to the dropdown content
+            var dropdownContent = document.querySelector('.dropdown-custom-content');
+            dropdownContent.appendChild(option);
+        });
+
+        if (selectedId !== undefined) {
+            update_governance();
+        } else {
+            if (isConnected === false) {
+                dropdownContent.innerHTML = '';
+            }
+            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+            dropdownButton.textContent = "Select Membership ID";
+            document.getElementById('vote-power').textContent = "-";
+            poolIlisDelegatedToMe = 0;
+            amountStaked = 0;
+        }
+    }
+
+    if (window.location.pathname === '/incentives') {
+        var dropdownContent = document.querySelector('.dropdown-custom-content.id');
+        dropdownContent.innerHTML = '';
+
+        console.log(incentive_ids);
+
+        incentive_ids.forEach(id => {
+            var name = id;
+            var logoUrl = 'images/staking-id.png'
+            var subtext = "ILIS DAO Incentives ID";
+
+            // Create a new option
+            var option = document.createElement('div');
+            option.className = 'dropdown-custom-option id';
+            option.dataset.logoUrl = logoUrl;
+            option.setAttribute('tabindex', '0'); // Make the option focusable
+
+            // Add the logo image to the option
+            var logoImage = document.createElement('img');
+            logoImage.src = logoUrl;
+            logoImage.alt = 'Logo';
+            logoImage.style.borderRadius = '0';
+            option.appendChild(logoImage);
+
+            // Add the text to the option
+            var optionText = document.createElement('div');
+            optionText.className = 'option-text';
+
+            var optionTitle = document.createElement('div');
+            optionTitle.className = 'option-title';
+            optionTitle.textContent = name;
+            optionText.appendChild(optionTitle);
+
+            var optionSubtext = document.createElement('div');
+            optionSubtext.className = 'option-subtext';
+            optionSubtext.textContent = subtext;
+            optionText.appendChild(optionSubtext);
+
+            option.appendChild(optionText);
+
+            // Attach the click event listener
+            option.addEventListener('click', function () {
+                // Remove the 'selected' class from all options
+                var options = document.querySelectorAll('.dropdown-custom-option.id');
+                options.forEach(function (otherOption) {
+                    otherOption.classList.remove('selected');
+                });
+
+                // Add the 'selected' class to the clicked option
+                option.classList.add('selected');
+
+                // Set the button text to the option title
+                var dropdownButton = document.querySelector('.dropdown-custom-button.id b');
+                dropdownButton.textContent = "Incentives ID " + name;
+
+                // Hide the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content.id');
+                dropdownContent.style.display = 'none';
+                setChevron(dropdownContent);
+
+                selectedId = id;
+
+                update_incentives();
+            });
+
+            // Append the new option to the dropdown content
+            var dropdownContent = document.querySelector('.dropdown-custom-content.id');
+            dropdownContent.appendChild(option);
+        });
+
+        var dropdownContent2 = document.querySelector('.dropdown-custom-content.resource');
+        dropdownContent2.innerHTML = '';
+
+        console.log(incentive_ids);
+
+        incentive_resources.forEach(id => {
+            var name = id[0];
+            var logoUrl = id[1];
+            var subtext = "ILIS DAO Incentivized Resource";
+
+            // Create a new option
+            var option = document.createElement('div');
+            option.className = 'dropdown-custom-option resource';
+            option.dataset.logoUrl = logoUrl;
+            option.setAttribute('tabindex', '0'); // Make the option focusable
+
+            // Add the logo image to the option
+            var logoImage = document.createElement('img');
+            logoImage.src = logoUrl;
+            logoImage.alt = 'Logo';
+            logoImage.style.borderRadius = '0';
+            option.appendChild(logoImage);
+
+            // Add the text to the option
+            var optionText = document.createElement('div');
+            optionText.className = 'option-text';
+
+            var optionTitle = document.createElement('div');
+            optionTitle.className = 'option-title';
+            optionTitle.textContent = name;
+            optionText.appendChild(optionTitle);
+
+            var optionSubtext = document.createElement('div');
+            optionSubtext.className = 'option-subtext';
+            optionSubtext.textContent = subtext;
+            optionText.appendChild(optionSubtext);
+
+            option.appendChild(optionText);
+
+            // Attach the click event listener
+            option.addEventListener('click', function () {
+                // Remove the 'selected' class from all options
+                var options = document.querySelectorAll('.dropdown-custom-option.resource');
+                options.forEach(function (otherOption) {
+                    otherOption.classList.remove('selected');
+                });
+
+                // Add the 'selected' class to the clicked option
+                option.classList.add('selected');
+
+                // Set the button text to the option title
+                var dropdownButton = document.querySelector('.dropdown-custom-button.resource b');
+                dropdownButton.textContent = name;
+
+                // Hide the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content.resource');
+                dropdownContent.style.display = 'none';
+                setChevron(dropdownContent);
+
+                selectedResource = id[2];
+
+                update_incentives();
+            });
+
+            if (name === "LPSTAB") {
+                option.click();
+            }
+
+            // Append the new option to the dropdown content
+            var dropdownContent = document.querySelector('.dropdown-custom-content.resource');
+            dropdownContent.appendChild(option);
+        });
+
+        if (selectedId !== undefined) {
+            update_incentives();
+        } else {
+            if (isConnected === false) {
+                dropdownContent.innerHTML = '';
+            }
+            var dropdownButton = document.querySelector('.dropdown-custom-button.id b');
+            dropdownButton.textContent = "Select Incentives ID";
+            document.getElementById('staked').textContent = "-";
+            document.getElementById('unstake-ready').textContent = "-";
+            document.getElementById('locked-until').textContent = "-";
+            
+            // set max stake and new stake to 0, and set locks to 0
+        }
+    }
+
+    if (window.location.pathname === '/borrow') {
+        document.getElementById('interest-rate').textContent = interestRate + "% APY";
+        var number1 = (1 * data[3].details.total_supply).toFixed(0);
+        document.getElementById('circulating-stab').textContent = Number(number1).toLocaleString('en-US');
+        document.getElementById('stab-internal-price').textContent = "$" + (xrdPrice * stabXrdRatio).toFixed(2);
+        document.getElementById('stab-market-price').textContent = "$" + (xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(2);
+        var number2 = (data[3].details.total_supply * xrdPrice * xrdPoolAmount / stabPoolAmount).toFixed(0);
+        document.getElementById('stab-mc').textContent = "$" + Number(number2).toLocaleString('en-US');
+
+        // Define the request payload
+        const requestPayload = {
+            key_value_store_address: collateralsKvs,
+            keys: [
+                {
+                    key_hex: xrdKeyHex,
+                },
+                {
+                    key_json: {
+                        kind: "Tuple",
+                        fields: [
+                            {
+                                kind: "U32",
+                                value: "1"
+                            }
+                        ]
+                    }
+                }
+            ]
+        };
+
+        // Make the API request
+        fetch('https://stokenet.radixdlt.com/state/key-value-store/data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestPayload)
+        })
+            .then(response => response.json())
+            .then(data => {
+                // Extract minted_stab and collateral_amount from the response
+                const entries = data.entries;
+                let mintedStab, collateralAmountInProtocol;
+
+                entries.forEach(entry => {
+                    const fields = entry.value.programmatic_json.fields;
+
+                    fields.forEach(field => {
+                        if (field.field_name === "minted_stab") {
+                            mintedStab = field.value;
+                        } else if (field.field_name === "collateral_amount") {
+                            collateralAmountInProtocol = field.value;
+                        }
+                    });
+                });
+                document.getElementById('stab-cr').textContent = (((collateralAmountInProtocol * xrdPrice) / (mintedStab * internalPrice)) * 100).toFixed(2) + "%";
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+
+    }
+
+    // this has got to be the strangest code I've ever written
+    // idk what the fuck it does anymore but it works...
+    // this counter thing is moronic hahahaha
+    if (window.location.pathname === '/manage-loans') {
+        var dropdownContent = document.querySelector('.dropdown-custom-content');
+        dropdownContent.innerHTML = '';
+        var cdpExists = false;
+        var counter;
+        if (data.length > 13) {
+            counter = data[14].length - 1;
+        }
+        // Get the dropdown element
+        cdp_ids.forEach(id => {
+            if (cdpExists == false) {
+                cdpExists = true;
+            }
+            var name = "Receipt " + id;
+            var logoUrl = 'images/receipt.png'
+            while (data[14][counter].is_burned == true && counter > 0) {
+                counter -= 1;
+            }
+            const resource = acceptedResources.find(ar => ar[1] === data[14][counter].data.programmatic_json.fields[0].value);
+            validatorMultiplier = resource[4];
+            var cr = ((data[14][counter].data.programmatic_json.fields[3].value / data[14][counter].data.programmatic_json.fields[4].value) * xrdPrice * 100 / internalPrice / validatorMultiplier);
+            var status = data[14][counter].data.programmatic_json.fields[6].variant_name;
+
+            if (status != "Liquidated" && status != "ForceLiquidated") {
+                var subtext = status + ", CR: " + (cr * 1).toFixed(2) + "%";
+            } else {
+                var subtext = status;
+            }
+
+
+            // Create a new option
+            var option = document.createElement('div');
+            option.className = 'dropdown-custom-option';
+            if (cr < 150 || status === "Marked") {
+                option.classList.add("extrawarning");
+            } else if (cr < 200) {
+                option.classList.add("littlewarning");
+            }
+            option.dataset.logoUrl = logoUrl;
+            option.setAttribute('tabindex', '0'); // Make the option focusable
+
+            // Add the logo image to the option
+            var logoImage = document.createElement('img');
+            logoImage.src = logoUrl;
+            logoImage.alt = 'Logo';
+            logoImage.style.borderRadius = '0';
+            option.appendChild(logoImage);
+
+            // Add the text to the option
+            var optionText = document.createElement('div');
+            optionText.className = 'option-text';
+
+            var optionTitle = document.createElement('div');
+            optionTitle.className = 'option-title';
+            optionTitle.textContent = name;
+            optionText.appendChild(optionTitle);
+
+            var optionSubtext = document.createElement('div');
+            optionSubtext.className = 'option-subtext';
+            optionSubtext.textContent = subtext;
+            optionText.appendChild(optionSubtext);
+
+            option.appendChild(optionText);
+
+            // Attach the click event listener
+            option.addEventListener('click', function () {
+                document.getElementById('amount-to-remove').value = "";
+                // Remove the 'selected' class from all options
+                var options = document.querySelectorAll('.dropdown-custom-option');
+                options.forEach(function (otherOption) {
+                    otherOption.classList.remove('selected');
+                });
+
+                // Add the 'selected' class to the clicked option
+                option.classList.add('selected');
+
+                // Set the button text to the option title
+                var dropdownButton = document.querySelector('.dropdown-custom-button b');
+                dropdownButton.textContent = name;
+
+                // Hide the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content');
+                dropdownContent.style.display = 'none';
+                setChevron(dropdownContent);
+                selectedCdp = id;
+                update_cdp();
+            });
+
+            // Append the new option to the dropdown content
+            var dropdownContent = document.querySelector('.dropdown-custom-content');
+            dropdownContent.appendChild(option);
+            if (counter > 0) {
+                counter -= 1;
+            }
+        });
+
+        var dropdownButton = document.querySelector('.dropdown-custom-button');
+
+        if (cdpExists == false) {
+            dropdownButton.style.backgroundColor = "";
+            dropdownButton.disabled = true;
+        } else {
+            dropdownButton.disabled = false;
+            dropdownButton.style.backgroundColor = "";
+        }
+
+        if (selectedCdp !== undefined) {
+            update_cdp();
+        } else {
+            if (isConnected === false) {
+                dropdownContent.innerHTML = '';
+            }
+            var dropdownButton = document.querySelector('.dropdown-custom-button b');
+            dropdownButton.textContent = "select loan receipt";
+            var logoImage = document.querySelector('.input-logo');
+            logoImage.src = 'images/radix-logo.svg';
+            document.getElementById('status').textContent = "-";
+            document.getElementById('collateral').textContent = "-";
+            document.getElementById('collateralAmount').textContent = "";
+            document.getElementById('debtAmount').textContent = "-";
+            document.getElementById('cr').textContent = "-";
+        }
+        setCloseLoanButton();
+        if (addingCollateral) {
+            setAddColButton();
+        } else {
+            setRemoveColButton();
+        }
+        if (addingDebt) {
+            setAddDebtButton();
+        }
+        else {
+            setRemoveDebtButton();
+        }
+    }
+        update_cdp();
+        update_liq();
+        update_id();
+        update_incentives();
+        update_governance();
 }
 
+async function getFungibleResources(accountAddress) {
+    const response = await fetch('https://stokenet.radixdlt.com/state/entity/details', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            addresses: [accountAddress],
+            aggregation_level: 'Vault',
+            opt_ins: {
+                ancestor_identities: true,
+                component_royalty_vault_balance: true,
+                package_royalty_vault_balance: true,
+                non_fungible_include_nfids: true,
+                explicit_metadata: []
+            }
+        })
+    });
+
+    const data = await response.json();
+
+    // Iterate over each item in the response
+    const acceptedFungibleResources = data.items.flatMap(item => {
+        // Filter the fungible resources to only include those in the list of accepted resources
+        return item.fungible_resources.items.filter(resource => {
+            return acceptedResources.some(acceptedResource => acceptedResource[1] === resource.resource_address);
+        }).map(resource => {
+            // Find the corresponding accepted resource
+            const acceptedResource = acceptedResources.find(ar => ar[1] === resource.resource_address);
+
+            // Add the name of the accepted resource to the resource object
+            resource.name = acceptedResource ? acceptedResource[0] : '';
+            resource.logo = acceptedResource ? acceptedResource[3] : '';
+            resource.multiplier = acceptedResource ? acceptedResource[4] : 1;
+            resource.identifier = acceptedResource ? acceptedResource[5] : '';
+
+            return resource;
+        });
+    });
+
+    // Map each object to its name, resource_address and amount properties
+    const resourceAddressesAndAmounts = acceptedFungibleResources.map(resource => {
+        let amount = 0;
+        if (resource.vaults && resource.vaults.items && resource.vaults.items.length > 0) {
+            amount = parseFloat(resource.vaults.items[0].amount);
+        }
+
+        return {
+            name: resource.name,
+            resourceAddress: resource.resource_address,
+            amount: amount,
+            logo: resource.logo,
+            multiplier: resource.multiplier,
+            identifier: resource.identifier
+        };
+    });
+
+    // Sort the array by amount in descending order
+    resourceAddressesAndAmounts.sort((a, b) => b.amount - a.amount);
+
+    return resourceAddressesAndAmounts;
+}
+
+// Create a persistent subscription that updates addressSubject
+const walletSubscription = rdt.walletApi.walletData$.pipe(
+    distinctUntilChanged((prev, curr) => 
+        prev?.accounts?.[0]?.address === curr?.accounts?.[0]?.address
+    )
+).subscribe(walletData => {
+    const newAddress = walletData?.accounts?.[0]?.address || DEFAULT_ADDRESS;
+    console.log("Wallet changed. New address:", newAddress);
+    addressSubject.next(newAddress);
+    update(false);  // Trigger an update whenever the wallet changes
+});
+
+async function wrappedUseWalletData(address, onlyWallet) {
+    if (window.location.pathname === "/deployment") {
+        return;
+    }
+    const updateId = ++latestUpdateId;
+    try {
+        const data = await fetchData(address);
+        
+        // Check if this is still the latest update
+        if (updateId !== latestUpdateId) {
+            console.log(`Update ${updateId} results discarded`);
+            return;
+        }
+
+        console.log(`Update ${updateId} results applied`);
+        if (onlyWallet === false) {
+            await useData(data);
+        }
+        if (window.location.pathname === '/liquidations') {
+            setMarkLiqButton();
+            setNoMarkLiqButton();
+        }
+        if (window.location.pathname === '/lbp') {
+            createChart(lbpLength, ledgerData);
+            resizeChart();
+            setLbpSwapButton();
+        }
+    } catch (error) {
+        console.error(`Error in update ${updateId}:`, error);
+    }
+}
+
+async function update(onlyWallet) {
+    const currentAddress = addressSubject.getValue();
+    console.log(`Update ${latestUpdateId + 1} - Address to be used:`, currentAddress);
+    await wrappedUseWalletData(currentAddress, onlyWallet);
+}
+
+// Initial update
 update(false);
+
+if (window.location.pathname === '/lbp') {
+    window.addEventListener('resize', resizeChart);
+
+    let swapMax = document.getElementById('swap-sell-amount');
+    let swapReceive = document.getElementById('amount-receive');
+    let inputFieldSwap = document.getElementById('amount-sell');
+
+    inputFieldSwap.oninput = function () {
+            calculateLbpChange();
+    }
+
+    document.getElementById("switch-button").onclick = function () {
+        let source1 = document.getElementById("swap-logo-1").getAttribute("src");
+        let source2 = document.getElementById("swap-logo-2").getAttribute("src");
+        let sell_suffix = document.getElementById("amount-sell-suffix");
+        let receive_suffix = document.getElementById("amount-receive-suffix");
+        if (sell_suffix.textContent === "XRD" && receive_suffix.textContent === "ILIS") {
+            sell_suffix.textContent = "ILIS";
+            receive_suffix.textContent = "XRD";
+        } else {
+            sell_suffix.textContent = "XRD";
+            receive_suffix.textContent = "ILIS";
+        }
+        document.getElementById("swap-logo-1").setAttribute("src", source2);
+        document.getElementById("swap-logo-2").setAttribute("src", source1);
+        lbpSell = !lbpSell;
+        inputFieldSwap.value = "0";
+        swapReceive.value = "0";
+        if (lbpSell == true) {
+            formattedWallet = Math.floor(walletXrd * 10) / 10;
+            swapMax.textContent = "max. " + formattedWallet.toLocaleString('en-US');
+        } else {
+            if (walletIlis >= 0.1) {
+                formattedWallet = Math.floor((walletIlis) * 10) / 10;
+            } else {
+                formattedWallet = 0;
+            }
+            swapMax.textContent = "max. " + formattedWallet.toLocaleString('en-US');
+        }
+        calculateLbpChange();
+    }
+    swapMax.addEventListener('click', function () {
+        if (lbpSell == true) {
+            inputFieldSwap.value = walletXrd;
+        }
+        else {
+            inputFieldSwap.value = walletIlis;
+        }
+        calculateLbpChange();
+    });
+    swapMax.style.cursor = "pointer";
+
+    // *********** Swap ***********
+    document.getElementById('sell').onclick = async function () {
+        update(true);
+        if (!isConnected) {
+            return;
+        }
+
+        if (document.getElementById("amount-sell").value === "") {
+            alert("Please enter an amount to swap.");
+            return;
+        }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
+        let sellAmount = document.getElementById("amount-sell").value;
+        let sellAddress;
+        let message;
+
+        if (lbpSell == true) {
+            sellAddress = xrdAddress;
+            message = "Selling XRD for ILIS using the ILIS Balancer-style Liquidity Bootstrapping Pool";
+        } else {
+            sellAddress = ilisAddress;
+            message = "Selling ILIS for XRD using the ILIS Balancer-style Liquidity Bootstrapping Pool";
+        }
+
+        let manifest = `
+                CALL_METHOD
+                Address("${accountAddress}")
+                "withdraw"    
+                Address("${sellAddress}")
+                Decimal("${sellAmount}");
+                TAKE_ALL_FROM_WORKTOP
+                Address("${sellAddress}")
+                Bucket("sell");
+                CALL_METHOD
+                Address("${lbpComponentAddress}")
+                "swap"
+                Bucket("sell");
+                CALL_METHOD
+                Address("${accountAddress}")
+                "deposit_batch"
+                Expression("ENTIRE_WORKTOP");
+                `
+        console.log('Swap manifest: ', manifest)
+        toastMe(0, "Swap", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message,
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Swap", 2);
+                console.log(result);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                update(false);
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                update(false);            
+            });
+    }
+}
 
 if (window.location.pathname === '/swap') {
     // Get all buttons with the class 'stake-button'
@@ -2583,11 +4746,20 @@ if (window.location.pathname === '/swap') {
     document.getElementById("switch-button").onclick = function () {
         let source1 = document.getElementById("swap-logo-1").getAttribute("src");
         let source2 = document.getElementById("swap-logo-2").getAttribute("src");
+        let sell_suffix = document.getElementById("amount-sell-suffix");
+        let receive_suffix = document.getElementById("amount-receive-suffix");
+        if (sell_suffix.textContent === "XRD" && receive_suffix.textContent === "STAB") {
+            sell_suffix.textContent = "STAB";
+            receive_suffix.textContent = "XRD";
+        } else {
+            sell_suffix.textContent = "XRD";
+            receive_suffix.textContent = "STAB";
+        }
         document.getElementById("swap-logo-1").setAttribute("src", source2);
         document.getElementById("swap-logo-2").setAttribute("src", source1);
         sell = !sell;
-        inputFieldSwap.value = "";
-        swapReceive.value = "";
+        inputFieldSwap.value = "0";
+        swapReceive.value = "0";
         if (sell == true) {
             formattedWallet = Math.floor(walletXrd * 10) / 10;
             swapMax.textContent = "max. " + formattedWallet.toLocaleString('en-US');
@@ -2627,8 +4799,10 @@ if (window.location.pathname === '/swap') {
 
     let provideMaxXrd = document.getElementById('provide-xrd-amount');
     let provideMaxStab = document.getElementById('provide-stab-amount');
+    let provideMaxStabSecond = document.getElementById('provide-stab-amount-second');
     let removeMaxLp = document.getElementById('remove-lp-amount');
     provideMaxStab.style.cursor = "pointer";
+    provideMaxStabSecond.style.cursor = "pointer";
     provideMaxXrd.style.cursor = "pointer";
     removeMaxLp.style.cursor = "pointer";
     provideMaxXrd.addEventListener('click', function () {
@@ -2637,6 +4811,11 @@ if (window.location.pathname === '/swap') {
         setProvideButton();
     });
     provideMaxStab.addEventListener('click', function () {
+        inputFieldProvideStab.value = walletStab;
+        inputFieldProvideXrd.value = inputFieldProvideStab.value * (xrdPoolAmount / stabPoolAmount);
+        setProvideButton();
+    });
+    provideMaxStabSecond.addEventListener('click', function () {
         inputFieldProvideStab.value = walletStab;
         inputFieldProvideXrd.value = inputFieldProvideStab.value * (xrdPoolAmount / stabPoolAmount);
         setProvideButton();
@@ -2695,10 +4874,10 @@ if (window.location.pathname === '/swap') {
 
         if (sell == true) {
             sellAddress = xrdAddress;
-            message = "Selling XRD for STAB using the Stabilis Protocol";
+            message = "Selling XRD for STAB using the STAB Protocol";
         } else {
             sellAddress = stabAddress;
-            message = "Selling STAB for XRD using the Stabilis Protocol";
+            message = "Selling STAB for XRD using the STAB Protocol";
         }
 
         let manifest = `
@@ -2750,8 +4929,7 @@ if (window.location.pathname === '/swap') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -2823,7 +5001,7 @@ if (window.location.pathname === '/swap') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
-                message: "Adding liquidity to the Stabilis Protocol",
+                message: "Adding liquidity to the STAB Protocol XRD/STAB pool",
             })
             .then(result => {
                 toastMe(result.value.transactionIntentHash, "Liquidity provision", 2);
@@ -2845,8 +5023,7 @@ if (window.location.pathname === '/swap') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -2903,7 +5080,7 @@ if (window.location.pathname === '/swap') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
-                message: "Removing liquidity from the Stabilis Protocol",
+                message: "Removing liquidity from the STAB Protocol XRD/STAB pool",
             })
             .then(result => {
                 toastMe(result.value.transactionIntentHash, "Liquidity removal", 2);
@@ -2925,18 +5102,35 @@ if (window.location.pathname === '/swap') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
 
     }
 }
 
 if (window.location.pathname === '/liquidations') {
+    // Get all buttons with the class 'stake-button'
+    const buttons = document.querySelectorAll('.stake-button');
+
+    // Add an event listener to each button
+    buttons.forEach(button => {
+        button.addEventListener('click', function () {
+            // Perform different actions depending on the id of the clicked button
+            buttons.forEach(button => button.classList.remove('selected'));
+            this.classList.add('selected');
+            if (this.id === 'with-marker-button') {
+                document.getElementById('with-marker-section').style.display = 'block';
+                document.getElementById('without-marker-section').style.display = 'none';
+            } else {
+                document.getElementById('with-marker-section').style.display = 'none';
+                document.getElementById('without-marker-section').style.display = 'block';
+            }
+        });
+    });
+
     var plusSymbolMark = document.getElementById('plus-symbol-mark');
     var minusSymbolMark = document.getElementById('minus-symbol-mark');
     var markCounter = document.getElementById('mark-counter');
-    minusSymbolMark.style.backgroundColor = "hsl(0, 0%, 78%)";
     checkMarking(1);
     setNoMarkLiqButton();
 
@@ -2952,7 +5146,6 @@ if (window.location.pathname === '/liquidations') {
         }
         if (parseInt(markCounter.textContent) == 1) {
             minusSymbolMark.disabled = true;
-            minusSymbolMark.style.backgroundColor = "hsl(0, 0%, 78%)";
         }
         checkMarking(parseInt(markCounter.textContent));
     }
@@ -2960,7 +5153,6 @@ if (window.location.pathname === '/liquidations') {
     var plusSymbolLiq = document.getElementById('plus-symbol-liq');
     var minusSymbolLiq = document.getElementById('minus-symbol-liq');
     var liqCounter = document.getElementById('liq-counter');
-    minusSymbolLiq.style.backgroundColor = "hsl(0, 0%, 78%)";
     checkLiquidation(0);
 
     plusSymbolLiq.onclick = function () {
@@ -2976,13 +5168,12 @@ if (window.location.pathname === '/liquidations') {
         }
         if (parseInt(liqCounter.textContent) == 0) {
             minusSymbolLiq.disabled = true;
-            minusSymbolLiq.style.backgroundColor = "hsl(0, 0%, 78%)";
         }
         checkLiquidation(parseInt(liqCounter.textContent));
         setNoMarkLiqButton();
     }
 
-    document.getElementById('liq-helper-button').addEventListener('click', function () {
+    /*document.getElementById('liq-helper-button').addEventListener('click', function () {
         if (document.getElementById('liq-helper').style.display === '') {
             document.getElementById('liq-helper').style.display = 'none';
             document.getElementById('chevron-down').style.display = '';
@@ -2992,7 +5183,7 @@ if (window.location.pathname === '/liquidations') {
             document.getElementById('chevron-down').style.display = 'none';
             document.getElementById('chevron-up').style.display = '';
         }
-    });
+    });*/
 
     var button = document.querySelector('.dropdown-custom-button');
     var initialWidth = window.getComputedStyle(button).width;
@@ -3063,7 +5254,7 @@ if (window.location.pathname === '/liquidations') {
         // Repeat the specified part of the manifest
         const repeatManifest = `
             CALL_METHOD
-                Address("${componentAddress}")
+                Address("${proxyComponentAddress}")
                 "mark_for_liquidation"
                 Address("${xrdAddress}")
                 ;
@@ -3113,8 +5304,7 @@ if (window.location.pathname === '/liquidations') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -3169,7 +5359,7 @@ if (window.location.pathname === '/liquidations') {
       Address("${stabAddress}")
       Bucket("stab");
     CALL_METHOD
-      Address("${componentAddress}")
+      Address("${proxyComponentAddress}")
       "liquidate_position_with_marker"
       Proof("marker_proof")
       Bucket("stab");
@@ -3199,7 +5389,7 @@ if (window.location.pathname === '/liquidations') {
         Bucket("marker_bucket");
   
     CALL_METHOD    
-        Address("${componentAddress}") #pool comp address
+        Address("${proxyComponentAddress}") #pool comp address
         "burn_marker"
         Bucket("marker_bucket");
       `
@@ -3241,8 +5431,7 @@ if (window.location.pathname === '/liquidations') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -3277,7 +5466,7 @@ if (window.location.pathname === '/liquidations') {
       Address("${stabAddress}")
       Bucket("stab");
     CALL_METHOD
-      Address("${componentAddress}")
+      Address("${proxyComponentAddress}")
       "liquidate_position_without_marker"
       Bucket("stab")
       true
@@ -3321,31 +5510,195 @@ if (window.location.pathname === '/liquidations') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 }
 
-if (window.location.pathname === '/incentives') {
-    // Get all buttons with the class 'stake-button'
-    const buttons = document.querySelectorAll('.stake-button');
+if (window.location.pathname === '/membership') {
+    var slider = document.getElementById("slider-stake");
+    var inputAmount = document.getElementById("amount-to-stake");
+    var maxButton = document.getElementById("max-new-stake");
+    var newStake = document.getElementById("new-stake");
+    var sliderLock = document.getElementById("slider-lock");
+    var inputAmountLock = document.getElementById("days-to-lock");
+    var maxButtonLock = document.getElementById("max-new-lock");
+    var newLock = document.getElementById("new-lock");
 
+    slider.addEventListener('input', function () {
+        updateSliderBackground(this);
+    });
+
+    sliderLock.addEventListener('input', function () {
+        updateSliderBackground(this);
+    });
+
+    slider.oninput = function () {
+        if (stake) {
+            stakingAmount = this.value;
+            newStake.textContent = "New stake: " + (parseFloat(this.value) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+            inputAmount.value = this.value;
+        } else {
+            stakingAmount = this.value;
+            newStake.textContent = "New stake: " + (-this.value + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+            inputAmount.value = this.value;
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+    }
+
+    inputAmount.oninput = function () {
+        if (stake) {
+            var input = this.value === '' ? 0 : parseFloat(this.value);
+            if (input > walletIlis) {
+                this.value = walletIlis;
+                input = walletIlis;
+            }
+            newStake.textContent = "New stake: " + (input + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+            slider.value = input;
+        } else {
+            var input = this.value === '' ? 0 : parseFloat(this.value);
+            if (input > parseFloat(amountStaked) * poolMultiplier) {
+                this.value = parseFloat(amountStaked) * poolMultiplier;
+                input = parseFloat(amountStaked) * poolMultiplier;
+            }
+            newStake.textContent = "New stake: " + (input).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+            slider.value = input;
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(slider);
+    }
+
+    maxButton.onclick = function () {
+        if (!maxButton.disabled) {
+            if (stake) {
+                slider.value = walletIlis;
+                newStake.textContent = "New stake: " + (parseFloat(walletIlis) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+                inputAmount.value = walletIlis;
+            } else {
+                newStake.textContent = "New stake: 0 ILIS";
+                slider.value = parseFloat(amountStaked) * poolMultiplier;
+                inputAmount.value = slider.value;
+            }
+        } 
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(slider);
+    }
+
+    sliderLock.oninput = function () {
+        if (lock) {
+            newLock.textContent = "New lock: " + (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            inputAmountLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, this.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        } else {
+            newLock.textContent = "New lock: " + (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            inputAmountLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(ilisLockPayment, ilisUnlockMultiplier, this.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+    }
+
+    inputAmountLock.oninput = function () {
+        if (lock) {
+            this.value = Math.min(this.value, maxLockDaysFloor);
+            newLock.textContent = "New lock: " + (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            sliderLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, sliderLock.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        } else {
+            this.value = Math.min(this.value, maxUnlockDaysCeil);
+            newLock.textContent = "New lock: " + (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            sliderLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(ilisLockPayment, ilisUnlockMultiplier, sliderLock.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(sliderLock);
+    }
+
+    maxButtonLock.onclick = function () {
+        if (!maxButtonLock.disabled) {
+            if (lock) {
+                sliderLock.value = maxLockDaysFloor;
+                newLock.textContent = "New lock: " + (Math.max(0, maxLockDaysFloor + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " days";
+                inputAmountLock.value = maxLockDaysFloor;
+                currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, sliderLock.value, amountStaked * poolMultiplier);
+                document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            } else {
+                sliderLock.value = maxUnlockDaysCeil;
+                newLock.textContent = "New lock: 0 days";
+                inputAmountLock.value = maxUnlockDaysCeil;
+                currentRequiredPayment = getRequiredPayment(ilisLockPayment, ilisUnlockMultiplier, sliderLock.value, amountStaked * poolMultiplier);
+                document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            }
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(sliderLock);
+    }
+
+    let buttonsStake = document.querySelectorAll('.stake-button.stake');
+    let buttonsLock = document.querySelectorAll('.stake-button.lock');
     // Add an event listener to each button
-    buttons.forEach(button => {
+    buttonsStake.forEach(button => {
         button.addEventListener('click', function () {
             // Perform different actions depending on the id of the clicked button
-            buttons.forEach(button => button.classList.remove('selected'));
+            buttonsStake.forEach(button => button.classList.remove('selected'));
             this.classList.add('selected');
-            if (this.id === 'stake-selector') {
-                console.log("showing stake section");
-                document.getElementById('stake-section').style.display = '';
-                document.getElementById('unstake-section').style.display = 'none';
-            } else {
-                console.log("showing unstake section");
-                document.getElementById('stake-section').style.display = 'none';
-                document.getElementById('unstake-section').style.display = '';
+            if (this.id === 'add-stake-selector') {
+                document.getElementById('add-stake-button').style.display = '';
+                document.getElementById('remove-stake-button').style.display = 'none';
+                stake = true;
+            } else if (this.id === 'remove-stake-selector') {
+                document.getElementById('add-stake-button').style.display = 'none';
+                document.getElementById('remove-stake-button').style.display = '';
+                stake = false;
             }
+            update_id();
+        });
+    });
+
+    buttonsLock.forEach(button => {
+        button.addEventListener('click', function () {
+            // Perform different actions depending on the id of the clicked button
+            buttonsLock.forEach(button => button.classList.remove('selected'));
+            this.classList.add('selected');
+            if (this.id === 'add-lock-selector') {
+                document.getElementById('remove-lock-button').style.display = 'none';
+                document.getElementById('add-lock-button').style.display = '';
+                document.getElementById('lock-reward-label').textContent= 'ILIS Reward';
+                lock = true;
+            } else if (this.id === 'remove-lock-selector') {
+                document.getElementById('remove-lock-button').style.display = '';
+                document.getElementById('add-lock-button').style.display = 'none';
+                document.getElementById('lock-reward-label').textContent= 'Necessary ILIS';
+                lock = false;
+            }
+            update_id();
         });
     });
 
@@ -3371,7 +5724,11 @@ if (window.location.pathname === '/incentives') {
         // Check if there are any options
         if (options.length === 0) {
             // If not, display a message
-            alert('No Stabilis Staking ID in wallet. Please create one.');
+            if (isConnected) {
+                alert('No Membership ID in wallet. Please create one.');
+            } else {
+                alert('Please connect your wallet.');
+            }
         }
     });
 
@@ -3409,8 +5766,8 @@ if (window.location.pathname === '/incentives') {
 
         let manifest = `
     CALL_METHOD    
-    Address("${componentAddress}") #proxy comp address
-    "create_stab_id";
+    Address("${stakingAddress}")
+    "create_id";
   
   CALL_METHOD
     Address("${accountAddress}") 
@@ -3425,7 +5782,7 @@ if (window.location.pathname === '/incentives') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
-                message: "Creating a new Stabilis Staking ID",
+                message: "Creating a new ILIS Membership ID",
             })
             .then(result => {
                 toastMe(result.value.transactionIntentHash, "ID creation", 2);
@@ -3449,164 +5806,15 @@ if (window.location.pathname === '/incentives') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
-            });
-    }
-
-    // *********** update ***********
-    document.getElementById('update').onclick = async function () {
-        update(true);
-        if (!isConnected) {
-            return;
-        }
-
-        const button = this;
-        const buttonText = button.querySelector('.button-text');
-        const buttonWaiting = button.querySelector('.button-waiting');
-        const spinner = button.querySelector('.spin');
-        const angleIcon = button.querySelector('.chevron');
-        spinner.style.display = 'inline-block';
-        angleIcon.style.display = 'none';
-        buttonText.style.display = 'none';
-        buttonWaiting.style.display = 'inline-block';
-        button.disabled = true;
-        button.style.backgroundColor = '#c6c6c6';
-
-        let manifest = `
-    CALL_METHOD
-      Address("${componentAddress}")
-      "update";
-    CALL_METHOD
-      Address("${accountAddress}")
-      "deposit_batch"
-      Expression("ENTIRE_WORKTOP");
-      `
-        console.log('update manifest: ', manifest)
-        toastMe(0, "Protocol update", 1);
-
-        // Send manifest to extension for signing
-        rdt.walletApi
-            .sendTransaction({
-                transactionManifest: manifest,
-                version: 1,
-                message: "Updating Stabilis Protocol",
-            })
-            .then(result => {
-                toastMe(result.value.transactionIntentHash, "Update", 2);
-                // Hide the spinner, show the angle icon, and change the button text back
-                spinner.style.display = 'none';
-                angleIcon.style.display = 'inline-block';
-                buttonText.style.display = 'inline-block';
-                buttonWaiting.style.display = 'none';
-                button.disabled = false;
-                button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value);
-                update_id();
-            })
-            .catch(error => {
-                // Hide the spinner, show the angle icon, and change the button text back
-                spinner.style.display = 'none';
-                angleIcon.style.display = 'inline-block';
-                buttonText.style.display = 'inline-block';
-                buttonWaiting.style.display = 'none';
-                button.disabled = false;
-                button.style.backgroundColor = '';
-
-                // Handle the error
-                console.error(error);
-            });
-    }
-
-    // *********** Claim ***********
-    document.getElementById('claim-button').onclick = async function () {
-        update(true);
-        if (!isConnected) {
-            return;
-        }
-
-        const button = this;
-        const buttonText = button.querySelector('.button-text');
-        const buttonWaiting = button.querySelector('.button-waiting');
-        const spinner = button.querySelector('.spin');
-        const angleIcon = button.querySelector('.chevron');
-        spinner.style.display = 'inline-block';
-        angleIcon.style.display = 'none';
-        buttonText.style.display = 'none';
-        buttonWaiting.style.display = 'inline-block';
-        button.disabled = true;
-        button.style.backgroundColor = '#c6c6c6';
-
-        let stabId = selectedId;
-        let manifest = `
-    CALL_METHOD
-      Address("${accountAddress}")
-      "create_proof_of_non_fungibles"
-      Address("${stabIdAddress}")
-      Array<NonFungibleLocalId>(
-        NonFungibleLocalId("${stabId}")
-      );
-  
-    POP_FROM_AUTH_ZONE
-      Proof("id_proof");
-  
-    CALL_METHOD    
-      Address("${componentAddress}")
-      "update_id"
-      Proof("id_proof")
-      false;
-  
-    CALL_METHOD
-      Address("${accountAddress}") 
-      "deposit_batch"
-      Expression("ENTIRE_WORKTOP");
-      `
-        console.log('claim manifest: ', manifest)
-        toastMe(0, "Reward claim", 1);
-
-        // Send manifest to extension for signing
-        rdt.walletApi
-            .sendTransaction({
-                transactionManifest: manifest,
-                version: 1,
-                message: "Claiming staking rewards from Stabilis Staking ID",
-            })
-            .then(result => {
-                toastMe(result.value.transactionIntentHash, "Reward claim", 2);
-                // Hide the spinner, show the angle icon, and change the button text back
-                spinner.style.display = 'none';
-                angleIcon.style.display = 'inline-block';
-                buttonText.style.display = 'inline-block';
-                buttonWaiting.style.display = 'none';
-                button.disabled = false;
-                button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value);
-                update_id();
-            })
-            .catch(error => {
-                // Hide the spinner, show the angle icon, and change the button text back
-                spinner.style.display = 'none';
-                angleIcon.style.display = 'inline-block';
-                buttonText.style.display = 'inline-block';
-                buttonWaiting.style.display = 'none';
-                button.disabled = false;
-                button.style.backgroundColor = '';
-
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
     // *********** Stake ***********
-    document.getElementById('stake-button').onclick = async function () {
-        update(true);
+    document.getElementById('add-stake-button').onclick = async function () {
         if (!isConnected) {
             return;
         }
-        let stabId = selectedId;
-        let lpAmount = document.getElementById('stake-lp-field').value;
-        let ilisAmount = document.getElementById('stake-ilis-field').value;
-        let manifest;
 
         const button = this;
         const buttonText = button.querySelector('.button-text');
@@ -3619,146 +5827,45 @@ if (window.location.pathname === '/incentives') {
         buttonWaiting.style.display = 'inline-block';
         button.disabled = true;
         button.style.backgroundColor = '#c6c6c6';
+        var stakeAmount = document.getElementById('amount-to-stake').value;
+        console.log(selectedId);
 
-        if (lpAmount !== "") {
-            if (ilisAmount == "") {
-                manifest = `
-            CALL_METHOD
-              Address("${accountAddress}")
-              "create_proof_of_non_fungibles"
-              Address("${stabIdAddress}")
-              Array<NonFungibleLocalId>(
-                NonFungibleLocalId("${stabId}")
-              );
-          
-            POP_FROM_AUTH_ZONE
-              Proof("id_proof");
-          
-              CALL_METHOD
-              Address("${accountAddress}") #Primary account 
-              "withdraw"
-              Address("${lpAddress}") # ILIS address
-              Decimal("${lpAmount}");
-          
-            TAKE_FROM_WORKTOP 
-                Address("${lpAddress}") # ILIS address
-                Decimal("${lpAmount}") 
-                Bucket("lp_bucket");
-          
-            CALL_METHOD    
-              Address("${componentAddress}") #proxy comp address
-              "stake"
-              Bucket("lp_bucket")
-              Proof("id_proof");
-          
-            CALL_METHOD
-              Address("${accountAddress}") 
-              "deposit_batch"
-              Expression("ENTIRE_WORKTOP");
-              `
-                console.log('stake manifest: ', manifest)
-            } else {
-                manifest = `
+        let manifest = `
         CALL_METHOD
-          Address("${accountAddress}")
-          "create_proof_of_non_fungibles"
-          Address("${stabIdAddress}")
-          Array<NonFungibleLocalId>(
-            NonFungibleLocalId("${stabId}")
-          );
-      
-        POP_FROM_AUTH_ZONE
-          Proof("id_proof");
-      
-          CALL_METHOD
-          Address("${accountAddress}") #Primary account 
-          "withdraw"
-          Address("${lpAddress}") # ILIS address
-          Decimal("${lpAmount}");
-      
-        TAKE_FROM_WORKTOP 
-            Address("${lpAddress}") # ILIS address
-            Decimal("${lpAmount}") 
-            Bucket("lp_bucket");
-      
-        CALL_METHOD    
-          Address("${componentAddress}") #proxy comp address
-          "stake"
-          Bucket("lp_bucket")
-          Proof("id_proof");
+            Address("${accountAddress}")
+            "withdraw"
+            Address("${ilisAddress}")
+            Decimal("${stakeAmount}")
+        ;
 
-          CALL_METHOD
-              Address("${accountAddress}") #Primary account 
-              "withdraw"
-              Address("${ilisAddress}") # ILIS address
-              Decimal("${ilisAmount}");
-          
-            TAKE_FROM_WORKTOP 
-                Address("${ilisAddress}") # ILIS address
-                Decimal("${ilisAmount}") 
-                Bucket("ilis_bucket");
+        TAKE_ALL_FROM_WORKTOP
+            Address("${ilisAddress}")
+            Bucket("ilis")
+        ;
 
-                CALL_METHOD
-          Address("${accountAddress}")
-          "create_proof_of_non_fungibles"
-          Address("${stabIdAddress}")
-          Array<NonFungibleLocalId>(
-            NonFungibleLocalId("${stabId}")
-          );
-      
-        POP_FROM_AUTH_ZONE
-          Proof("id_proof_2");
-          
-            CALL_METHOD    
-              Address("${componentAddress}") #proxy comp address
-              "stake"
-              Bucket("ilis_bucket")
-              Proof("id_proof_2");
-      
         CALL_METHOD
-          Address("${accountAddress}") 
-          "deposit_batch"
-          Expression("ENTIRE_WORKTOP");
-          `
-                console.log('stake manifest: ', manifest)
-            }
-        } else if (ilisAmount !== "") {
-            manifest = `
-            CALL_METHOD
-              Address("${accountAddress}")
-              "create_proof_of_non_fungibles"
-              Address("${stabIdAddress}")
-              Array<NonFungibleLocalId>(
-                NonFungibleLocalId("${stabId}")
-              );
-          
-            POP_FROM_AUTH_ZONE
-              Proof("id_proof");
-          
-              CALL_METHOD
-              Address("${accountAddress}") #Primary account 
-              "withdraw"
-              Address("${ilisAddress}") # ILIS address
-              Decimal("${ilisAmount}");
-          
-            TAKE_FROM_WORKTOP 
-                Address("${ilisAddress}") # ILIS address
-                Decimal("${ilisAmount}") 
-                Bucket("ilis_bucket");
-          
-            CALL_METHOD    
-              Address("${componentAddress}") #proxy comp address
-              "stake"
-              Bucket("ilis_bucket")
-              Proof("id_proof");
-          
-            CALL_METHOD
-              Address("${accountAddress}") 
-              "deposit_batch"
-              Expression("ENTIRE_WORKTOP");
-              `
-            console.log('stake manifest: ', manifest)
-        }
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${membershipIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${stakingAddress}")
+            "stake"
+            Bucket("ilis")
+            Enum<1u8>(
+                Proof("id")
+            )
+        ;
+      `
+        console.log('staking manifest: ', manifest)
         toastMe(0, "Staking request", 1);
 
         // Send manifest to extension for signing
@@ -3766,7 +5873,7 @@ if (window.location.pathname === '/incentives') {
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
-                message: "Staking to Stabilis Staking ID",
+                message: "Staking ILIS to your ILIS Membership ID",
             })
             .then(result => {
                 toastMe(result.value.transactionIntentHash, "Staking", 2);
@@ -3777,13 +5884,8 @@ if (window.location.pathname === '/incentives') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-                console.log("Mint Result: ", result.value);
-                if (lpAmount !== "") {
-                    walletLp -= lpAmount;
-                }
-                if (ilisAmount !== "") {
-                    walletIlis -= ilisAmount;
-                }
+                console.log("Staking Result: ", result.value);
+                update(false);
                 update_id();
             })
             .catch(error => {
@@ -3794,22 +5896,455 @@ if (window.location.pathname === '/incentives') {
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
                 button.style.backgroundColor = '';
-
-                // Handle the error
-                console.error(error);
             });
     }
 
     // *********** Unstake ***********
-    document.getElementById('unstake-button').onclick = async function () {
+    document.getElementById('remove-stake-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var stakeAmount = document.getElementById('amount-to-stake').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${membershipIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${stakingAddress}")
+            "start_unstake"
+            Proof("id")
+            Decimal("${stakeAmount/poolMultiplier}")
+            false
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+        ;
+      `
+        console.log('staking manifest: ', manifest)
+        toastMe(0, "Staking request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: "Unstaking ILIS from your ILIS Membership ID",
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Unstaking", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+
+    // *********** Lock ***********
+    document.getElementById('add-lock-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+        
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var daysToLock = document.getElementById('days-to-lock').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${membershipIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${stakingAddress}")
+            "lock_stake"
+            Proof("id")
+            ${daysToLock}i64
+            true
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+        ;
+      `
+        console.log('locking manifest: ', manifest)
+        toastMe(0, "Locking request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: "Locking ILIS in your ILIS Membership ID",
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Locking", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+
+    // *********** Unlock ***********
+    document.getElementById('remove-lock-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+        
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var daysToUnlock = document.getElementById('days-to-lock').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "withdraw"
+            Address("${ilisAddress}")
+            Decimal("${(parseFloat(currentRequiredPayment) + 0.1)}")
+        ;
+
+        TAKE_ALL_FROM_WORKTOP
+            Address("${ilisAddress}")
+            Bucket("ilis")
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${membershipIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${stakingAddress}")
+            "unlock_stake"
+            Proof("id")
+            Bucket("ilis")
+            ${daysToUnlock}i64
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+        ;
+      `
+        console.log('unlocking manifest: ', manifest)
+        toastMe(0, "Unlocking request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: "Unlocking ILIS in your ILIS Membership ID",
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Unlocking", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+    // *********** Finish unstake ***********
+    document.getElementById('claim-unstaked-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+        
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        
+        // Take only the first 5 IDs from idsReadyToUnstake
+        const limitedIds = idsReadyToUnstake.slice(0, 5);
+
+        const nonFungibleIdsString = limitedIds
+            .map(id => `NonFungibleLocalId("${id}")`)
+            .join(',\n            ');
+
+        let manifest_first = `
+        CALL_METHOD
+        Address("${accountAddress}")
+        "withdraw_non_fungibles"
+        Address("${membershipUnstakeAddress}")
+        Array<NonFungibleLocalId>(
+            ${nonFungibleIdsString}
+        )
+        ;`
+
+        let manifest_second = limitedIds.map((id, index) => `
+        TAKE_NON_FUNGIBLES_FROM_WORKTOP
+        Address("${membershipUnstakeAddress}")
+        Array<NonFungibleLocalId>(
+            NonFungibleLocalId("${id}")
+        )
+        Bucket("unstake_nft_${index}")
+        ;
+
+        CALL_METHOD
+        Address("${stakingAddress}")
+        "finish_unstake"
+        Bucket("unstake_nft_${index}")
+        ;
+        `).join('\n');
+
+        let manifest_third = `
+        CALL_METHOD
+        Address("${accountAddress}")
+        "deposit_batch"
+        Expression("ENTIRE_WORKTOP")
+        ;
+        `
+
+        let manifest = manifest_first + manifest_second + manifest_third;
+        console.log('unstaking manifest: ', manifest)
+        toastMe(0, "Finishing unstake", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: "Finishing ILIS unstake",
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Finishing unstake", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+}
+
+if (window.location.pathname === '/governance') {
+
+    var proposalCounter = document.getElementById('prop-id-counter');
+    var plusSymbolProp = document.getElementById('plus-symbol-prop');
+    var minusSymbolProp = document.getElementById('minus-symbol-prop');
+
+    plusSymbolProp.onclick = function () {
+        if (parseInt(proposalCounter.textContent) < maxProposals) {
+            proposalCounter.textContent = parseInt(proposalCounter.textContent) + 1;
+            minusSymbolProp.disabled = false;
+            minusSymbolProp.style.backgroundColor = "";
+        } else {
+            plusSymbolProp.disabled = true;
+        }
+        proposalToView = parseInt(proposalCounter.textContent);
+        update_governance();
+    }
+    minusSymbolProp.onclick = function () {
+        if (parseInt(proposalCounter.textContent) > 0) {
+            proposalCounter.textContent = parseInt(proposalCounter.textContent) - 1;
+            plusSymbolProp.disabled = false;
+        }
+        if (parseInt(proposalCounter.textContent) == 0) {
+            minusSymbolProp.disabled = true;
+        }
+        proposalToView = parseInt(proposalCounter.textContent);
+        update_governance();
+    }
+
+    let buttonsVote = document.querySelectorAll('.stake-button.vote');
+    // Add an event listener to each button
+    buttonsVote.forEach(button => {
+        button.addEventListener('click', function () {
+            // Perform different actions depending on the id of the clicked button
+            buttonsVote.forEach(button => button.classList.remove('selected'));
+            this.classList.add('selected');
+            if (this.id === 'vote-for') {
+                vote = true;
+            } else if (this.id === 'vote-against') {
+                vote = false;
+            }
+            update_governance();
+        });
+    });
+
+    // Get the dropdown button and content
+    var dropdownButton = document.querySelector('.dropdown-custom-button');
+    var dropdownContent = document.querySelector('.dropdown-custom-content');
+
+    // Add click event listeners to each option
+    var options = document.querySelectorAll('.dropdown-custom-option');
+
+    // Show the dropdown content when the button is clicked
+    dropdownButton.addEventListener('click', function () {
+        if (dropdownButton.disabled) {
+            return;
+        }
+        if (dropdownContent !== undefined) {
+            var display = dropdownContent.style.display;
+            dropdownContent.style.display = display === 'block' ? 'none' : 'block';
+            setChevron(dropdownContent);
+        }
+        var options = document.querySelectorAll('.dropdown-custom-option');
+
+        // Check if there are any options
+        if (options.length === 0) {
+            // If not, display a message
+            if (isConnected) {
+                alert('No Membership ID in wallet. Please create one.');
+            } else {
+                alert('Please connect your wallet.');
+            }
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+        // Check if the clicked element is the dropdown button or one of the dropdown options
+        var isDropdownButton = dropdownButton.contains(event.target);
+        var isDropdownOption = Array.from(options).some(function (option) {
+            return option.contains(event.target);
+        });
+
+        // If the clicked element is not the dropdown button or one of the dropdown options, hide the dropdown content
+        if (!isDropdownButton && !isDropdownOption) {
+            dropdownContent.style.display = 'none';
+            setChevron(dropdownContent);
+        }
+    });
+    // *********** Vote ***********
+    document.getElementById('vote-button').onclick = async function () {
         update(true);
         if (!isConnected) {
             return;
         }
-        let stabId = selectedId;
-        let lpAmount = document.getElementById('unstake-lp-field').value;
-        let ilisAmount = document.getElementById('unstake-ilis-field').value;
-        let manifest;
 
         const button = this;
         const buttonText = button.querySelector('.button-text');
@@ -3823,121 +6358,382 @@ if (window.location.pathname === '/incentives') {
         button.disabled = true;
         button.style.backgroundColor = '#c6c6c6';
 
-        if (lpAmount !== "") {
-            if (ilisAmount == "") {
-                manifest = `
-                CALL_METHOD
-                  Address("${accountAddress}")
-                  "create_proof_of_non_fungibles"
-                  Address("${stabIdAddress}")
-                  Array<NonFungibleLocalId>(
-                    NonFungibleLocalId("${stabId}")
-                  );
-              
-                POP_FROM_AUTH_ZONE
-                  Proof("id_proof");
-              
-                CALL_METHOD    
-                  Address("${componentAddress}") #proxy comp address
-                  "unstake"
-                  Proof("id_proof")
-                  Address("${lpAddress}")
-                  Decimal("${lpAmount}")
-                  false;
-              
-                CALL_METHOD
-                  Address("${accountAddress}") 
-                  "deposit_batch"
-                  Expression("ENTIRE_WORKTOP");
-                  `
-                console.log('unstake manifest: ', manifest)
-            } else {
-                manifest = `
-            CALL_METHOD
-              Address("${accountAddress}")
-              "create_proof_of_non_fungibles"
-              Address("${stabIdAddress}")
-              Array<NonFungibleLocalId>(
-                NonFungibleLocalId("${stabId}")
-              );
-          
-            POP_FROM_AUTH_ZONE
-              Proof("id_proof");
-          
-              CALL_METHOD    
-              Address("${componentAddress}") #proxy comp address
-              "unstake"
-              Proof("id_proof")
-              Address("${lpAddress}")
-              Decimal("${lpAmount}")
-              false;
-    
-                    CALL_METHOD
-              Address("${accountAddress}")
-              "create_proof_of_non_fungibles"
-              Address("${stabIdAddress}")
-              Array<NonFungibleLocalId>(
-                NonFungibleLocalId("${stabId}")
-              );
-          
-            POP_FROM_AUTH_ZONE
-              Proof("id_proof_2");
-              
-              CALL_METHOD    
-              Address("${componentAddress}") #proxy comp address
-              "unstake"
-              Proof("id_proof_2")
-              Address("${ilisAddress}")
-              Decimal("${ilisAmount}")
-              false;
-          
-            CALL_METHOD
-              Address("${accountAddress}") 
-              "deposit_batch"
-              Expression("ENTIRE_WORKTOP");
-              `
-                console.log('unstake manifest: ', manifest)
-            }
-        } else if (ilisAmount !== "") {
-            manifest = `
-                CALL_METHOD
-                  Address("${accountAddress}")
-                  "create_proof_of_non_fungibles"
-                  Address("${stabIdAddress}")
-                  Array<NonFungibleLocalId>(
-                    NonFungibleLocalId("${stabId}")
-                  );
-              
-                POP_FROM_AUTH_ZONE
-                  Proof("id_proof");
-              
-                  CALL_METHOD    
-                  Address("${componentAddress}") #proxy comp address
-                  "unstake"
-                  Proof("id_proof")
-                  Address("${ilisAddress}")
-                  Decimal("${ilisAmount}")
-                  false;
-              
-                CALL_METHOD
-                  Address("${accountAddress}") 
-                  "deposit_batch"
-                  Expression("ENTIRE_WORKTOP");
-                  `
-            console.log('unstake manifest: ', manifest)
-        }
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${membershipIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
 
-        toastMe(0, "Unstaking request", 1);
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${governanceAddress}")
+            "vote_on_proposal"
+            ${proposalToView}u64
+            ${vote}
+            Proof("id")
+        ;
+      `
+        console.log('voting manifest: ', manifest)
+        toastMe(0, "Voting on proposal", 1);
+
+        var voteDescription = "for";
+
+        if (vote == false) {
+            voteDescription = "against";
+        }
 
         // Send manifest to extension for signing
         rdt.walletApi
             .sendTransaction({
                 transactionManifest: manifest,
                 version: 1,
-                message: "Unstaking from Stabilis Staking ID",
+                message: `Voting ${voteDescription} proposal ${proposalToView}`,
             })
             .then(result => {
-                toastMe(result.value.transactionIntentHash, "Unstaking", 2);
+                toastMe(result.value.transactionIntentHash, "Voting", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Voting Result: ", result.value);
+                update_governance();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';                
+            });
+    }
+}
+
+if (window.location.pathname === '/incentives') {
+    var slider = document.getElementById("slider-stake");
+    var inputAmount = document.getElementById("amount-to-stake");
+    var maxButton = document.getElementById("max-new-stake");
+    var newStake = document.getElementById("new-stake");
+    var sliderLock = document.getElementById("slider-lock");
+    var inputAmountLock = document.getElementById("days-to-lock");
+    var maxButtonLock = document.getElementById("max-new-lock");
+    var newLock = document.getElementById("new-lock");
+
+    slider.addEventListener('input', function () {
+        updateSliderBackground(this);
+    });
+
+    sliderLock.addEventListener('input', function () {
+        updateSliderBackground(this);
+    });
+
+    slider.oninput = function () {
+        if (stake) {
+            stakingAmount = this.value;
+            newStake.textContent = "New stake: " + (parseFloat(this.value) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
+            inputAmount.value = this.value;
+        } else {
+            stakingAmount = this.value;
+            newStake.textContent = "New stake: " + (-this.value + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
+            inputAmount.value = this.value;
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+    }
+
+    inputAmount.oninput = function () {
+        if (stake) {
+            var input = this.value === '' ? 0 : parseFloat(this.value);
+            if (input > walletResource) {
+                input = walletResource;
+                this.value = input;
+            }     
+            newStake.textContent = "New stake: " + (input + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
+            slider.value = input;
+        } else {
+            var input = this.value === '' ? 0 : parseFloat(this.value);
+            if (input > parseFloat(amountStaked) * poolMultiplier) {
+                input = parseFloat(amountStaked) * poolMultiplier;
+                this.value = input;
+            }
+            newStake.textContent = "New stake: " + (input).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
+            slider.value = input;
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(slider);
+    }
+
+    maxButton.onclick = function () {
+        if (!maxButton.disabled) {
+            if (stake) {
+                slider.value = walletResource;
+                newStake.textContent = "New stake: " + (parseFloat(walletResource) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS";
+                inputAmount.value = walletResource;
+            } else {
+                newStake.textContent = "New stake: 0 ILIS";
+                slider.value = parseFloat(amountStaked) * poolMultiplier;
+                inputAmount.value = slider.value;
+            }
+        } 
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(slider);
+    }
+
+    sliderLock.oninput = function () {
+        if (lock) {
+            newLock.textContent = "New lock: " + (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            inputAmountLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, this.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        } else {
+            newLock.textContent = "New lock: " + (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            inputAmountLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(lbpLockPayment, lbpUnlockMultiplier, this.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+    }
+
+    inputAmountLock.oninput = function () {
+        if (lock) {
+            this.value = Math.min(this.value, maxLockDaysFloor);
+            newLock.textContent = "New lock: " + (parseFloat(this.value) + lockNow).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            sliderLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, sliderLock.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        } else {
+            this.value = Math.min(this.value, maxUnlockDaysCeil);
+            newLock.textContent = "New lock: " + (Math.max(0, -this.value + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " days";
+            sliderLock.value = this.value;
+            currentRequiredPayment = getRequiredPayment(lbpLockPayment, lbpUnlockMultiplier, sliderLock.value, amountStaked * poolMultiplier);
+            document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(sliderLock);
+    }
+
+    maxButtonLock.onclick = function () {
+        if (!maxButtonLock.disabled) {
+            if (lock) {
+                sliderLock.value = maxLockDaysFloor;
+                newLock.textContent = "New lock: " + (Math.max(0, maxLockDaysFloor + lockNow)).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " days";
+                inputAmountLock.value = maxLockDaysFloor;
+                currentRequiredPayment = getRequiredPayment(ilisLockPayment, 1, sliderLock.value, amountStaked * poolMultiplier);
+                document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            } else {
+                sliderLock.value = maxUnlockDaysCeil;
+                newLock.textContent = "New lock: 0 days";
+                inputAmountLock.value = maxUnlockDaysCeil;
+                currentRequiredPayment = getRequiredPayment(lbpLockPayment, lbpUnlockMultiplier, sliderLock.value, amountStaked * poolMultiplier);
+                document.getElementById('ilis-reward').textContent = currentRequiredPayment.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            }
+        }
+        setStakeButton();
+        setLockButton();
+        setClaimButton();
+        setNewIdButton();
+        setUnstakeFinishButton();
+        updateSliderBackground(sliderLock);
+    }
+
+    let buttonsStake = document.querySelectorAll('.stake-button.stake');
+    let buttonsLock = document.querySelectorAll('.stake-button.lock');
+    // Add an event listener to each button
+    buttonsStake.forEach(button => {
+        button.addEventListener('click', function () {
+            // Perform different actions depending on the id of the clicked button
+            buttonsStake.forEach(button => button.classList.remove('selected'));
+            this.classList.add('selected');
+            if (this.id === 'add-stake-selector') {
+                document.getElementById('add-stake-button').style.display = '';
+                document.getElementById('remove-stake-button').style.display = 'none';
+                stake = true;
+            } else if (this.id === 'remove-stake-selector') {
+                document.getElementById('add-stake-button').style.display = 'none';
+                document.getElementById('remove-stake-button').style.display = '';
+                stake = false;
+            }
+            update_incentives();
+        });
+    });
+
+    buttonsLock.forEach(button => {
+        button.addEventListener('click', function () {
+            // Perform different actions depending on the id of the clicked button
+            buttonsLock.forEach(button => button.classList.remove('selected'));
+            this.classList.add('selected');
+            if (this.id === 'add-lock-selector') {
+                document.getElementById('remove-lock-button').style.display = 'none';
+                document.getElementById('add-lock-button').style.display = '';
+                document.getElementById('lock-reward-label').textContent= 'ILIS Reward';
+                lock = true;
+            } else if (this.id === 'remove-lock-selector') {
+                document.getElementById('remove-lock-button').style.display = '';
+                document.getElementById('add-lock-button').style.display = 'none';
+                document.getElementById('lock-reward-label').textContent= 'Necessary ILIS';
+                lock = false;
+            }
+            update_incentives();
+        });
+    });
+    // Get the dropdown button and content
+    var dropdownButton = document.querySelector('.dropdown-custom-button.id');
+    var dropdownContent = document.querySelector('.dropdown-custom-content.id');
+
+    // Add click event listeners to each option
+    var options = document.querySelectorAll('.dropdown-custom-option.id');
+
+    // Show the dropdown content when the button is clicked
+    dropdownButton.addEventListener('click', function () {
+        if (dropdownButton.disabled) {
+            return;
+        }
+        if (dropdownContent !== undefined) {
+            var display = dropdownContent.style.display;
+            dropdownContent.style.display = display === 'block' ? 'none' : 'block';
+            setChevron(dropdownContent);
+        }
+        var options = document.querySelectorAll('.dropdown-custom-option.id');
+
+        // Check if there are any options
+        if (options.length === 0) {
+            // If not, display a message
+            if (isConnected) {
+                alert('No Incentives ID in wallet. Please create one.');
+            } else {
+                alert('Please connect your wallet.');
+            }
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+        // Check if the clicked element is the dropdown button or one of the dropdown options
+        var isDropdownButton = dropdownButton.contains(event.target);
+        var isDropdownOption = Array.from(options).some(function (option) {
+            return option.contains(event.target);
+        });
+
+        // If the clicked element is not the dropdown button or one of the dropdown options, hide the dropdown content
+        if (!isDropdownButton && !isDropdownOption) {
+            dropdownContent.style.display = 'none';
+            setChevron(dropdownContent);
+        }
+    });
+
+    // Get the dropdown button and content
+    var dropdownButton2 = document.querySelector('.dropdown-custom-button.resource');
+    var dropdownContent2 = document.querySelector('.dropdown-custom-content.resource');
+
+    // Add click event listeners to each option
+    var options2 = document.querySelectorAll('.dropdown-custom-option.resource');
+
+    // Show the dropdown content when the button is clicked
+    dropdownButton2.addEventListener('click', function () {
+        if (dropdownButton2.disabled) {
+            return;
+        }
+        if (dropdownContent2 !== undefined) {
+            var display = dropdownContent2.style.display;
+            dropdownContent2.style.display = display === 'block' ? 'none' : 'block';
+            setChevron(dropdownContent2);
+        }
+        var options2 = document.querySelectorAll('.dropdown-custom-option.resource');
+
+        // Check if there are any options
+        if (options2.length === 0) {
+            // If not, display a message
+            if (isConnected) {
+                alert('No Incentives ID in wallet. Please create one.');
+            } else {
+                alert('Please connect your wallet.');
+            }
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+        // Check if the clicked element is the dropdown button or one of the dropdown options
+        var isDropdownButton = dropdownButton2.contains(event.target);
+        var isDropdownOption = Array.from(options2).some(function (option) {
+            return option.contains(event.target);
+        });
+
+        // If the clicked element is not the dropdown button or one of the dropdown options, hide the dropdown content
+        if (!isDropdownButton && !isDropdownOption) {
+            dropdownContent2.style.display = 'none';
+            setChevron(dropdownContent2);
+        }
+    });
+    // *********** Create ID ***********
+    document.getElementById('new-id').onclick = async function () {
+        update(true);
+        if (!isConnected) {
+            return;
+        }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+
+        let manifest = `
+    CALL_METHOD    
+    Address("${incentiveAddress}")
+    "create_id";
+  
+  CALL_METHOD
+    Address("${accountAddress}") 
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP");
+      `
+        console.log('create id manifest: ', manifest)
+        toastMe(0, "ID creation request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: "Creating a new ILIS Incentive ID",
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "ID creation", 2);
                 // Hide the spinner, show the angle icon, and change the button text back
                 spinner.style.display = 'none';
                 angleIcon.style.display = 'inline-block';
@@ -3946,6 +6742,7 @@ if (window.location.pathname === '/incentives') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
                 console.log("Mint Result: ", result.value);
+                update(false);
                 update_id();
             })
             .catch(error => {
@@ -3957,20 +6754,532 @@ if (window.location.pathname === '/incentives') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
-
-        if (lpAmount !== "") {
-            let lpChange = Math.min(lpAmount, lpAmountId + lpWaitingAmount);
-            walletLp += lpChange;
-        }
-        if (ilisAmount !== "") {
-            let ilisChange = Math.min(ilisAmount, ilisAmountId + ilisWaitingAmount);
-            walletIlis += ilisChange;
-        }
     }
 
+    // *********** Stake ***********
+    document.getElementById('add-stake-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var stakeAmount = document.getElementById('amount-to-stake').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "withdraw"
+            Address("${selectedResource}")
+            Decimal("${stakeAmount}")
+        ;
+
+        TAKE_ALL_FROM_WORKTOP
+            Address("${selectedResource}")
+            Bucket("stake")
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${incentiveIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${incentiveAddress}")
+            "stake"
+            Bucket("stake")
+            Enum<1u8>(
+                Proof("id")
+            )
+        ;
+      `
+        console.log('staking manifest: ', manifest)
+        toastMe(0, "Staking request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: `Staking ${selectedResource} to your ILIS Incentives ID`,
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Staking", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Staking Result: ", result.value);
+                update(false);
+                update_incentives();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+
+    // *********** Unstake ***********
+    document.getElementById('remove-stake-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var stakeAmount = document.getElementById('amount-to-stake').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${incentiveIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${incentiveAddress}")
+            "start_unstake"
+            Proof("id")
+            Address("${selectedResource}")
+            Decimal("${stakeAmount}")
+            false
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+        ;
+      `
+        console.log('staking manifest: ', manifest)
+        toastMe(0, "Staking request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: `Unstaking ${selectedResource} from your ILIS Incentives ID`,
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Unstaking", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+
+    // *********** Lock ***********
+    document.getElementById('add-lock-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+        
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var daysToLock = document.getElementById('days-to-lock').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${incentiveIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${incentiveAddress}")
+            "lock_stake"
+            Address("${selectedResource}")
+            Proof("id")
+            ${daysToLock}i64
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+        ;
+      `
+        console.log('locking manifest: ', manifest)
+        toastMe(0, "Locking request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: `Locking ${selectedResource} in your ILIS Incentives ID`,
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Locking", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+
+    // *********** Unlock ***********
+    document.getElementById('remove-lock-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+        
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var daysToUnlock = document.getElementById('days-to-lock').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "withdraw"
+            Address("${ilisAddress}")
+            Decimal("${(parseFloat(currentRequiredPayment) + 0.001)}")
+        ;
+
+        TAKE_ALL_FROM_WORKTOP
+            Address("${ilisAddress}")
+            Bucket("ilis")
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${incentiveIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${incentiveAddress}")
+            "unlock_stake"
+            Address("${selectedResource}")
+            Proof("id")
+            Bucket("ilis")
+            ${daysToUnlock}i64
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+        ;
+      `
+        console.log('unlocking manifest: ', manifest)
+        toastMe(0, "Unlocking request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: `Unlocking ${selectedResource} in your ILIS Incentives ID`,
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Unlocking", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+
+    // *********** Claim periods ***********
+    document.getElementById('claim-periods-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+        
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        var daysToUnlock = document.getElementById('days-to-lock').value;
+        console.log(selectedId);
+
+        let manifest = `
+        CALL_METHOD
+            Address("${accountAddress}")
+            "create_proof_of_non_fungibles"
+            Address("${incentiveIdAddress}")
+            Array<NonFungibleLocalId>(
+                NonFungibleLocalId("${selectedId}")
+            )
+        ;
+
+        POP_FROM_AUTH_ZONE
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${incentiveAddress}")
+            "update_id"
+            Proof("id")
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
+        ;
+      `
+        console.log('claiming manifest: ', manifest)
+        toastMe(0, "Claiming request", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: `Claiming rewards from your ILIS Incentives ID`,
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Claiming", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Claiming Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
+
+    // *********** Finish unstake ***********
+    document.getElementById('claim-unstaked-button').onclick = async function () {
+        if (!isConnected) {
+            return;
+        }
+        
+        const button = this;
+        const buttonText = button.querySelector('.button-text');
+        const buttonWaiting = button.querySelector('.button-waiting');
+        const spinner = button.querySelector('.spin');
+        const angleIcon = button.querySelector('.chevron');
+        spinner.style.display = 'inline-block';
+        angleIcon.style.display = 'none';
+        buttonText.style.display = 'none';
+        buttonWaiting.style.display = 'inline-block';
+        button.disabled = true;
+        button.style.backgroundColor = '#c6c6c6';
+        
+        // Take only the first 5 IDs from idsReadyToUnstake
+        const limitedIds = idsReadyToUnstake.slice(0, 5);
+
+        const nonFungibleIdsString = limitedIds
+            .map(id => `NonFungibleLocalId("${id}")`)
+            .join(',\n            ');
+
+        let manifest_first = `
+        CALL_METHOD
+        Address("${accountAddress}")
+        "withdraw_non_fungibles"
+        Address("${incentiveUnstakeAddress}")
+        Array<NonFungibleLocalId>(
+            ${nonFungibleIdsString}
+        )
+        ;`
+
+        let manifest_second = limitedIds.map((id, index) => `
+        TAKE_NON_FUNGIBLES_FROM_WORKTOP
+        Address("${incentiveUnstakeAddress}")
+        Array<NonFungibleLocalId>(
+            NonFungibleLocalId("${id}")
+        )
+        Bucket("unstake_nft_${index}")
+        ;
+
+        CALL_METHOD
+        Address("${incentiveAddress}")
+        "finish_unstake"
+        Bucket("unstake_nft_${index}")
+        ;
+        `).join('\n');
+
+        let manifest_third = `
+        CALL_METHOD
+        Address("${accountAddress}")
+        "deposit_batch"
+        Expression("ENTIRE_WORKTOP")
+        ;
+        `
+
+        let manifest = manifest_first + manifest_second + manifest_third;
+        console.log('unstaking manifest: ', manifest)
+        toastMe(0, "Finishing unstake", 1);
+
+        // Send manifest to extension for signing
+        rdt.walletApi
+            .sendTransaction({
+                transactionManifest: manifest,
+                version: 1,
+                message: `Finishing ${selectedResource} unstake`,
+            })
+            .then(result => {
+                toastMe(result.value.transactionIntentHash, "Finishing unstake", 2);
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+                console.log("Unstaking Result: ", result.value);
+                update(false);
+                update_id();
+            })
+            .catch(error => {
+                // Hide the spinner, show the angle icon, and change the button text back
+                spinner.style.display = 'none';
+                angleIcon.style.display = 'inline-block';
+                buttonText.style.display = 'inline-block';
+                buttonWaiting.style.display = 'none';
+                button.disabled = false;
+                button.style.backgroundColor = '';
+            });
+    }
 }
 
 if (window.location.pathname === '/manage-loans') {
@@ -4036,7 +7345,7 @@ if (window.location.pathname === '/manage-loans') {
             }
             setRemoveColButton();
         }
-
+        updateSliderBackground(slider);
     }
 
     maxButton.onclick = function () {
@@ -4051,6 +7360,9 @@ if (window.location.pathname === '/manage-loans') {
             inputAmount.value = availableCollateral;
             setAddColButton();
         } else if (status != "Marked") {
+            if (newCr < 150) {
+                return;
+            }
             newCr = 150;
             realInputCol = newCr;
             document.getElementById("new-cr").textContent = "New CR: 150%";
@@ -4058,7 +7370,7 @@ if (window.location.pathname === '/manage-loans') {
             inputAmount.value = (collateralAmount - getNecessaryCollateral(debtAmount, 1.5, validatorMultiplier));
             setRemoveColButton();
         }
-
+        updateSliderBackground(slider);
     }
 
     sliderDebt.oninput = function () {
@@ -4111,7 +7423,7 @@ if (window.location.pathname === '/manage-loans') {
             }
             setAddDebtButton();
         }
-
+        updateSliderBackground(sliderDebt);
     }
 
     maxButtonDebt.onclick = function () {
@@ -4127,6 +7439,9 @@ if (window.location.pathname === '/manage-loans') {
             inputAmountDebt.value = maxStabToUse;
             setRemoveDebtButton();
         } else if (status != "Marked") {
+            if (newCrDebt < 150) {
+                return;
+            }
             newCrDebt = 150;
             realInputDebt = newCrDebt;
             document.getElementById("new-cr-debt").textContent = "New CR: 150%";
@@ -4134,7 +7449,7 @@ if (window.location.pathname === '/manage-loans') {
             inputAmountDebt.value = (getNecessaryStab(collateralAmount, 1.5, validatorMultiplier) - debtAmount);
             setAddDebtButton();
         }
-
+        updateSliderBackground(sliderDebt);
     }
 
 
@@ -4278,7 +7593,7 @@ if (window.location.pathname === '/manage-loans') {
             Bucket("xrd_bucket");
          
         CALL_METHOD    
-          Address("${componentAddress}")
+          Address("${proxyComponentAddress}")
           "top_up_cdp"
           Proof("cdp_proof")
           Bucket("xrd_bucket");
@@ -4316,8 +7631,7 @@ if (window.location.pathname === '/manage-loans') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -4364,7 +7678,7 @@ if (window.location.pathname === '/manage-loans') {
           Proof("cdp_proof");
          
         CALL_METHOD    
-          Address("${componentAddress}")
+          Address("${proxyComponentAddress}")
           "remove_collateral"
           Proof("cdp_proof")
           Decimal("${collateralAmount}");
@@ -4405,8 +7719,7 @@ if (window.location.pathname === '/manage-loans') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -4465,7 +7778,7 @@ if (window.location.pathname === '/manage-loans') {
         ;
          
         CALL_METHOD    
-          Address("${componentAddress}")
+          Address("${proxyComponentAddress}")
           "partial_close_cdp"
           Proof("cdp_proof")
           Bucket("stab");
@@ -4506,8 +7819,7 @@ if (window.location.pathname === '/manage-loans') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -4554,7 +7866,7 @@ if (window.location.pathname === '/manage-loans') {
           Proof("cdp_proof");
          
         CALL_METHOD    
-          Address("${componentAddress}")
+          Address("${proxyComponentAddress}")
           "borrow_more"
           Proof("cdp_proof")
           Decimal("${collateralAmount}");
@@ -4595,8 +7907,7 @@ if (window.location.pathname === '/manage-loans') {
                 button.disabled = false;
                 button.style.backgroundColor = '';
 
-                // Handle the error
-                console.error(error);
+                
             });
     }
 
@@ -4648,7 +7959,7 @@ if (window.location.pathname === '/manage-loans') {
                     Bucket("receipt_bucket");
             
                 CALL_METHOD    
-                    Address("${componentAddress}") #pool comp address
+                    Address("${proxyComponentAddress}") #pool comp address
                     "burn_loan_receipt"
                     Bucket("receipt_bucket");
                 `
@@ -4686,9 +7997,6 @@ if (window.location.pathname === '/manage-loans') {
                     buttonWaiting.style.display = 'none';
                     button.disabled = false;
                     button.style.backgroundColor = '';
-
-                    // Handle the error
-                    console.error(error);
                 });
 
         } else if (status == "Liquidated" || status == "ForceLiquidated") {
@@ -4705,7 +8013,7 @@ if (window.location.pathname === '/manage-loans') {
               Proof("cdp_proof");
              
             CALL_METHOD    
-              Address("${componentAddress}")
+              Address("${proxyComponentAddress}")
               "retrieve_leftover_collateral"
               Proof("cdp_proof");
              
@@ -4744,9 +8052,6 @@ if (window.location.pathname === '/manage-loans') {
                     buttonWaiting.style.display = 'none';
                     button.disabled = false;
                     button.style.backgroundColor = '';
-
-                    // Handle the error
-                    console.error(error);
                 });
 
         } else {
@@ -4776,7 +8081,7 @@ if (window.location.pathname === '/manage-loans') {
                 Bucket("repayment_bucket");
              
             CALL_METHOD    
-              Address("${componentAddress}")
+              Address("${proxyComponentAddress}")
               "close_cdp"
               Proof("cdp_proof")
               Bucket("repayment_bucket");
@@ -4817,14 +8122,17 @@ if (window.location.pathname === '/manage-loans') {
                     buttonWaiting.style.display = 'none';
                     button.disabled = false;
                     button.style.backgroundColor = '';
-
-                    // Handle the error
-                    console.error(error);
                 });
         }
     }
 }
 if (window.location.pathname === '/borrow') {
+    document.getElementById('warning-low-ratio').addEventListener('click', function () {
+        setChevronNoButton(document.getElementById('warning-low-ratio'));
+    });
+    document.getElementById('warning-good-ratio').addEventListener('click', function () {
+        setChevronNoButton(document.getElementById('warning-good-ratio'));
+    });
     let colMax = document.getElementById('col-max');
     colMax.addEventListener('click', function () {
         collateralAmount = availableCollateral;
@@ -4846,6 +8154,18 @@ if (window.location.pathname === '/borrow') {
     var h2 = document.getElementById('colRatioStab');
     let colToUse = document.getElementById("colToUse");
     // Display the default slider value
+
+    // Update the slider background on input change
+    slider.addEventListener('input', function () {
+        const value = this.value;
+        // Calculate the percentage of the thumb position
+        const percentage = (value - this.min) / (this.max - this.min) * 100;
+        // Update the slider background style
+        this.style.background = `linear-gradient(to right, #1BA9A0 0%, #2B6CCC ${percentage}%, #f2f2f2 ${percentage}%)`;
+    });
+
+    // Initialize the slider background
+    slider.dispatchEvent(new Event('input'));
 
     // Get the dropdown button and content
     var dropdownButton = document.querySelector('.dropdown-custom-button');
@@ -4885,7 +8205,7 @@ if (window.location.pathname === '/borrow') {
 
     // Update the current slider value (each time you drag the slider handle)
     slider.oninput = function () {
-        h2.textContent = slider.value;
+        h2.textContent = slider.value + "%";
         if (selectedCollateral !== undefined) {
             if (colToUse.value !== "") {
                 let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (this.value / 100)) * colToUse.value;
@@ -4903,21 +8223,18 @@ if (window.location.pathname === '/borrow') {
         if (this.value >= 200) {
             document.getElementById('warning-low-ratio').style.display = 'none';
             document.getElementById('warning-good-ratio').style.display = '';
-            document.getElementById('warning-impossible-ratio').style.display = 'none';
         } else if (this.value >= 150) {
             document.getElementById('warning-low-ratio').style.display = '';
             document.getElementById('warning-good-ratio').style.display = 'none';
-            document.getElementById('warning-impossible-ratio').style.display = 'none';
         } else {
             document.getElementById('warning-low-ratio').style.display = 'none';
             document.getElementById('warning-good-ratio').style.display = 'none';
-            document.getElementById('warning-impossible-ratio').style.display = '';
         }
     }
 
     plus.onclick = function () {
         slider.value = parseInt(slider.value) + 1;
-        h2.textContent = slider.value;
+        h2.textContent = slider.value + "%";
         if (selectedCollateral !== undefined) {
             if (colToUse.value !== "") {
                 let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
@@ -4936,21 +8253,18 @@ if (window.location.pathname === '/borrow') {
         if (slider.value >= 200) {
             document.getElementById('warning-low-ratio').style.display = 'none';
             document.getElementById('warning-good-ratio').style.display = '';
-            document.getElementById('warning-impossible-ratio').style.display = 'none';
         } else if (slider.value >= 150) {
             document.getElementById('warning-low-ratio').style.display = '';
             document.getElementById('warning-good-ratio').style.display = 'none';
-            document.getElementById('warning-impossible-ratio').style.display = 'none';
         } else {
             document.getElementById('warning-low-ratio').style.display = 'none';
             document.getElementById('warning-good-ratio').style.display = 'none';
-            document.getElementById('warning-impossible-ratio').style.display = '';
         }
     }
 
     minus.onclick = function () {
         slider.value = parseInt(slider.value) - 1;
-        h2.textContent = slider.value;
+        h2.textContent = slider.value + "%";
         if (selectedCollateral !== undefined) {
             if (colToUse.value !== "") {
                 let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * colToUse.value;
@@ -4969,20 +8283,17 @@ if (window.location.pathname === '/borrow') {
         if (slider.value >= 200) {
             document.getElementById('warning-low-ratio').style.display = 'none';
             document.getElementById('warning-good-ratio').style.display = '';
-            document.getElementById('warning-impossible-ratio').style.display = 'none';
         } else if (slider.value >= 150) {
             document.getElementById('warning-low-ratio').style.display = '';
             document.getElementById('warning-good-ratio').style.display = 'none';
-            document.getElementById('warning-impossible-ratio').style.display = 'none';
         } else {
             document.getElementById('warning-low-ratio').style.display = 'none';
             document.getElementById('warning-good-ratio').style.display = 'none';
-            document.getElementById('warning-impossible-ratio').style.display = '';
         }
     }
 
     document.getElementById("colToUse").oninput = function () {
-        h2.textContent = slider.value;
+        h2.textContent = slider.value + "%";
         if (selectedCollateral !== undefined) {
             if (this.value !== "") {
                 let result = ((1 / (stabXrdRatio * validatorMultiplier)) / (slider.value / 100)) * this.value;
@@ -5047,7 +8358,7 @@ if (window.location.pathname === '/borrow') {
     Address("${selectedCollateral}")
     Bucket("collateral");
     CALL_METHOD
-    Address("${componentAddress}")
+    Address("${proxyComponentAddress}")
     "open_cdp"
     Bucket("collateral")
     Decimal("${mintAmount}")
@@ -5085,38 +8396,205 @@ if (window.location.pathname === '/borrow') {
                 buttonText.style.display = 'inline-block';
                 buttonWaiting.style.display = 'none';
                 button.disabled = false;
-                button.style.backgroundColor = '';
-
-                // Handle the error
-                console.error(error);
+                button.style.backgroundColor = '';             
             });
     }
 }
 
-//RIP this big mess of webflow code
+function createChart(lbpLength, initialDataWithoutNow) {
+    // Example Data: [time, [XRD amount, ILIS amount]]
+    //const lbpLength = 7;
 
-(() => {
-    var be = (t, d) => () => (d || t((d = { exports: {} }).exports, d), d.exports); var Ge = be(() => { "use strict"; window.tram = function (t) { function d(e, i) { var s = new g.Bare; return s.init(e, i) } function p(e) { return e.replace(/[A-Z]/g, function (i) { return "-" + i.toLowerCase() }) } function S(e) { var i = parseInt(e.slice(1), 16), s = i >> 16 & 255, a = i >> 8 & 255, o = 255 & i; return [s, a, o] } function K(e, i, s) { return "#" + (1 << 24 | e << 16 | i << 8 | s).toString(16).slice(1) } function T() { } function W(e, i) { Z("Type warning: Expected: [" + e + "] Got: [" + typeof i + "] " + i) } function M(e, i, s) { Z("Units do not match [" + e + "]: " + i + ", " + s) } function I(e, i, s) { if (i !== void 0 && (s = i), e === void 0) return s; var a = s; return De.test(e) || !Se.test(e) ? a = parseInt(e, 10) : Se.test(e) && (a = 1e3 * parseFloat(e)), 0 > a && (a = 0), a === a ? a : s } function Z(e) { V.debug && window && window.console.warn(e) } function oe(e) { for (var i = -1, s = e ? e.length : 0, a = []; ++i < s;) { var o = e[i]; o && a.push(o) } return a } var G = function (e, i, s) { function a(H) { return typeof H == "object" } function o(H) { return typeof H == "function" } function u() { } function R(H, se) { function w() { var ge = new X; return o(ge.init) && ge.init.apply(ge, arguments), ge } function X() { } se === s && (se = H, H = Object), w.Bare = X; var j, de = u[e] = H[e], Le = X[e] = w[e] = new u; return Le.constructor = w, w.mixin = function (ge) { return X[e] = w[e] = R(w, ge)[e], w }, w.open = function (ge) { if (j = {}, o(ge) ? j = ge.call(w, Le, de, w, H) : a(ge) && (j = ge), a(j)) for (var He in j) i.call(j, He) && (Le[He] = j[He]); return o(Le.init) || (Le.init = H), w }, w.open(se) } return R }("prototype", {}.hasOwnProperty), J = { ease: ["ease", function (e, i, s, a) { var o = (e /= a) * e, u = o * e; return i + s * (-2.75 * u * o + 11 * o * o + -15.5 * u + 8 * o + .25 * e) }], "ease-in": ["ease-in", function (e, i, s, a) { var o = (e /= a) * e, u = o * e; return i + s * (-1 * u * o + 3 * o * o + -3 * u + 2 * o) }], "ease-out": ["ease-out", function (e, i, s, a) { var o = (e /= a) * e, u = o * e; return i + s * (.3 * u * o + -1.6 * o * o + 2.2 * u + -1.8 * o + 1.9 * e) }], "ease-in-out": ["ease-in-out", function (e, i, s, a) { var o = (e /= a) * e, u = o * e; return i + s * (2 * u * o + -5 * o * o + 2 * u + 2 * o) }], linear: ["linear", function (e, i, s, a) { return s * e / a + i }], "ease-in-quad": ["cubic-bezier(0.550, 0.085, 0.680, 0.530)", function (e, i, s, a) { return s * (e /= a) * e + i }], "ease-out-quad": ["cubic-bezier(0.250, 0.460, 0.450, 0.940)", function (e, i, s, a) { return -s * (e /= a) * (e - 2) + i }], "ease-in-out-quad": ["cubic-bezier(0.455, 0.030, 0.515, 0.955)", function (e, i, s, a) { return (e /= a / 2) < 1 ? s / 2 * e * e + i : -s / 2 * (--e * (e - 2) - 1) + i }], "ease-in-cubic": ["cubic-bezier(0.550, 0.055, 0.675, 0.190)", function (e, i, s, a) { return s * (e /= a) * e * e + i }], "ease-out-cubic": ["cubic-bezier(0.215, 0.610, 0.355, 1)", function (e, i, s, a) { return s * ((e = e / a - 1) * e * e + 1) + i }], "ease-in-out-cubic": ["cubic-bezier(0.645, 0.045, 0.355, 1)", function (e, i, s, a) { return (e /= a / 2) < 1 ? s / 2 * e * e * e + i : s / 2 * ((e -= 2) * e * e + 2) + i }], "ease-in-quart": ["cubic-bezier(0.895, 0.030, 0.685, 0.220)", function (e, i, s, a) { return s * (e /= a) * e * e * e + i }], "ease-out-quart": ["cubic-bezier(0.165, 0.840, 0.440, 1)", function (e, i, s, a) { return -s * ((e = e / a - 1) * e * e * e - 1) + i }], "ease-in-out-quart": ["cubic-bezier(0.770, 0, 0.175, 1)", function (e, i, s, a) { return (e /= a / 2) < 1 ? s / 2 * e * e * e * e + i : -s / 2 * ((e -= 2) * e * e * e - 2) + i }], "ease-in-quint": ["cubic-bezier(0.755, 0.050, 0.855, 0.060)", function (e, i, s, a) { return s * (e /= a) * e * e * e * e + i }], "ease-out-quint": ["cubic-bezier(0.230, 1, 0.320, 1)", function (e, i, s, a) { return s * ((e = e / a - 1) * e * e * e * e + 1) + i }], "ease-in-out-quint": ["cubic-bezier(0.860, 0, 0.070, 1)", function (e, i, s, a) { return (e /= a / 2) < 1 ? s / 2 * e * e * e * e * e + i : s / 2 * ((e -= 2) * e * e * e * e + 2) + i }], "ease-in-sine": ["cubic-bezier(0.470, 0, 0.745, 0.715)", function (e, i, s, a) { return -s * Math.cos(e / a * (Math.PI / 2)) + s + i }], "ease-out-sine": ["cubic-bezier(0.390, 0.575, 0.565, 1)", function (e, i, s, a) { return s * Math.sin(e / a * (Math.PI / 2)) + i }], "ease-in-out-sine": ["cubic-bezier(0.445, 0.050, 0.550, 0.950)", function (e, i, s, a) { return -s / 2 * (Math.cos(Math.PI * e / a) - 1) + i }], "ease-in-expo": ["cubic-bezier(0.950, 0.050, 0.795, 0.035)", function (e, i, s, a) { return e === 0 ? i : s * Math.pow(2, 10 * (e / a - 1)) + i }], "ease-out-expo": ["cubic-bezier(0.190, 1, 0.220, 1)", function (e, i, s, a) { return e === a ? i + s : s * (-Math.pow(2, -10 * e / a) + 1) + i }], "ease-in-out-expo": ["cubic-bezier(1, 0, 0, 1)", function (e, i, s, a) { return e === 0 ? i : e === a ? i + s : (e /= a / 2) < 1 ? s / 2 * Math.pow(2, 10 * (e - 1)) + i : s / 2 * (-Math.pow(2, -10 * --e) + 2) + i }], "ease-in-circ": ["cubic-bezier(0.600, 0.040, 0.980, 0.335)", function (e, i, s, a) { return -s * (Math.sqrt(1 - (e /= a) * e) - 1) + i }], "ease-out-circ": ["cubic-bezier(0.075, 0.820, 0.165, 1)", function (e, i, s, a) { return s * Math.sqrt(1 - (e = e / a - 1) * e) + i }], "ease-in-out-circ": ["cubic-bezier(0.785, 0.135, 0.150, 0.860)", function (e, i, s, a) { return (e /= a / 2) < 1 ? -s / 2 * (Math.sqrt(1 - e * e) - 1) + i : s / 2 * (Math.sqrt(1 - (e -= 2) * e) + 1) + i }], "ease-in-back": ["cubic-bezier(0.600, -0.280, 0.735, 0.045)", function (e, i, s, a, o) { return o === void 0 && (o = 1.70158), s * (e /= a) * e * ((o + 1) * e - o) + i }], "ease-out-back": ["cubic-bezier(0.175, 0.885, 0.320, 1.275)", function (e, i, s, a, o) { return o === void 0 && (o = 1.70158), s * ((e = e / a - 1) * e * ((o + 1) * e + o) + 1) + i }], "ease-in-out-back": ["cubic-bezier(0.680, -0.550, 0.265, 1.550)", function (e, i, s, a, o) { return o === void 0 && (o = 1.70158), (e /= a / 2) < 1 ? s / 2 * e * e * (((o *= 1.525) + 1) * e - o) + i : s / 2 * ((e -= 2) * e * (((o *= 1.525) + 1) * e + o) + 2) + i }] }, F = { "ease-in-back": "cubic-bezier(0.600, 0, 0.735, 0.045)", "ease-out-back": "cubic-bezier(0.175, 0.885, 0.320, 1)", "ease-in-out-back": "cubic-bezier(0.680, 0, 0.265, 1)" }, ee = document, te = window, Q = "bkwld-tram", U = /[\-\.0-9]/g, D = /[A-Z]/, E = "number", $ = /^(rgb|#)/, z = /(em|cm|mm|in|pt|pc|px)$/, Y = /(em|cm|mm|in|pt|pc|px|%)$/, ue = /(deg|rad|turn)$/, fe = "unitless", pe = /(all|none) 0s ease 0s/, Ee = /^(width|height)$/, he = " ", y = ee.createElement("a"), l = ["Webkit", "Moz", "O", "ms"], v = ["-webkit-", "-moz-", "-o-", "-ms-"], L = function (e) { if (e in y.style) return { dom: e, css: e }; var i, s, a = "", o = e.split("-"); for (i = 0; i < o.length; i++)a += o[i].charAt(0).toUpperCase() + o[i].slice(1); for (i = 0; i < l.length; i++)if (s = l[i] + a, s in y.style) return { dom: s, css: v[i] + e } }, _ = d.support = { bind: Function.prototype.bind, transform: L("transform"), transition: L("transition"), backface: L("backface-visibility"), timing: L("transition-timing-function") }; if (_.transition) { var q = _.timing.dom; if (y.style[q] = J["ease-in-back"][0], !y.style[q]) for (var N in F) J[N][0] = F[N] } var f = d.frame = function () { var e = te.requestAnimationFrame || te.webkitRequestAnimationFrame || te.mozRequestAnimationFrame || te.oRequestAnimationFrame || te.msRequestAnimationFrame; return e && _.bind ? e.bind(te) : function (i) { te.setTimeout(i, 16) } }(), O = d.now = function () { var e = te.performance, i = e && (e.now || e.webkitNow || e.msNow || e.mozNow); return i && _.bind ? i.bind(e) : Date.now || function () { return +new Date } }(), A = G(function (e) { function i(P, ne) { var ce = oe(("" + P).split(he)), re = ce[0]; ne = ne || {}; var we = k[re]; if (!we) return Z("Unsupported property: " + re); if (!ne.weak || !this.props[re]) { var ke = we[0], ye = this.props[re]; return ye || (ye = this.props[re] = new ke.Bare), ye.init(this.$el, ce, we, ne), ye } } function s(P, ne, ce) { if (P) { var re = typeof P; if (ne || (this.timer && this.timer.destroy(), this.queue = [], this.active = !1), re == "number" && ne) return this.timer = new B({ duration: P, context: this, complete: u }), void (this.active = !0); if (re == "string" && ne) { switch (P) { case "hide": w.call(this); break; case "stop": R.call(this); break; case "redraw": X.call(this); break; default: i.call(this, P, ce && ce[1]) }return u.call(this) } if (re == "function") return void P.call(this, this); if (re == "object") { var we = 0; Le.call(this, P, function (ve, Ut) { ve.span > we && (we = ve.span), ve.stop(), ve.animate(Ut) }, function (ve) { "wait" in ve && (we = I(ve.wait, 0)) }), de.call(this), we > 0 && (this.timer = new B({ duration: we, context: this }), this.active = !0, ne && (this.timer.complete = u)); var ke = this, ye = !1, ze = {}; f(function () { Le.call(ke, P, function (ve) { ve.active && (ye = !0, ze[ve.name] = ve.nextStyle) }), ye && ke.$el.css(ze) }) } } } function a(P) { P = I(P, 0), this.active ? this.queue.push({ options: P }) : (this.timer = new B({ duration: P, context: this, complete: u }), this.active = !0) } function o(P) { return this.active ? (this.queue.push({ options: P, args: arguments }), void (this.timer.complete = u)) : Z("No active transition timer. Use start() or wait() before then().") } function u() { if (this.timer && this.timer.destroy(), this.active = !1, this.queue.length) { var P = this.queue.shift(); s.call(this, P.options, !0, P.args) } } function R(P) { this.timer && this.timer.destroy(), this.queue = [], this.active = !1; var ne; typeof P == "string" ? (ne = {}, ne[P] = 1) : ne = typeof P == "object" && P != null ? P : this.props, Le.call(this, ne, ge), de.call(this) } function H(P) { R.call(this, P), Le.call(this, P, He, Ht) } function se(P) { typeof P != "string" && (P = "block"), this.el.style.display = P } function w() { R.call(this), this.el.style.display = "none" } function X() { this.el.offsetHeight } function j() { R.call(this), t.removeData(this.el, Q), this.$el = this.el = null } function de() { var P, ne, ce = []; this.upstream && ce.push(this.upstream); for (P in this.props) ne = this.props[P], ne.active && ce.push(ne.string); ce = ce.join(","), this.style !== ce && (this.style = ce, this.el.style[_.transition.dom] = ce) } function Le(P, ne, ce) { var re, we, ke, ye, ze = ne !== ge, ve = {}; for (re in P) ke = P[re], re in ae ? (ve.transform || (ve.transform = {}), ve.transform[re] = ke) : (D.test(re) && (re = p(re)), re in k ? ve[re] = ke : (ye || (ye = {}), ye[re] = ke)); for (re in ve) { if (ke = ve[re], we = this.props[re], !we) { if (!ze) continue; we = i.call(this, re) } ne.call(this, we, ke) } ce && ye && ce.call(this, ye) } function ge(P) { P.stop() } function He(P, ne) { P.set(ne) } function Ht(P) { this.$el.css(P) } function xe(P, ne) { e[P] = function () { return this.children ? zt.call(this, ne, arguments) : (this.el && ne.apply(this, arguments), this) } } function zt(P, ne) { var ce, re = this.children.length; for (ce = 0; re > ce; ce++)P.apply(this.children[ce], ne); return this } e.init = function (P) { if (this.$el = t(P), this.el = this.$el[0], this.props = {}, this.queue = [], this.style = "", this.active = !1, V.keepInherited && !V.fallback) { var ne = m(this.el, "transition"); ne && !pe.test(ne) && (this.upstream = ne) } _.backface && V.hideBackface && n(this.el, _.backface.css, "hidden") }, xe("add", i), xe("start", s), xe("wait", a), xe("then", o), xe("next", u), xe("stop", R), xe("set", H), xe("show", se), xe("hide", w), xe("redraw", X), xe("destroy", j) }), g = G(A, function (e) { function i(s, a) { var o = t.data(s, Q) || t.data(s, Q, new A.Bare); return o.el || o.init(s), a ? o.start(a) : o } e.init = function (s, a) { var o = t(s); if (!o.length) return this; if (o.length === 1) return i(o[0], a); var u = []; return o.each(function (R, H) { u.push(i(H, a)) }), this.children = u, this } }), h = G(function (e) { function i() { var u = this.get(); this.update("auto"); var R = this.get(); return this.update(u), R } function s(u, R, H) { return R !== void 0 && (H = R), u in J ? u : H } function a(u) { var R = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(u); return (R ? K(R[1], R[2], R[3]) : u).replace(/#(\w)(\w)(\w)$/, "#$1$1$2$2$3$3") } var o = { duration: 500, ease: "ease", delay: 0 }; e.init = function (u, R, H, se) { this.$el = u, this.el = u[0]; var w = R[0]; H[2] && (w = H[2]), C[w] && (w = C[w]), this.name = w, this.type = H[1], this.duration = I(R[1], this.duration, o.duration), this.ease = s(R[2], this.ease, o.ease), this.delay = I(R[3], this.delay, o.delay), this.span = this.duration + this.delay, this.active = !1, this.nextStyle = null, this.auto = Ee.test(this.name), this.unit = se.unit || this.unit || V.defaultUnit, this.angle = se.angle || this.angle || V.defaultAngle, V.fallback || se.fallback ? this.animate = this.fallback : (this.animate = this.transition, this.string = this.name + he + this.duration + "ms" + (this.ease != "ease" ? he + J[this.ease][0] : "") + (this.delay ? he + this.delay + "ms" : "")) }, e.set = function (u) { u = this.convert(u, this.type), this.update(u), this.redraw() }, e.transition = function (u) { this.active = !0, u = this.convert(u, this.type), this.auto && (this.el.style[this.name] == "auto" && (this.update(this.get()), this.redraw()), u == "auto" && (u = i.call(this))), this.nextStyle = u }, e.fallback = function (u) { var R = this.el.style[this.name] || this.convert(this.get(), this.type); u = this.convert(u, this.type), this.auto && (R == "auto" && (R = this.convert(this.get(), this.type)), u == "auto" && (u = i.call(this))), this.tween = new c({ from: R, to: u, duration: this.duration, delay: this.delay, ease: this.ease, update: this.update, context: this }) }, e.get = function () { return m(this.el, this.name) }, e.update = function (u) { n(this.el, this.name, u) }, e.stop = function () { (this.active || this.nextStyle) && (this.active = !1, this.nextStyle = null, n(this.el, this.name, this.get())); var u = this.tween; u && u.context && u.destroy() }, e.convert = function (u, R) { if (u == "auto" && this.auto) return u; var H, se = typeof u == "number", w = typeof u == "string"; switch (R) { case E: if (se) return u; if (w && u.replace(U, "") === "") return +u; H = "number(unitless)"; break; case $: if (w) { if (u === "" && this.original) return this.original; if (R.test(u)) return u.charAt(0) == "#" && u.length == 7 ? u : a(u) } H = "hex or rgb string"; break; case z: if (se) return u + this.unit; if (w && R.test(u)) return u; H = "number(px) or string(unit)"; break; case Y: if (se) return u + this.unit; if (w && R.test(u)) return u; H = "number(px) or string(unit or %)"; break; case ue: if (se) return u + this.angle; if (w && R.test(u)) return u; H = "number(deg) or string(angle)"; break; case fe: if (se || w && Y.test(u)) return u; H = "number(unitless) or string(unit or %)" }return W(H, u), u }, e.redraw = function () { this.el.offsetHeight } }), r = G(h, function (e, i) { e.init = function () { i.init.apply(this, arguments), this.original || (this.original = this.convert(this.get(), $)) } }), b = G(h, function (e, i) { e.init = function () { i.init.apply(this, arguments), this.animate = this.fallback }, e.get = function () { return this.$el[this.name]() }, e.update = function (s) { this.$el[this.name](s) } }), x = G(h, function (e, i) { function s(a, o) { var u, R, H, se, w; for (u in a) se = ae[u], H = se[0], R = se[1] || u, w = this.convert(a[u], H), o.call(this, R, w, H) } e.init = function () { i.init.apply(this, arguments), this.current || (this.current = {}, ae.perspective && V.perspective && (this.current.perspective = V.perspective, n(this.el, this.name, this.style(this.current)), this.redraw())) }, e.set = function (a) { s.call(this, a, function (o, u) { this.current[o] = u }), n(this.el, this.name, this.style(this.current)), this.redraw() }, e.transition = function (a) { var o = this.values(a); this.tween = new le({ current: this.current, values: o, duration: this.duration, delay: this.delay, ease: this.ease }); var u, R = {}; for (u in this.current) R[u] = u in o ? o[u] : this.current[u]; this.active = !0, this.nextStyle = this.style(R) }, e.fallback = function (a) { var o = this.values(a); this.tween = new le({ current: this.current, values: o, duration: this.duration, delay: this.delay, ease: this.ease, update: this.update, context: this }) }, e.update = function () { n(this.el, this.name, this.style(this.current)) }, e.style = function (a) { var o, u = ""; for (o in a) u += o + "(" + a[o] + ") "; return u }, e.values = function (a) { var o, u = {}; return s.call(this, a, function (R, H, se) { u[R] = H, this.current[R] === void 0 && (o = 0, ~R.indexOf("scale") && (o = 1), this.current[R] = this.convert(o, se)) }), u } }), c = G(function (e) { function i(w) { H.push(w) === 1 && f(s) } function s() { var w, X, j, de = H.length; if (de) for (f(s), X = O(), w = de; w--;)j = H[w], j && j.render(X) } function a(w) { var X, j = t.inArray(w, H); j >= 0 && (X = H.slice(j + 1), H.length = j, X.length && (H = H.concat(X))) } function o(w) { return Math.round(w * se) / se } function u(w, X, j) { return K(w[0] + j * (X[0] - w[0]), w[1] + j * (X[1] - w[1]), w[2] + j * (X[2] - w[2])) } var R = { ease: J.ease[1], from: 0, to: 1 }; e.init = function (w) { this.duration = w.duration || 0, this.delay = w.delay || 0; var X = w.ease || R.ease; J[X] && (X = J[X][1]), typeof X != "function" && (X = R.ease), this.ease = X, this.update = w.update || T, this.complete = w.complete || T, this.context = w.context || this, this.name = w.name; var j = w.from, de = w.to; j === void 0 && (j = R.from), de === void 0 && (de = R.to), this.unit = w.unit || "", typeof j == "number" && typeof de == "number" ? (this.begin = j, this.change = de - j) : this.format(de, j), this.value = this.begin + this.unit, this.start = O(), w.autoplay !== !1 && this.play() }, e.play = function () { this.active || (this.start || (this.start = O()), this.active = !0, i(this)) }, e.stop = function () { this.active && (this.active = !1, a(this)) }, e.render = function (w) { var X, j = w - this.start; if (this.delay) { if (j <= this.delay) return; j -= this.delay } if (j < this.duration) { var de = this.ease(j, 0, 1, this.duration); return X = this.startRGB ? u(this.startRGB, this.endRGB, de) : o(this.begin + de * this.change), this.value = X + this.unit, void this.update.call(this.context, this.value) } X = this.endHex || this.begin + this.change, this.value = X + this.unit, this.update.call(this.context, this.value), this.complete.call(this.context), this.destroy() }, e.format = function (w, X) { if (X += "", w += "", w.charAt(0) == "#") return this.startRGB = S(X), this.endRGB = S(w), this.endHex = w, this.begin = 0, void (this.change = 1); if (!this.unit) { var j = X.replace(U, ""), de = w.replace(U, ""); j !== de && M("tween", X, w), this.unit = j } X = parseFloat(X), w = parseFloat(w), this.begin = this.value = X, this.change = w - X }, e.destroy = function () { this.stop(), this.context = null, this.ease = this.update = this.complete = T }; var H = [], se = 1e3 }), B = G(c, function (e) { e.init = function (i) { this.duration = i.duration || 0, this.complete = i.complete || T, this.context = i.context, this.play() }, e.render = function (i) { var s = i - this.start; s < this.duration || (this.complete.call(this.context), this.destroy()) } }), le = G(c, function (e, i) { e.init = function (s) { this.context = s.context, this.update = s.update, this.tweens = [], this.current = s.current; var a, o; for (a in s.values) o = s.values[a], this.current[a] !== o && this.tweens.push(new c({ name: a, from: this.current[a], to: o, duration: s.duration, delay: s.delay, ease: s.ease, autoplay: !1 })); this.play() }, e.render = function (s) { var a, o, u = this.tweens.length, R = !1; for (a = u; a--;)o = this.tweens[a], o.context && (o.render(s), this.current[o.name] = o.value, R = !0); return R ? void (this.update && this.update.call(this.context)) : this.destroy() }, e.destroy = function () { if (i.destroy.call(this), this.tweens) { var s, a = this.tweens.length; for (s = a; s--;)this.tweens[s].destroy(); this.tweens = null, this.current = null } } }), V = d.config = { debug: !1, defaultUnit: "px", defaultAngle: "deg", keepInherited: !1, hideBackface: !1, perspective: "", fallback: !_.transition, agentTests: [] }; d.fallback = function (e) { if (!_.transition) return V.fallback = !0; V.agentTests.push("(" + e + ")"); var i = new RegExp(V.agentTests.join("|"), "i"); V.fallback = i.test(navigator.userAgent) }, d.fallback("6.0.[2-5] Safari"), d.tween = function (e) { return new c(e) }, d.delay = function (e, i, s) { return new B({ complete: i, duration: e, context: s }) }, t.fn.tram = function (e) { return d.call(null, this, e) }; var n = t.style, m = t.css, C = { transform: _.transform && _.transform.css }, k = { color: [r, $], background: [r, $, "background-color"], "outline-color": [r, $], "border-color": [r, $], "border-top-color": [r, $], "border-right-color": [r, $], "border-bottom-color": [r, $], "border-left-color": [r, $], "border-width": [h, z], "border-top-width": [h, z], "border-right-width": [h, z], "border-bottom-width": [h, z], "border-left-width": [h, z], "border-spacing": [h, z], "letter-spacing": [h, z], margin: [h, z], "margin-top": [h, z], "margin-right": [h, z], "margin-bottom": [h, z], "margin-left": [h, z], padding: [h, z], "padding-top": [h, z], "padding-right": [h, z], "padding-bottom": [h, z], "padding-left": [h, z], "outline-width": [h, z], opacity: [h, E], top: [h, Y], right: [h, Y], bottom: [h, Y], left: [h, Y], "font-size": [h, Y], "text-indent": [h, Y], "word-spacing": [h, Y], width: [h, Y], "min-width": [h, Y], "max-width": [h, Y], height: [h, Y], "min-height": [h, Y], "max-height": [h, Y], "line-height": [h, fe], "scroll-top": [b, E, "scrollTop"], "scroll-left": [b, E, "scrollLeft"] }, ae = {}; _.transform && (k.transform = [x], ae = { x: [Y, "translateX"], y: [Y, "translateY"], rotate: [ue], rotateX: [ue], rotateY: [ue], scale: [E], scaleX: [E], scaleY: [E], skew: [ue], skewX: [ue], skewY: [ue] }), _.transform && _.backface && (ae.z = [Y, "translateZ"], ae.rotateZ = [ue], ae.scaleZ = [E], ae.perspective = [z]); var De = /ms/, Se = /s|\./; return t.tram = d }(window.jQuery) }); var it = be((cn, rt) => {
-        "use strict"; var Bt = window.$, $t = Ge() && Bt.tram; rt.exports = function () {
-            var t = {}; t.VERSION = "1.6.0-Webflow"; var d = {}, p = Array.prototype, S = Object.prototype, K = Function.prototype, T = p.push, W = p.slice, M = p.concat, I = S.toString, Z = S.hasOwnProperty, oe = p.forEach, G = p.map, J = p.reduce, F = p.reduceRight, ee = p.filter, te = p.every, Q = p.some, U = p.indexOf, D = p.lastIndexOf, E = Array.isArray, $ = Object.keys, z = K.bind, Y = t.each = t.forEach = function (l, v, L) { if (l == null) return l; if (oe && l.forEach === oe) l.forEach(v, L); else if (l.length === +l.length) { for (var _ = 0, q = l.length; _ < q; _++)if (v.call(L, l[_], _, l) === d) return } else for (var N = t.keys(l), _ = 0, q = N.length; _ < q; _++)if (v.call(L, l[N[_]], N[_], l) === d) return; return l }; t.map = t.collect = function (l, v, L) { var _ = []; return l == null ? _ : G && l.map === G ? l.map(v, L) : (Y(l, function (q, N, f) { _.push(v.call(L, q, N, f)) }), _) }, t.find = t.detect = function (l, v, L) { var _; return ue(l, function (q, N, f) { if (v.call(L, q, N, f)) return _ = q, !0 }), _ }, t.filter = t.select = function (l, v, L) { var _ = []; return l == null ? _ : ee && l.filter === ee ? l.filter(v, L) : (Y(l, function (q, N, f) { v.call(L, q, N, f) && _.push(q) }), _) }; var ue = t.some = t.any = function (l, v, L) { v || (v = t.identity); var _ = !1; return l == null ? _ : Q && l.some === Q ? l.some(v, L) : (Y(l, function (q, N, f) { if (_ || (_ = v.call(L, q, N, f))) return d }), !!_) }; t.contains = t.include = function (l, v) { return l == null ? !1 : U && l.indexOf === U ? l.indexOf(v) != -1 : ue(l, function (L) { return L === v }) }, t.delay = function (l, v) { var L = W.call(arguments, 2); return setTimeout(function () { return l.apply(null, L) }, v) }, t.defer = function (l) { return t.delay.apply(t, [l, 1].concat(W.call(arguments, 1))) }, t.throttle = function (l) { var v, L, _; return function () { v || (v = !0, L = arguments, _ = this, $t.frame(function () { v = !1, l.apply(_, L) })) } }, t.debounce = function (l, v, L) { var _, q, N, f, O, A = function () { var g = t.now() - f; g < v ? _ = setTimeout(A, v - g) : (_ = null, L || (O = l.apply(N, q), N = q = null)) }; return function () { N = this, q = arguments, f = t.now(); var g = L && !_; return _ || (_ = setTimeout(A, v)), g && (O = l.apply(N, q), N = q = null), O } }, t.defaults = function (l) { if (!t.isObject(l)) return l; for (var v = 1, L = arguments.length; v < L; v++) { var _ = arguments[v]; for (var q in _) l[q] === void 0 && (l[q] = _[q]) } return l }, t.keys = function (l) { if (!t.isObject(l)) return []; if ($) return $(l); var v = []; for (var L in l) t.has(l, L) && v.push(L); return v }, t.has = function (l, v) { return Z.call(l, v) }, t.isObject = function (l) { return l === Object(l) }, t.now = Date.now || function () { return new Date().getTime() }, t.templateSettings = { evaluate: /<%([\s\S]+?)%>/g, interpolate: /<%=([\s\S]+?)%>/g, escape: /<%-([\s\S]+?)%>/g }; var fe = /(.)^/, pe = { "'": "'", "\\": "\\", "\r": "r", "\n": "n", "\u2028": "u2028", "\u2029": "u2029" }, Ee = /\\|'|\r|\n|\u2028|\u2029/g, he = function (l) { return "\\" + pe[l] }, y = /^\s*(\w|\$)+\s*$/; return t.template = function (l, v, L) {
-                !v && L && (v = L), v = t.defaults({}, v, t.templateSettings); var _ = RegExp([(v.escape || fe).source, (v.interpolate || fe).source, (v.evaluate || fe).source].join("|") + "|$", "g"), q = 0, N = "__p+='"; l.replace(_, function (g, h, r, b, x) {
-                    return N += l.slice(q, x).replace(Ee, he), q = x + g.length, h ? N += `'+
-((__t=(`+ h + `))==null?'':_.escape(__t))+
-'`: r ? N += `'+
-((__t=(`+ r + `))==null?'':__t)+
-'`: b && (N += `';
-`+ b + `
-__p+='`), g
-                }), N += `';
-`; var f = v.variable; if (f) { if (!y.test(f)) throw new Error("variable is not a bare identifier: " + f) } else N = `with(obj||{}){
-`+ N + `}
-`, f = "obj"; N = `var __t,__p='',__j=Array.prototype.join,print=function(){__p+=__j.call(arguments,'');};
-`+ N + `return __p;
-`; var O; try { O = new Function(v.variable || "obj", "_", N) } catch (g) { throw g.source = N, g } var A = function (g) { return O.call(this, g, t) }; return A.source = "function(" + f + `){
-`+ N + "}", A
-            }, t
-        }()
-    }); var Ce = be((ln, dt) => { "use strict"; var ie = {}, Ne = {}, We = [], Ze = window.Webflow || [], Ie = window.jQuery, Oe = Ie(window), Kt = Ie(document), Te = Ie.isFunction, _e = ie._ = it(), st = ie.tram = Ge() && Ie.tram, Be = !1, Qe = !1; st.config.hideBackface = !1; st.config.keepInherited = !0; ie.define = function (t, d, p) { Ne[t] && ut(Ne[t]); var S = Ne[t] = d(Ie, _e, p) || {}; return at(S), S }; ie.require = function (t) { return Ne[t] }; function at(t) { ie.env() && (Te(t.design) && Oe.on("__wf_design", t.design), Te(t.preview) && Oe.on("__wf_preview", t.preview)), Te(t.destroy) && Oe.on("__wf_destroy", t.destroy), t.ready && Te(t.ready) && Xt(t) } function Xt(t) { if (Be) { t.ready(); return } _e.contains(We, t.ready) || We.push(t.ready) } function ut(t) { Te(t.design) && Oe.off("__wf_design", t.design), Te(t.preview) && Oe.off("__wf_preview", t.preview), Te(t.destroy) && Oe.off("__wf_destroy", t.destroy), t.ready && Te(t.ready) && Vt(t) } function Vt(t) { We = _e.filter(We, function (d) { return d !== t.ready }) } ie.push = function (t) { if (Be) { Te(t) && t(); return } Ze.push(t) }; ie.env = function (t) { var d = window.__wf_design, p = typeof d < "u"; if (!t) return p; if (t === "design") return p && d; if (t === "preview") return p && !d; if (t === "slug") return p && window.__wf_slug; if (t === "editor") return window.WebflowEditor; if (t === "test") return window.__wf_test; if (t === "frame") return window !== window.top }; var Ue = navigator.userAgent.toLowerCase(), ct = ie.env.touch = "ontouchstart" in window || window.DocumentTouch && document instanceof window.DocumentTouch, Gt = ie.env.chrome = /chrome/.test(Ue) && /Google/.test(navigator.vendor) && parseInt(Ue.match(/chrome\/(\d+)\./)[1], 10), Yt = ie.env.ios = /(ipod|iphone|ipad)/.test(Ue); ie.env.safari = /safari/.test(Ue) && !Gt && !Yt; var Ye; ct && Kt.on("touchstart mousedown", function (t) { Ye = t.target }); ie.validClick = ct ? function (t) { return t === Ye || Ie.contains(t, Ye) } : function () { return !0 }; var lt = "resize.webflow orientationchange.webflow load.webflow", Zt = "scroll.webflow " + lt; ie.resize = je(Oe, lt); ie.scroll = je(Oe, Zt); ie.redraw = je(); function je(t, d) { var p = [], S = {}; return S.up = _e.throttle(function (K) { _e.each(p, function (T) { T(K) }) }), t && d && t.on(d, S.up), S.on = function (K) { typeof K == "function" && (_e.contains(p, K) || p.push(K)) }, S.off = function (K) { if (!arguments.length) { p = []; return } p = _e.filter(p, function (T) { return T !== K }) }, S } ie.location = function (t) { window.location = t }; ie.env() && (ie.location = function () { }); ie.ready = function () { Be = !0, Qe ? Qt() : _e.each(We, ot), _e.each(Ze, ot), ie.resize.up() }; function ot(t) { Te(t) && t() } function Qt() { Qe = !1, _e.each(Ne, at) } var Fe; ie.load = function (t) { Fe.then(t) }; function ft() { Fe && (Fe.reject(), Oe.off("load", Fe.resolve)), Fe = new Ie.Deferred, Oe.on("load", Fe.resolve) } ie.destroy = function (t) { t = t || {}, Qe = !0, Oe.triggerHandler("__wf_destroy"), t.domready != null && (Be = t.domready), _e.each(Ne, ut), ie.resize.off(), ie.scroll.off(), ie.redraw.off(), We = [], Ze = [], Fe.state() === "pending" && ft() }; Ie(ie.ready); ft(); dt.exports = window.Webflow = ie }); var pt = be((fn, ht) => { "use strict"; var vt = Ce(); vt.define("brand", ht.exports = function (t) { var d = {}, p = document, S = t("html"), K = t("body"), T = ".w-webflow-badge", W = window.location, M = /PhantomJS/i.test(navigator.userAgent), I = "fullscreenchange webkitfullscreenchange mozfullscreenchange msfullscreenchange", Z; d.ready = function () { var F = S.attr("data-wf-status"), ee = S.attr("data-wf-domain") || ""; /\.webflow\.io$/i.test(ee) && W.hostname !== ee && (F = !0), F && !M && (Z = Z || G(), J(), setTimeout(J, 500), t(p).off(I, oe).on(I, oe)) }; function oe() { var F = p.fullScreen || p.mozFullScreen || p.webkitIsFullScreen || p.msFullscreenElement || !!p.webkitFullscreenElement; t(Z).attr("style", F ? "display: none !important;" : "") } function G() { var F = t('<a class="w-webflow-badge"></a>').attr("href", "https://webflow.com?utm_campaign=brandjs"), ee = t("<img>").attr("src", "https://d3e54v103j8qbb.cloudfront.net/img/webflow-badge-icon-d2.89e12c322e.svg").attr("alt", "").css({ marginRight: "4px", width: "26px" }), te = t("<img>").attr("src", "https://d3e54v103j8qbb.cloudfront.net/img/webflow-badge-text-d2.c82cec3b78.svg").attr("alt", "Made in Webflow"); return F.append(ee, te), F[0] } function J() { var F = K.children(T), ee = F.length && F.get(0) === Z, te = vt.env("editor"); if (ee) { te && F.remove(); return } F.length && F.remove(), te || K.append(Z) } return d }) }); var gt = be((dn, mt) => { "use strict"; var jt = Ce(); jt.define("focus-visible", mt.exports = function () { function t(p) { var S = !0, K = !1, T = null, W = { text: !0, search: !0, url: !0, tel: !0, email: !0, password: !0, number: !0, date: !0, month: !0, week: !0, time: !0, datetime: !0, "datetime-local": !0 }; function M(E) { return !!(E && E !== document && E.nodeName !== "HTML" && E.nodeName !== "BODY" && "classList" in E && "contains" in E.classList) } function I(E) { var $ = E.type, z = E.tagName; return !!(z === "INPUT" && W[$] && !E.readOnly || z === "TEXTAREA" && !E.readOnly || E.isContentEditable) } function Z(E) { E.getAttribute("data-wf-focus-visible") || E.setAttribute("data-wf-focus-visible", "true") } function oe(E) { E.getAttribute("data-wf-focus-visible") && E.removeAttribute("data-wf-focus-visible") } function G(E) { E.metaKey || E.altKey || E.ctrlKey || (M(p.activeElement) && Z(p.activeElement), S = !0) } function J() { S = !1 } function F(E) { M(E.target) && (S || I(E.target)) && Z(E.target) } function ee(E) { M(E.target) && E.target.hasAttribute("data-wf-focus-visible") && (K = !0, window.clearTimeout(T), T = window.setTimeout(function () { K = !1 }, 100), oe(E.target)) } function te() { document.visibilityState === "hidden" && (K && (S = !0), Q()) } function Q() { document.addEventListener("mousemove", D), document.addEventListener("mousedown", D), document.addEventListener("mouseup", D), document.addEventListener("pointermove", D), document.addEventListener("pointerdown", D), document.addEventListener("pointerup", D), document.addEventListener("touchmove", D), document.addEventListener("touchstart", D), document.addEventListener("touchend", D) } function U() { document.removeEventListener("mousemove", D), document.removeEventListener("mousedown", D), document.removeEventListener("mouseup", D), document.removeEventListener("pointermove", D), document.removeEventListener("pointerdown", D), document.removeEventListener("pointerup", D), document.removeEventListener("touchmove", D), document.removeEventListener("touchstart", D), document.removeEventListener("touchend", D) } function D(E) { E.target.nodeName && E.target.nodeName.toLowerCase() === "html" || (S = !1, U()) } document.addEventListener("keydown", G, !0), document.addEventListener("mousedown", J, !0), document.addEventListener("pointerdown", J, !0), document.addEventListener("touchstart", J, !0), document.addEventListener("visibilitychange", te, !0), Q(), p.addEventListener("focus", F, !0), p.addEventListener("blur", ee, !0) } function d() { if (typeof document < "u") try { document.querySelector(":focus-visible") } catch { t(document) } } return { ready: d } }) }); var yt = be((vn, bt) => { "use strict"; var wt = Ce(); wt.define("focus", bt.exports = function () { var t = [], d = !1; function p(W) { d && (W.preventDefault(), W.stopPropagation(), W.stopImmediatePropagation(), t.unshift(W)) } function S(W) { var M = W.target, I = M.tagName; return /^a$/i.test(I) && M.href != null || /^(button|textarea)$/i.test(I) && M.disabled !== !0 || /^input$/i.test(I) && /^(button|reset|submit|radio|checkbox)$/i.test(M.type) && !M.disabled || !/^(button|input|textarea|select|a)$/i.test(I) && !Number.isNaN(Number.parseFloat(M.tabIndex)) || /^audio$/i.test(I) || /^video$/i.test(I) && M.controls === !0 } function K(W) { S(W) && (d = !0, setTimeout(() => { for (d = !1, W.target.focus(); t.length > 0;) { var M = t.pop(); M.target.dispatchEvent(new MouseEvent(M.type, M)) } }, 0)) } function T() { typeof document < "u" && document.body.hasAttribute("data-wf-focus-within") && wt.env.safari && (document.addEventListener("mousedown", K, !0), document.addEventListener("mouseup", p, !0), document.addEventListener("click", p, !0)) } return { ready: T } }) }); var xt = be((hn, Et) => { "use strict"; var qe = Ce(); qe.define("links", Et.exports = function (t, d) { var p = {}, S = t(window), K, T = qe.env(), W = window.location, M = document.createElement("a"), I = "w--current", Z = /index\.(html|php)$/, oe = /\/$/, G, J; p.ready = p.design = p.preview = F; function F() { K = T && qe.env("design"), J = qe.env("slug") || W.pathname || "", qe.scroll.off(te), G = []; for (var U = document.links, D = 0; D < U.length; ++D)ee(U[D]); G.length && (qe.scroll.on(te), te()) } function ee(U) { if (!U.getAttribute("hreflang")) { var D = K && U.getAttribute("href-disabled") || U.getAttribute("href"); if (M.href = D, !(D.indexOf(":") >= 0)) { var E = t(U); if (M.hash.length > 1 && M.host + M.pathname === W.host + W.pathname) { if (!/^#[a-zA-Z0-9\-\_]+$/.test(M.hash)) return; var $ = t(M.hash); $.length && G.push({ link: E, sec: $, active: !1 }); return } if (!(D === "#" || D === "")) { var z = M.href === W.href || D === J || Z.test(D) && oe.test(J); Q(E, I, z) } } } } function te() { var U = S.scrollTop(), D = S.height(); d.each(G, function (E) { if (!E.link.attr("hreflang")) { var $ = E.link, z = E.sec, Y = z.offset().top, ue = z.outerHeight(), fe = D * .5, pe = z.is(":visible") && Y + ue - fe >= U && Y + fe <= U + D; E.active !== pe && (E.active = pe, Q($, I, pe)) } }) } function Q(U, D, E) { var $ = U.hasClass(D); E && $ || !E && !$ || (E ? U.addClass(D) : U.removeClass(D)) } return p }) }); var _t = be((pn, kt) => { "use strict"; var $e = Ce(); $e.define("scroll", kt.exports = function (t) { var d = { WF_CLICK_EMPTY: "click.wf-empty-link", WF_CLICK_SCROLL: "click.wf-scroll" }, p = window.location, S = ee() ? null : window.history, K = t(window), T = t(document), W = t(document.body), M = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || function (y) { window.setTimeout(y, 15) }, I = $e.env("editor") ? ".w-editor-body" : "body", Z = "header, " + I + " > .header, " + I + " > .w-nav:not([data-no-scroll])", oe = 'a[href="#"]', G = 'a[href*="#"]:not(.w-tab-link):not(' + oe + ")", J = '.wf-force-outline-none[tabindex="-1"]:focus{outline:none;}', F = document.createElement("style"); F.appendChild(document.createTextNode(J)); function ee() { try { return !!window.frameElement } catch { return !0 } } var te = /^#[a-zA-Z0-9][\w:.-]*$/; function Q(y) { return te.test(y.hash) && y.host + y.pathname === p.host + p.pathname } let U = typeof window.matchMedia == "function" && window.matchMedia("(prefers-reduced-motion: reduce)"); function D() { return document.body.getAttribute("data-wf-scroll-motion") === "none" || U.matches } function E(y, l) { var v; switch (l) { case "add": v = y.attr("tabindex"), v ? y.attr("data-wf-tabindex-swap", v) : y.attr("tabindex", "-1"); break; case "remove": v = y.attr("data-wf-tabindex-swap"), v ? (y.attr("tabindex", v), y.removeAttr("data-wf-tabindex-swap")) : y.removeAttr("tabindex"); break }y.toggleClass("wf-force-outline-none", l === "add") } function $(y) { var l = y.currentTarget; if (!($e.env("design") || window.$.mobile && /(?:^|\s)ui-link(?:$|\s)/.test(l.className))) { var v = Q(l) ? l.hash : ""; if (v !== "") { var L = t(v); L.length && (y && (y.preventDefault(), y.stopPropagation()), z(v, y), window.setTimeout(function () { Y(L, function () { E(L, "add"), L.get(0).focus({ preventScroll: !0 }), E(L, "remove") }) }, y ? 0 : 300)) } } } function z(y) { if (p.hash !== y && S && S.pushState && !($e.env.chrome && p.protocol === "file:")) { var l = S.state && S.state.hash; l !== y && S.pushState({ hash: y }, "", y) } } function Y(y, l) { var v = K.scrollTop(), L = ue(y); if (v !== L) { var _ = fe(y, v, L), q = Date.now(), N = function () { var f = Date.now() - q; window.scroll(0, pe(v, L, f, _)), f <= _ ? M(N) : typeof l == "function" && l() }; M(N) } } function ue(y) { var l = t(Z), v = l.css("position") === "fixed" ? l.outerHeight() : 0, L = y.offset().top - v; if (y.data("scroll") === "mid") { var _ = K.height() - v, q = y.outerHeight(); q < _ && (L -= Math.round((_ - q) / 2)) } return L } function fe(y, l, v) { if (D()) return 0; var L = 1; return W.add(y).each(function (_, q) { var N = parseFloat(q.getAttribute("data-scroll-time")); !isNaN(N) && N >= 0 && (L = N) }), (472.143 * Math.log(Math.abs(l - v) + 125) - 2e3) * L } function pe(y, l, v, L) { return v > L ? l : y + (l - y) * Ee(v / L) } function Ee(y) { return y < .5 ? 4 * y * y * y : (y - 1) * (2 * y - 2) * (2 * y - 2) + 1 } function he() { var { WF_CLICK_EMPTY: y, WF_CLICK_SCROLL: l } = d; T.on(l, G, $), T.on(y, oe, function (v) { v.preventDefault() }), document.head.insertBefore(F, document.head.firstChild) } return { ready: he } }) }); var At = be((mn, Ot) => { "use strict"; var Jt = Ce(); Jt.define("touch", Ot.exports = function (t) { var d = {}, p = window.getSelection; t.event.special.tap = { bindType: "click", delegateType: "click" }, d.init = function (T) { return T = typeof T == "string" ? t(T).get(0) : T, T ? new S(T) : null }; function S(T) { var W = !1, M = !1, I = Math.min(Math.round(window.innerWidth * .04), 40), Z, oe; T.addEventListener("touchstart", G, !1), T.addEventListener("touchmove", J, !1), T.addEventListener("touchend", F, !1), T.addEventListener("touchcancel", ee, !1), T.addEventListener("mousedown", G, !1), T.addEventListener("mousemove", J, !1), T.addEventListener("mouseup", F, !1), T.addEventListener("mouseout", ee, !1); function G(Q) { var U = Q.touches; U && U.length > 1 || (W = !0, U ? (M = !0, Z = U[0].clientX) : Z = Q.clientX, oe = Z) } function J(Q) { if (W) { if (M && Q.type === "mousemove") { Q.preventDefault(), Q.stopPropagation(); return } var U = Q.touches, D = U ? U[0].clientX : Q.clientX, E = D - oe; oe = D, Math.abs(E) > I && p && String(p()) === "" && (K("swipe", Q, { direction: E > 0 ? "right" : "left" }), ee()) } } function F(Q) { if (W && (W = !1, M && Q.type === "mouseup")) { Q.preventDefault(), Q.stopPropagation(), M = !1; return } } function ee() { W = !1 } function te() { T.removeEventListener("touchstart", G, !1), T.removeEventListener("touchmove", J, !1), T.removeEventListener("touchend", F, !1), T.removeEventListener("touchcancel", ee, !1), T.removeEventListener("mousedown", G, !1), T.removeEventListener("mousemove", J, !1), T.removeEventListener("mouseup", F, !1), T.removeEventListener("mouseout", ee, !1), T = null } this.destroy = te } function K(T, W, M) { var I = t.Event(T, { originalEvent: W }); t(W.target).trigger(I, M) } return d.instance = d.init(document), d }) }); var Ct = be((gn, Tt) => { "use strict"; var Je = window.jQuery, Re = {}, Ke = [], Lt = ".w-ix", Xe = { reset: function (t, d) { d.__wf_intro = null }, intro: function (t, d) { d.__wf_intro || (d.__wf_intro = !0, Je(d).triggerHandler(Re.types.INTRO)) }, outro: function (t, d) { d.__wf_intro && (d.__wf_intro = null, Je(d).triggerHandler(Re.types.OUTRO)) } }; Re.triggers = {}; Re.types = { INTRO: "w-ix-intro" + Lt, OUTRO: "w-ix-outro" + Lt }; Re.init = function () { for (var t = Ke.length, d = 0; d < t; d++) { var p = Ke[d]; p[0](0, p[1]) } Ke = [], Je.extend(Re.triggers, Xe) }; Re.async = function () { for (var t in Xe) { var d = Xe[t]; Xe.hasOwnProperty(t) && (Re.triggers[t] = function (p, S) { Ke.push([d, S]) }) } }; Re.async(); Tt.exports = Re }); var tt = be((wn, It) => { "use strict"; var et = Ct(); function Rt(t, d) { var p = document.createEvent("CustomEvent"); p.initCustomEvent(d, !0, !0, null), t.dispatchEvent(p) } var en = window.jQuery, Ve = {}, St = ".w-ix", tn = { reset: function (t, d) { et.triggers.reset(t, d) }, intro: function (t, d) { et.triggers.intro(t, d), Rt(d, "COMPONENT_ACTIVE") }, outro: function (t, d) { et.triggers.outro(t, d), Rt(d, "COMPONENT_INACTIVE") } }; Ve.triggers = {}; Ve.types = { INTRO: "w-ix-intro" + St, OUTRO: "w-ix-outro" + St }; en.extend(Ve.triggers, tn); It.exports = Ve }); var Ft = be((bn, Dt) => { "use strict"; var Pe = Ce(), nn = tt(), Ae = { ARROW_LEFT: 37, ARROW_UP: 38, ARROW_RIGHT: 39, ARROW_DOWN: 40, ESCAPE: 27, SPACE: 32, ENTER: 13, HOME: 36, END: 35 }, Mt = !0, rn = /^#[a-zA-Z0-9\-_]+$/; Pe.define("dropdown", Dt.exports = function (t, d) { var p = d.debounce, S = {}, K = Pe.env(), T = !1, W, M = Pe.env.touch, I = ".w-dropdown", Z = "w--open", oe = nn.triggers, G = 900, J = "focusout" + I, F = "keydown" + I, ee = "mouseenter" + I, te = "mousemove" + I, Q = "mouseleave" + I, U = (M ? "click" : "mouseup") + I, D = "w-close" + I, E = "setting" + I, $ = t(document), z; S.ready = Y, S.design = function () { T && l(), T = !1, Y() }, S.preview = function () { T = !0, Y() }; function Y() { W = K && Pe.env("design"), z = $.find(I), z.each(ue) } function ue(r, b) { var x = t(b), c = t.data(b, I); c || (c = t.data(b, I, { open: !1, el: x, config: {}, selectedIdx: -1 })), c.toggle = c.el.children(".w-dropdown-toggle"), c.list = c.el.children(".w-dropdown-list"), c.links = c.list.find("a:not(.w-dropdown .w-dropdown a)"), c.complete = _(c), c.mouseLeave = N(c), c.mouseUpOutside = L(c), c.mouseMoveOutside = f(c), fe(c); var B = c.toggle.attr("id"), le = c.list.attr("id"); B || (B = "w-dropdown-toggle-" + r), le || (le = "w-dropdown-list-" + r), c.toggle.attr("id", B), c.toggle.attr("aria-controls", le), c.toggle.attr("aria-haspopup", "menu"), c.toggle.attr("aria-expanded", "false"), c.toggle.find(".w-icon-dropdown-toggle").attr("aria-hidden", "true"), c.toggle.prop("tagName") !== "BUTTON" && (c.toggle.attr("role", "button"), c.toggle.attr("tabindex") || c.toggle.attr("tabindex", "0")), c.list.attr("id", le), c.list.attr("aria-labelledby", B), c.links.each(function (n, m) { m.hasAttribute("tabindex") || m.setAttribute("tabindex", "0"), rn.test(m.hash) && m.addEventListener("click", y.bind(null, c)) }), c.el.off(I), c.toggle.off(I), c.nav && c.nav.off(I); var V = Ee(c, Mt); W && c.el.on(E, pe(c)), W || (K && (c.hovering = !1, y(c)), c.config.hover && c.toggle.on(ee, q(c)), c.el.on(D, V), c.el.on(F, O(c)), c.el.on(J, h(c)), c.toggle.on(U, V), c.toggle.on(F, g(c)), c.nav = c.el.closest(".w-nav"), c.nav.on(D, V)) } function fe(r) { var b = Number(r.el.css("z-index")); r.manageZ = b === G || b === G + 1, r.config = { hover: r.el.attr("data-hover") === "true" && !M, delay: r.el.attr("data-delay") } } function pe(r) { return function (b, x) { x = x || {}, fe(r), x.open === !0 && he(r, !0), x.open === !1 && y(r, { immediate: !0 }) } } function Ee(r, b) { return p(function (x) { if (r.open || x && x.type === "w-close") return y(r, { forceClose: b }); he(r) }) } function he(r) { if (!r.open) { v(r), r.open = !0, r.list.addClass(Z), r.toggle.addClass(Z), r.toggle.attr("aria-expanded", "true"), oe.intro(0, r.el[0]), Pe.redraw.up(), r.manageZ && r.el.css("z-index", G + 1); var b = Pe.env("editor"); W || $.on(U, r.mouseUpOutside), r.hovering && !b && r.el.on(Q, r.mouseLeave), r.hovering && b && $.on(te, r.mouseMoveOutside), window.clearTimeout(r.delayId) } } function y(r, { immediate: b, forceClose: x } = {}) { if (r.open && !(r.config.hover && r.hovering && !x)) { r.toggle.attr("aria-expanded", "false"), r.open = !1; var c = r.config; if (oe.outro(0, r.el[0]), $.off(U, r.mouseUpOutside), $.off(te, r.mouseMoveOutside), r.el.off(Q, r.mouseLeave), window.clearTimeout(r.delayId), !c.delay || b) return r.complete(); r.delayId = window.setTimeout(r.complete, c.delay) } } function l() { $.find(I).each(function (r, b) { t(b).triggerHandler(D) }) } function v(r) { var b = r.el[0]; z.each(function (x, c) { var B = t(c); B.is(b) || B.has(b).length || B.triggerHandler(D) }) } function L(r) { return r.mouseUpOutside && $.off(U, r.mouseUpOutside), p(function (b) { if (r.open) { var x = t(b.target); if (!x.closest(".w-dropdown-toggle").length) { var c = t.inArray(r.el[0], x.parents(I)) === -1, B = Pe.env("editor"); if (c) { if (B) { var le = x.parents().length === 1 && x.parents("svg").length === 1, V = x.parents(".w-editor-bem-EditorHoverControls").length; if (le || V) return } y(r) } } } }) } function _(r) { return function () { r.list.removeClass(Z), r.toggle.removeClass(Z), r.manageZ && r.el.css("z-index", "") } } function q(r) { return function () { r.hovering = !0, he(r) } } function N(r) { return function () { r.hovering = !1, r.links.is(":focus") || y(r) } } function f(r) { return p(function (b) { if (r.open) { var x = t(b.target), c = t.inArray(r.el[0], x.parents(I)) === -1; if (c) { var B = x.parents(".w-editor-bem-EditorHoverControls").length, le = x.parents(".w-editor-bem-RTToolbar").length, V = t(".w-editor-bem-EditorOverlay"), n = V.find(".w-editor-edit-outline").length || V.find(".w-editor-bem-RTToolbar").length; if (B || le || n) return; r.hovering = !1, y(r) } } }) } function O(r) { return function (b) { if (!(W || !r.open)) switch (r.selectedIdx = r.links.index(document.activeElement), b.keyCode) { case Ae.HOME: return r.open ? (r.selectedIdx = 0, A(r), b.preventDefault()) : void 0; case Ae.END: return r.open ? (r.selectedIdx = r.links.length - 1, A(r), b.preventDefault()) : void 0; case Ae.ESCAPE: return y(r), r.toggle.focus(), b.stopPropagation(); case Ae.ARROW_RIGHT: case Ae.ARROW_DOWN: return r.selectedIdx = Math.min(r.links.length - 1, r.selectedIdx + 1), A(r), b.preventDefault(); case Ae.ARROW_LEFT: case Ae.ARROW_UP: return r.selectedIdx = Math.max(-1, r.selectedIdx - 1), A(r), b.preventDefault() } } } function A(r) { r.links[r.selectedIdx] && r.links[r.selectedIdx].focus() } function g(r) { var b = Ee(r, Mt); return function (x) { if (!W) { if (!r.open) switch (x.keyCode) { case Ae.ARROW_UP: case Ae.ARROW_DOWN: return x.stopPropagation() }switch (x.keyCode) { case Ae.SPACE: case Ae.ENTER: return b(), x.stopPropagation(), x.preventDefault() } } } } function h(r) { return p(function (b) { var { relatedTarget: x, target: c } = b, B = r.el[0], le = B.contains(x) || B.contains(c); return le || y(r), b.stopPropagation() }) } return S }) }); var Nt = be((yn, Pt) => { "use strict"; var nt = Ce(); nt.define("forms", Pt.exports = function (t, d) { var p = {}, S = t(document), K, T = window.location, W = window.XDomainRequest && !window.atob, M = ".w-form", I, Z = /e(-)?mail/i, oe = /^\S+@\S+$/, G = window.alert, J = nt.env(), F, ee, te, Q = /list-manage[1-9]?.com/i, U = d.debounce(function () { G("Oops! This page has improperly configured forms. Please contact your website administrator to fix this issue.") }, 100); p.ready = p.design = p.preview = function () { D(), !J && !F && $() }; function D() { I = t("html").attr("data-wf-site"), ee = "https://webflow.com/api/v1/form/" + I, W && ee.indexOf("https://webflow.com") >= 0 && (ee = ee.replace("https://webflow.com", "https://formdata.webflow.com")), te = `${ee}/signFile`, K = t(M + " form"), K.length && K.each(E) } function E(f, O) { var A = t(O), g = t.data(O, M); g || (g = t.data(O, M, { form: A })), z(g); var h = A.closest("div.w-form"); g.done = h.find("> .w-form-done"), g.fail = h.find("> .w-form-fail"), g.fileUploads = h.find(".w-file-upload"), g.fileUploads.each(function (x) { _(x, g) }); var r = g.form.attr("aria-label") || g.form.attr("data-name") || "Form"; g.done.attr("aria-label") || g.form.attr("aria-label", r), g.done.attr("tabindex", "-1"), g.done.attr("role", "region"), g.done.attr("aria-label") || g.done.attr("aria-label", r + " success"), g.fail.attr("tabindex", "-1"), g.fail.attr("role", "region"), g.fail.attr("aria-label") || g.fail.attr("aria-label", r + " failure"); var b = g.action = A.attr("action"); if (g.handler = null, g.redirect = A.attr("data-redirect"), Q.test(b)) { g.handler = l; return } if (!b) { if (I) { g.handler = y; return } U() } } function $() { F = !0, S.on("submit", M + " form", function (x) { var c = t.data(this, M); c.handler && (c.evt = x, c.handler(c)) }); let f = ".w-checkbox-input", O = ".w-radio-input", A = "w--redirected-checked", g = "w--redirected-focus", h = "w--redirected-focus-visible", r = ":focus-visible, [data-wf-focus-visible]", b = [["checkbox", f], ["radio", O]]; S.on("change", M + ' form input[type="checkbox"]:not(' + f + ")", x => { t(x.target).siblings(f).toggleClass(A) }), S.on("change", M + ' form input[type="radio"]', x => { t(`input[name="${x.target.name}"]:not(${f})`).map((B, le) => t(le).siblings(O).removeClass(A)); let c = t(x.target); c.hasClass("w-radio-input") || c.siblings(O).addClass(A) }), b.forEach(([x, c]) => { S.on("focus", M + ` form input[type="${x}"]:not(` + c + ")", B => { t(B.target).siblings(c).addClass(g), t(B.target).filter(r).siblings(c).addClass(h) }), S.on("blur", M + ` form input[type="${x}"]:not(` + c + ")", B => { t(B.target).siblings(c).removeClass(`${g} ${h}`) }) }) } function z(f) { var O = f.btn = f.form.find(':input[type="submit"]'); f.wait = f.btn.attr("data-wait") || null, f.success = !1, O.prop("disabled", !1), f.label && O.val(f.label) } function Y(f) { var O = f.btn, A = f.wait; O.prop("disabled", !0), A && (f.label = O.val(), O.val(A)) } function ue(f, O) { var A = null; return O = O || {}, f.find(':input:not([type="submit"]):not([type="file"])').each(function (g, h) { var r = t(h), b = r.attr("type"), x = r.attr("data-name") || r.attr("name") || "Field " + (g + 1); x = encodeURIComponent(x); var c = r.val(); if (b === "checkbox") c = r.is(":checked"); else if (b === "radio") { if (O[x] === null || typeof O[x] == "string") return; c = f.find('input[name="' + r.attr("name") + '"]:checked').val() || null } typeof c == "string" && (c = t.trim(c)), O[x] = c, A = A || he(r, b, x, c) }), A } function fe(f) { var O = {}; return f.find(':input[type="file"]').each(function (A, g) { var h = t(g), r = h.attr("data-name") || h.attr("name") || "File " + (A + 1), b = h.attr("data-value"); typeof b == "string" && (b = t.trim(b)), O[r] = b }), O } let pe = { _mkto_trk: "marketo" }; function Ee() { return document.cookie.split("; ").reduce(function (O, A) { let g = A.split("="), h = g[0]; if (h in pe) { let r = pe[h], b = g.slice(1).join("="); O[r] = b } return O }, {}) } function he(f, O, A, g) { var h = null; return O === "password" ? h = "Passwords cannot be submitted." : f.attr("required") ? g ? Z.test(f.attr("type")) && (oe.test(g) || (h = "Please enter a valid email address for: " + A)) : h = "Please fill out the required field: " + A : A === "g-recaptcha-response" && !g && (h = "Please confirm you\u2019re not a robot."), h } function y(f) { L(f), v(f) } function l(f) { z(f); var O = f.form, A = {}; if (/^https/.test(T.href) && !/^https/.test(f.action)) { O.attr("method", "post"); return } L(f); var g = ue(O, A); if (g) return G(g); Y(f); var h; d.each(A, function (c, B) { Z.test(B) && (A.EMAIL = c), /^((full[ _-]?)?name)$/i.test(B) && (h = c), /^(first[ _-]?name)$/i.test(B) && (A.FNAME = c), /^(last[ _-]?name)$/i.test(B) && (A.LNAME = c) }), h && !A.FNAME && (h = h.split(" "), A.FNAME = h[0], A.LNAME = A.LNAME || h[1]); var r = f.action.replace("/post?", "/post-json?") + "&c=?", b = r.indexOf("u=") + 2; b = r.substring(b, r.indexOf("&", b)); var x = r.indexOf("id=") + 3; x = r.substring(x, r.indexOf("&", x)), A["b_" + b + "_" + x] = "", t.ajax({ url: r, data: A, dataType: "jsonp" }).done(function (c) { f.success = c.result === "success" || /already/.test(c.msg), f.success || console.info("MailChimp error: " + c.msg), v(f) }).fail(function () { v(f) }) } function v(f) { var O = f.form, A = f.redirect, g = f.success; if (g && A) { nt.location(A); return } f.done.toggle(g), f.fail.toggle(!g), g ? f.done.focus() : f.fail.focus(), O.toggle(!g), z(f) } function L(f) { f.evt && f.evt.preventDefault(), f.evt = null } function _(f, O) { if (!O.fileUploads || !O.fileUploads[f]) return; var A, g = t(O.fileUploads[f]), h = g.find("> .w-file-upload-default"), r = g.find("> .w-file-upload-uploading"), b = g.find("> .w-file-upload-success"), x = g.find("> .w-file-upload-error"), c = h.find(".w-file-upload-input"), B = h.find(".w-file-upload-label"), le = B.children(), V = x.find(".w-file-upload-error-msg"), n = b.find(".w-file-upload-file"), m = b.find(".w-file-remove-link"), C = n.find(".w-file-upload-file-name"), k = V.attr("data-w-size-error"), ae = V.attr("data-w-type-error"), De = V.attr("data-w-generic-error"); if (J || B.on("click keydown", function (o) { o.type === "keydown" && o.which !== 13 && o.which !== 32 || (o.preventDefault(), c.click()) }), B.find(".w-icon-file-upload-icon").attr("aria-hidden", "true"), m.find(".w-icon-file-upload-remove").attr("aria-hidden", "true"), J) c.on("click", function (o) { o.preventDefault() }), B.on("click", function (o) { o.preventDefault() }), le.on("click", function (o) { o.preventDefault() }); else { m.on("click keydown", function (o) { if (o.type === "keydown") { if (o.which !== 13 && o.which !== 32) return; o.preventDefault() } c.removeAttr("data-value"), c.val(""), C.html(""), h.toggle(!0), b.toggle(!1), B.focus() }), c.on("change", function (o) { A = o.target && o.target.files && o.target.files[0], A && (h.toggle(!1), x.toggle(!1), r.toggle(!0), r.focus(), C.text(A.name), a() || Y(O), O.fileUploads[f].uploading = !0, q(A, i)) }); var Se = B.outerHeight(); c.height(Se), c.width(1) } function e(o) { var u = o.responseJSON && o.responseJSON.msg, R = De; typeof u == "string" && u.indexOf("InvalidFileTypeError") === 0 ? R = ae : typeof u == "string" && u.indexOf("MaxFileSizeError") === 0 && (R = k), V.text(R), c.removeAttr("data-value"), c.val(""), r.toggle(!1), h.toggle(!0), x.toggle(!0), x.focus(), O.fileUploads[f].uploading = !1, a() || z(O) } function i(o, u) { if (o) return e(o); var R = u.fileName, H = u.postData, se = u.fileId, w = u.s3Url; c.attr("data-value", se), N(w, H, A, R, s) } function s(o) { if (o) return e(o); r.toggle(!1), b.css("display", "inline-block"), b.focus(), O.fileUploads[f].uploading = !1, a() || z(O) } function a() { var o = O.fileUploads && O.fileUploads.toArray() || []; return o.some(function (u) { return u.uploading }) } } function q(f, O) { var A = new URLSearchParams({ name: f.name, size: f.size }); t.ajax({ type: "GET", url: `${te}?${A}`, crossDomain: !0 }).done(function (g) { O(null, g) }).fail(function (g) { O(g) }) } function N(f, O, A, g, h) { var r = new FormData; for (var b in O) r.append(b, O[b]); r.append("file", A, g), t.ajax({ type: "POST", url: f, data: r, processData: !1, contentType: !1 }).done(function () { h(null) }).fail(function (x) { h(x) }) } return p }) }); var qt = be((En, Wt) => { "use strict"; var Me = Ce(), on = tt(), me = { ARROW_LEFT: 37, ARROW_UP: 38, ARROW_RIGHT: 39, ARROW_DOWN: 40, ESCAPE: 27, SPACE: 32, ENTER: 13, HOME: 36, END: 35 }; Me.define("navbar", Wt.exports = function (t, d) { var p = {}, S = t.tram, K = t(window), T = t(document), W = d.debounce, M, I, Z, oe, G = Me.env(), J = '<div class="w-nav-overlay" data-wf-ignore />', F = ".w-nav", ee = "w--open", te = "w--nav-dropdown-open", Q = "w--nav-dropdown-toggle-open", U = "w--nav-dropdown-list-open", D = "w--nav-link-open", E = on.triggers, $ = t(); p.ready = p.design = p.preview = z, p.destroy = function () { $ = t(), Y(), I && I.length && I.each(Ee) }; function z() { Z = G && Me.env("design"), oe = Me.env("editor"), M = t(document.body), I = T.find(F), I.length && (I.each(pe), Y(), ue()) } function Y() { Me.resize.off(fe) } function ue() { Me.resize.on(fe) } function fe() { I.each(h) } function pe(n, m) { var C = t(m), k = t.data(m, F); k || (k = t.data(m, F, { open: !1, el: C, config: {}, selectedIdx: -1 })), k.menu = C.find(".w-nav-menu"), k.links = k.menu.find(".w-nav-link"), k.dropdowns = k.menu.find(".w-dropdown"), k.dropdownToggle = k.menu.find(".w-dropdown-toggle"), k.dropdownList = k.menu.find(".w-dropdown-list"), k.button = C.find(".w-nav-button"), k.container = C.find(".w-container"), k.overlayContainerId = "w-nav-overlay-" + n, k.outside = A(k); var ae = C.find(".w-nav-brand"); ae && ae.attr("href") === "/" && ae.attr("aria-label") == null && ae.attr("aria-label", "home"), k.button.attr("style", "-webkit-user-select: text;"), k.button.attr("aria-label") == null && k.button.attr("aria-label", "menu"), k.button.attr("role", "button"), k.button.attr("tabindex", "0"), k.button.attr("aria-controls", k.overlayContainerId), k.button.attr("aria-haspopup", "menu"), k.button.attr("aria-expanded", "false"), k.el.off(F), k.button.off(F), k.menu.off(F), l(k), Z ? (he(k), k.el.on("setting" + F, v(k))) : (y(k), k.button.on("click" + F, f(k)), k.menu.on("click" + F, "a", O(k)), k.button.on("keydown" + F, L(k)), k.el.on("keydown" + F, _(k))), h(n, m) } function Ee(n, m) { var C = t.data(m, F); C && (he(C), t.removeData(m, F)) } function he(n) { n.overlay && (V(n, !0), n.overlay.remove(), n.overlay = null) } function y(n) { n.overlay || (n.overlay = t(J).appendTo(n.el), n.overlay.attr("id", n.overlayContainerId), n.parent = n.menu.parent(), V(n, !0)) } function l(n) { var m = {}, C = n.config || {}, k = m.animation = n.el.attr("data-animation") || "default"; m.animOver = /^over/.test(k), m.animDirect = /left$/.test(k) ? -1 : 1, C.animation !== k && n.open && d.defer(N, n), m.easing = n.el.attr("data-easing") || "ease", m.easing2 = n.el.attr("data-easing2") || "ease"; var ae = n.el.attr("data-duration"); m.duration = ae != null ? Number(ae) : 400, m.docHeight = n.el.attr("data-doc-height"), n.config = m } function v(n) { return function (m, C) { C = C || {}; var k = K.width(); l(n), C.open === !0 && B(n, !0), C.open === !1 && V(n, !0), n.open && d.defer(function () { k !== K.width() && N(n) }) } } function L(n) { return function (m) { switch (m.keyCode) { case me.SPACE: case me.ENTER: return f(n)(), m.preventDefault(), m.stopPropagation(); case me.ESCAPE: return V(n), m.preventDefault(), m.stopPropagation(); case me.ARROW_RIGHT: case me.ARROW_DOWN: case me.HOME: case me.END: return n.open ? (m.keyCode === me.END ? n.selectedIdx = n.links.length - 1 : n.selectedIdx = 0, q(n), m.preventDefault(), m.stopPropagation()) : (m.preventDefault(), m.stopPropagation()) } } } function _(n) { return function (m) { if (n.open) switch (n.selectedIdx = n.links.index(document.activeElement), m.keyCode) { case me.HOME: case me.END: return m.keyCode === me.END ? n.selectedIdx = n.links.length - 1 : n.selectedIdx = 0, q(n), m.preventDefault(), m.stopPropagation(); case me.ESCAPE: return V(n), n.button.focus(), m.preventDefault(), m.stopPropagation(); case me.ARROW_LEFT: case me.ARROW_UP: return n.selectedIdx = Math.max(-1, n.selectedIdx - 1), q(n), m.preventDefault(), m.stopPropagation(); case me.ARROW_RIGHT: case me.ARROW_DOWN: return n.selectedIdx = Math.min(n.links.length - 1, n.selectedIdx + 1), q(n), m.preventDefault(), m.stopPropagation() } } } function q(n) { if (n.links[n.selectedIdx]) { var m = n.links[n.selectedIdx]; m.focus(), O(m) } } function N(n) { n.open && (V(n, !0), B(n, !0)) } function f(n) { return W(function () { n.open ? V(n) : B(n) }) } function O(n) { return function (m) { var C = t(this), k = C.attr("href"); if (!Me.validClick(m.currentTarget)) { m.preventDefault(); return } k && k.indexOf("#") === 0 && n.open && V(n) } } function A(n) { return n.outside && T.off("click" + F, n.outside), function (m) { var C = t(m.target); oe && C.closest(".w-editor-bem-EditorOverlay").length || g(n, C) } } var g = W(function (n, m) { if (n.open) { var C = m.closest(".w-nav-menu"); n.menu.is(C) || V(n) } }); function h(n, m) { var C = t.data(m, F), k = C.collapsed = C.button.css("display") !== "none"; if (C.open && !k && !Z && V(C, !0), C.container.length) { var ae = b(C); C.links.each(ae), C.dropdowns.each(ae) } C.open && le(C) } var r = "max-width"; function b(n) { var m = n.container.css(r); return m === "none" && (m = ""), function (C, k) { k = t(k), k.css(r, ""), k.css(r) === "none" && k.css(r, m) } } function x(n, m) { m.setAttribute("data-nav-menu-open", "") } function c(n, m) { m.removeAttribute("data-nav-menu-open") } function B(n, m) { if (n.open) return; n.open = !0, n.menu.each(x), n.links.addClass(D), n.dropdowns.addClass(te), n.dropdownToggle.addClass(Q), n.dropdownList.addClass(U), n.button.addClass(ee); var C = n.config, k = C.animation; (k === "none" || !S.support.transform || C.duration <= 0) && (m = !0); var ae = le(n), De = n.menu.outerHeight(!0), Se = n.menu.outerWidth(!0), e = n.el.height(), i = n.el[0]; if (h(0, i), E.intro(0, i), Me.redraw.up(), Z || T.on("click" + F, n.outside), m) { o(); return } var s = "transform " + C.duration + "ms " + C.easing; if (n.overlay && ($ = n.menu.prev(), n.overlay.show().append(n.menu)), C.animOver) { S(n.menu).add(s).set({ x: C.animDirect * Se, height: ae }).start({ x: 0 }).then(o), n.overlay && n.overlay.width(Se); return } var a = e + De; S(n.menu).add(s).set({ y: -a }).start({ y: 0 }).then(o); function o() { n.button.attr("aria-expanded", "true") } } function le(n) { var m = n.config, C = m.docHeight ? T.height() : M.height(); return m.animOver ? n.menu.height(C) : n.el.css("position") !== "fixed" && (C -= n.el.outerHeight(!0)), n.overlay && n.overlay.height(C), C } function V(n, m) { if (!n.open) return; n.open = !1, n.button.removeClass(ee); var C = n.config; if ((C.animation === "none" || !S.support.transform || C.duration <= 0) && (m = !0), E.outro(0, n.el[0]), T.off("click" + F, n.outside), m) { S(n.menu).stop(), i(); return } var k = "transform " + C.duration + "ms " + C.easing2, ae = n.menu.outerHeight(!0), De = n.menu.outerWidth(!0), Se = n.el.height(); if (C.animOver) { S(n.menu).add(k).start({ x: De * C.animDirect }).then(i); return } var e = Se + ae; S(n.menu).add(k).start({ y: -e }).then(i); function i() { n.menu.height(""), S(n.menu).set({ x: 0, y: 0 }), n.menu.each(c), n.links.removeClass(D), n.dropdowns.removeClass(te), n.dropdownToggle.removeClass(Q), n.dropdownList.removeClass(U), n.overlay && n.overlay.children().length && ($.length ? n.menu.insertAfter($) : n.menu.prependTo(n.parent), n.overlay.attr("style", "").hide()), n.el.triggerHandler("w-close"), n.button.attr("aria-expanded", "false") } } return p }) }); pt(); gt(); yt(); xt(); _t(); At(); Ft(); Nt(); qt();
-})();
+    const initialData = initialDataWithoutNow.concat([[lbpProgress, initialDataWithoutNow[initialDataWithoutNow.length - 1][1]]]);
+    const dataExtrapolated = [
+        [1, initialData[initialData.length - 1][1]],
+    ];
+    const cutoffPoint = (initialData[initialData.length - 1][0]) * lbpLength;
+    const data = initialData.concat(dataExtrapolated);
+
+    if (lbpEnded == true) {
+        xrdLbpPoolAmount = data[data.length - 1][1][0];
+        ilisLbpPoolAmount = data[data.length - 1][1][1];
+        document.getElementById('final-fdv').textContent = (((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5)) * 100000000).toLocaleString('en-US', { maximumFractionDigits: 0 }) + " XRD";
+        document.getElementById('ilis-price-final').textContent = (((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5))).toLocaleString('en-US', { maximumFractionDigits: 4 }) + " XRD";
+        document.getElementById('lbp-end-text').textContent = "Thanks for participating in the ILIS LBP! The LBP has ended and the price progression can be seen in the chart below. The resulting liquidity has been added to the Ociswap ILIS/XRD pool, go there or to any other DEX to swap ILIS.";
+    }
+
+    // Initial and final weights
+    const initialWeightILIS = 0.99;
+    const finalWeightILIS = 0.50;
+    const totalWeightChange = initialWeightILIS - finalWeightILIS;
+
+    // Function to calculate the weight at a given time (partial progress interpolation)
+    function calculateWeight(startWeightILIS, endWeightILIS, progress) {
+        return startWeightILIS - progress * (startWeightILIS - endWeightILIS);
+    }
+
+    // Function to calculate price XRD/ILIS at each data point
+    function calculatePrice(xrd, ilis, weightILIS) {
+        const weightXRD = 1 - weightILIS;
+        return (xrd / ilis) * (weightILIS / weightXRD);
+    }
+
+    // Function to interpolate prices between two points based on weights
+    function interpolateBetweenPoints(start, end, startWeightILIS, endWeightILIS, numSteps) {
+        const [startTime, [startXRD, startILIS]] = start;
+        const [endTime, [endXRD, endILIS]] = end;
+        const interpolatedData = [];
+
+        for (let step = 0; step <= numSteps; step++) {
+            const t = step / numSteps;
+            const time = startTime + t * (endTime - startTime);
+
+            // Gradual weight change between the start and end weight (corrected)
+            const weightILIS = calculateWeight(startWeightILIS, endWeightILIS, t);
+
+            // Use the XRD and ILIS amounts from the start of the segment
+            const price = calculatePrice(startXRD, startILIS, weightILIS);
+
+            interpolatedData.push({ time, price });
+        }
+
+        return interpolatedData;
+    }
+
+    // Generate interpolated price data
+    function generatePriceData(data) {
+        const priceData = [];
+        let currentWeightILIS = initialWeightILIS;
+
+        for (let i = 0; i < data.length - 1; i++) {
+            // Calculate how much the weight should change in this interval
+            const progress = data[i + 1][0] - data[i][0]; // Time difference
+            var numStepsBetweenPoints = Math.round(1008 * progress);
+            const nextWeightILIS = currentWeightILIS - progress * totalWeightChange;
+
+            // Interpolate between two points
+            const interpolatedSegment = interpolateBetweenPoints(data[i], data[i + 1], currentWeightILIS, nextWeightILIS, numStepsBetweenPoints);
+            priceData.push(...interpolatedSegment);
+
+            // Add the exact time point (price jump) at the next point
+            const [nextTime, [nextXRD, nextILIS]] = data[i + 1];
+            const weightILIS = nextWeightILIS; // At this time, the weight jumps to the next
+            const nextPrice = calculatePrice(nextXRD, nextILIS, weightILIS);
+            priceData.push({ time: nextTime, price: nextPrice });
+
+            // Update the starting weight for the next interval
+            currentWeightILIS = nextWeightILIS;
+        }
+
+        return priceData;
+    }
+
+    function createDataPoints(times, prices) {
+        return times.map((time, index) => ({
+            x: time,
+            y: prices[index]
+        }));
+    }
+
+    // Generate data with interpolation (e.g., 50 steps between each key point)
+    const interpolatedData = generatePriceData(data);
+    const extrapolatedData = generatePriceData(dataExtrapolated);
+
+    // Extract time and price data for the chart
+    const timeValues = interpolatedData.map(d => d.time);
+    const timeValuesMultiplied = timeValues.map(value => value * lbpLength);
+    const priceValues = interpolatedData.map(d => d.price);
+    const extrapolatedIndices = timeValuesMultiplied.map((value, index) => value > cutoffPoint ? index : -1).filter(index => index !== -1);
+    const extrapolatedPriceValues = extrapolatedIndices.map(index => priceValues[index]);
+    const extrapolatedTimeValues = extrapolatedIndices.map(index => timeValuesMultiplied[index]);
+    const remainingTimeValues = timeValuesMultiplied.filter((value, index) => !extrapolatedIndices.includes(index));
+    const remainingPriceValues = priceValues.filter((value, index) => !extrapolatedIndices.includes(index));
+
+    const dataset1Data = createDataPoints(remainingTimeValues, remainingPriceValues);
+    const dataset2Data = createDataPoints(extrapolatedTimeValues, extrapolatedPriceValues);
+
+    // Create a chart using Chart.js
+    const ctx = document.getElementById('myChart').getContext('2d');
+
+    const existingChart = Chart.getChart(ctx);
+    if (existingChart) {
+        // Destroy the existing chart
+        existingChart.destroy();
+    }
+
+    realChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: [
+                {
+                    label: 'Real price',
+                    data: dataset1Data,  // Use transformed data for the first dataset
+                    borderColor: 'rgba(27, 169, 160, 1)',
+                    backgroundColor: 'rgba(27, 169, 160, 0.2)',
+                    fill: true,
+                    tension: 0.4, // Smooth curves
+                    borderWidth: 2
+                },
+                {
+                    label: 'Extrapolated price',
+                    data: dataset2Data,  // Use transformed data for the second dataset
+                    borderColor: 'rgba(22, 22, 22, 1)', // Different color for the new dataset
+                    backgroundColor: 'rgba(22, 22, 22, 0)', // Different background color
+                    fill: false,
+                    tension: 0.4, // Smooth curves
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    type: 'linear',  // Use linear scale for the x-axis
+                    title: {
+                        display: true,
+                        text: 'Time (days from start)',
+                        color: 'white'  // Change x-axis title color to white
+                    },
+                    min: 0, // Minimum value for x-axis
+                    max: lbpLength, // Maximum value for x-axis
+                    ticks: {
+                        color: 'white'  // Change x-axis ticks color to white
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Price (XRD/ILIS)',
+                        color: 'white'  // Change y-axis title color to white
+                    },
+                    ticks: {
+                        color: 'white'  // Change y-axis ticks color to white
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: {
+                        color: 'white'  // Change legend text color to white
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        title: function (tooltipItems) {
+                            // Replace commas with dots and parse as a float, then format with a dot for decimals
+                            const xValue = parseFloat(tooltipItems[0].label.replace(',', '.')).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 4 });
+                            return xValue + ' days from start';
+                        },
+                        label: function (tooltipItem) {
+                            // Round y-value to 4 decimal points and format with dot for decimals
+                            const roundedY = tooltipItem.raw.y.toFixed(4);
+                            return tooltipItem.dataset.label + ': ' + roundedY + ' XRD/ILIS';
+                        }
+                    }
+                }
+            }
+        }
+    });
 
 
+}

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="images/favicon.ico" rel="shortcut icon" type="image/x-icon">
+    <link href="images/webclip.png" rel="apple-touch-icon">
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <title>STAB app - Deployment</title>
+    <link href="css/style.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="navbar-container">
+            <header class="navbar">
+                <div class="navbar-content">
+                    <div class="logo-site"><img src="images/stab_app_portal_small.png" alt="Stabilis logo" /></div>
+                    <button class="hamburger" id="hamburger">&#9776;</button>
+                    <nav id="navLinks" class="nav-links">
+                        <a href="/swap">Swap</a>
+                        <a class="selected" href="/borrow">Borrow</a>
+                        <a href="/manage-loans">Manage loans</a>
+                        <a href="/liquidations">Liquidations</a>
+                    </nav>
+                    <div class="cta">
+                        <radix-connect-button id="buggedElement" style="--radix-connect-button-border-radius: 6px;" />
+                    </div>
+                </div>
+            </header>
+            <nav id="navLinks-hamburger" class="nav-links-hamburger" style="display:none">
+                <a href="/swap">Swap</a>
+                <a class="selected" href="/borrow">Borrow</a>
+                <a href="/manage-loans">Manage loans</a>
+                <a href="/liquidations">Liquidations</a>
+            </nav>
+        </div>
+
+        <h1>Deploying that shit</h1>
+        
+    <p>Do steps 1, 2, 3, 4 and 5 from deployment document</p>
+    <p>Set xrdAddress,hashToStore, storageKvs, storageComponent, ilisAddress, ilisCtrlBadgeAddress, ociDappDef, morpherComponentAddress, incentiveInterval, bootstrapLength in the js file</p>
+    <button class="wallet-necessary transaction-button bottom" id="instantiate-dao">
+        <b class="button-text" style="vertical-align: middle;">INSTANTIATE DAO</b>
+    </button>
+    <p>update the front end with the new addresses</p>
+    <button class="wallet-necessary transaction-button bottom" id="change-ilis-metadata">
+        <b class="button-text" style="vertical-align: middle;">CHANGE ILIS METADATA</b>
+    </button>
+    <p>6.d airdrop ilis to beta testers</p>
+    <button class="wallet-necessary transaction-button bottom" id="deposit-admin-badges-into-governance">
+        <b class="button-text" style="vertical-align: middle;">DEPOSIT DAO ADMIN BADGES INTO GOVERNANCE</b>
+    </button>
+    <p>Deploy STAB Package and add package address to the js file</p>
+    <button class="wallet-necessary transaction-button bottom" id="instantiate-stab-protocol">
+        <b class="button-text" style="vertical-align: middle;">INSTANTIATE STAB PROTOCOL</b>
+    </button>
+    <p>Add created entities to the js file</p>
+    <button class="wallet-necessary transaction-button bottom" id="instantiate-stab-protocol-after">
+        <b class="button-text" style="vertical-align: middle;">ADD XRD COLLATERAL AND OPEN LOAN</b>
+    </button>
+    <button class="wallet-necessary transaction-button bottom" id="instantiate-proxy">
+        <b class="button-text" style="vertical-align: middle;">INSTANTIATE PROXY</b>
+    </button>
+    <p>Add created entities to the js file</p>
+    <p>Get timestamp for front-end and set XRD KVS hex</p>
+    <p>Manually test oracle price setting</p>
+    <button class="wallet-necessary transaction-button bottom" id="after-proxy-instantiation">
+        <b class="button-text" style="vertical-align: middle;">DISABLE OPENINGS, GIVE LP LOGO, ADD STAKECOMP METADATA, DAPP_DEF STAB</b>
+    </button>
+    <button class="wallet-necessary transaction-button bottom" id="add-proposal-and-vote">
+        <b class="button-text" style="vertical-align: middle;">ADD PROPOSAL TO DAO AND IMMEDIATELY VOTE FOR</b>
+    </button>
+    <button class="wallet-necessary transaction-button bottom" id="start-bootstrap">
+        <b class="button-text" style="vertical-align: middle;">START BOOTSTRAP</b>
+    </button>
+    <p>Create account from private key and add auth depositor</p>
+    <p>Update price-getter dyno to use new addresses and deploy</p>
+    <p>Enjoy stability!</p>
+
+                    
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section logo-section">
+                <img src="images/6591759c82a086a532a90d33_stabilis-1-p-130x130q80.png" alt="Logo 1">
+            </div>
+            <div class="footer-section">
+                <h3>Socials</h3>
+                <a href="https://twitter.com/stabilislabs" target="_blank">Twitter</a>
+                <a href="https://t.me/ilisdao" target="_blank">Telegram</a>
+            </div>
+            <div class="footer-section">
+                <h3>Information</h3>
+                <a href="terms-and-conditions.html" target="_blank">Terms & Conditions</a>
+                <a href="https://docs.ilikeitstable.com" target="_blank">Documentation</a>
+            </div>
+            <div class="footer-section logo-section">
+                <img src="images/runs-on-radix.png" alt="Logo 2">
+            </div>
+        </div>
+        <div class="copyright-section">
+            <p>Copyright &copy; 2024 I Like It Stable DAO LLC</p>
+        </div>
+    </footer>
+
+    <script>
+        feather.replace();
+        window.addEventListener('scroll', function () {
+            const navbarContainer = document.querySelector('.navbar-container');
+            navbarContainer.classList.toggle('scrolled', window.scrollY > 0);
+        });
+    </script>
+    <script src="dist/main.js?v=1.0.3"></script>
+    <script src="dist/784.main.js?v=1.0.3"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+</body>
+
+</html>
