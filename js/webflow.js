@@ -65,7 +65,7 @@ let oracleComponent = "component_tdx_2_1czlqhe5zgr0c3t89l5asxm5z0lyw38qre8avhyca
 let flashLoansComponent = 'component_tdx_2_1crk6srdg4v4fe32lv8525vrh04h6pjkdp47lc4sxewn8mzjmflcghr'
 let lpAddress = "resource_tdx_2_1t4nw3xcttpq3k3jkzfd0une3etmk7fynd7npugsm2meged27slc3x5"
 let flashLoanReceipt = "resource_tdx_2_1nttv0zur20a4narwgszrxyrksd9n2lkfszwjkggfwl2zsx6g33wg8y"
-let lpAddressForIncentives = xrdAddress
+let lpAddressForIncentives = "resource_tdx_2_1t4nw3xcttpq3k3jkzfd0une3etmk7fynd7npugsm2meged27slc3x5"
 let selectedResource = lpAddressForIncentives
 
 let lbpKvsHexes = ["5c0a0000000000000000", "5c0a0000000000000001", "5c0a0000000000000002"]
@@ -777,6 +777,7 @@ function generateDownloadLinks(files, baseLink) {
   }
   
   function displayAttachmentLinks(links) {
+    console.log(links);
     const attachmentsElement = document.getElementById('attachments');
     attachmentsElement.innerHTML = ''; // Clear any existing content
   
@@ -1515,6 +1516,15 @@ function setStakeButton() {
     if (stake == true && votingUntil > nowLbpTime && window.location.pathname == "/membership" && (document.getElementById('amount-to-stake').value != '' && parseFloat(document.getElementById('amount-to-stake').value) != 0)) {
         infoMessage = "Be careful, this ID is currently voting. Proposals you have already voted on will NOT be affected by your increase in voting power, and votes are non-updatable!";
     }
+    if (claimablePeriods != 0) {
+        enableButton = false;
+        enableInput = false;
+        if (stake == true) {
+            message = "Cannot stake while having periods to claim.";
+        } else {
+            message = "Please claim your periods before unstaking.";
+        }
+    }
     if (enableButton) {
         stakeButton.style.backgroundColor = "";
         stakeButton.disabled = false;
@@ -1545,11 +1555,13 @@ function setStakeButton() {
     } else {
         document.getElementById('warning-box-stake').style.display = 'none';
     }
-    if (infoMessage != "") {
-        document.getElementById('info-box-stake').style.display = 'block';
-        document.getElementById('info-message-stake').textContent = infoMessage;
-    } else {
-        document.getElementById('info-box-stake').style.display = 'none';
+    if (window.location.pathname == "/membership") {
+        if (infoMessage != "") {
+            document.getElementById('info-box-stake').style.display = 'block';
+            document.getElementById('info-message-stake').textContent = infoMessage;
+        } else {
+            document.getElementById('info-box-stake').style.display = 'none';
+        }
     }
 }
 
@@ -1669,9 +1681,6 @@ function setClaimButton() {
         var enableButton = true;
         console.log(selectedId);
         if (isConnected == false) {
-            enableButton = false;
-        }
-        if (totalReadyToUnstake == 0) {
             enableButton = false;
         }
         if (claimablePeriods == 0) {
@@ -2620,7 +2629,7 @@ async function update_governance() {
             document.getElementById('warning-message-id-select').style.display = 'block';
         }
 
-        if (maxProposals >= 0) {
+        if (maxProposals >= 0 && proposalToView != -1) {
             let request2 = {
                 "key_value_store_address": proposalsKvs,
                 "keys": [
@@ -2690,6 +2699,23 @@ async function update_governance() {
             var voteButton = document.getElementById('vote-button');
             voteButton.style.backgroundColor = "hsl(0, 0%, 0%)";
             voteButton.disabled = true;
+
+            if (proposalToView == -1) {
+                document.getElementById('proposal-title').textContent = "Proposal #-1: Transitioning to Advanced Smart Contract Package and Updating Operational Agreement";
+                document.getElementById('proposal-description').textContent = "This proposal aims to transition the ILIS DAO to a more advanced smart contract package and update the operational agreement to reflect these changes. As the current sole owner of governance tokens, this proposal serves as a formal declaration of intent and a record of the transition process.";
+                document.getElementById('status').textContent = "Passed";
+                document.getElementById('deadline').textContent = "N/A";
+                var votesFor = 100000000;
+                var votesAgainst = 0;
+                var totalVotes = parseFloat(votesFor) + parseFloat(votesAgainst);
+                document.getElementById('votes-for').textContent = parseFloat(votesFor).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " (" + ((votesFor / totalVotes) * 100).toFixed(2) + "%)";
+                document.getElementById('votes-against').textContent = parseFloat(votesAgainst).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " (" + ((votesAgainst / totalVotes) * 100).toFixed(2) + "%)";
+                document.getElementById('quorum').textContent = "N/A";
+                const downloadLinks = ["https://radix-files-mainnet.vercel.app/file/internal_keyvaluestore_rdx1krupls6a9x689fnkcpr7nt7n5xl8zmk7gvm2d6rmavxjs6z92dllhg/921fb2f9f9136488abe035d4278740dc7d9c0daffee822e8f1be4e5dba82046c"]
+                displayAttachmentLinks(downloadLinks);
+                const specificsElement = document.getElementById('specifics');
+                specificsElement.innerHTML = '';
+            }
         }
     }
 }
@@ -6331,11 +6357,11 @@ if (window.location.pathname === '/governance') {
         update_governance();
     }
     minusSymbolProp.onclick = function () {
-        if (parseInt(proposalCounter.textContent) > 0) {
+        if (parseInt(proposalCounter.textContent) > -1) {
             proposalCounter.textContent = parseInt(proposalCounter.textContent) - 1;
             plusSymbolProp.disabled = false;
         }
-        if (parseInt(proposalCounter.textContent) == 0) {
+        if (parseInt(proposalCounter.textContent) == -1) {
             minusSymbolProp.disabled = true;
         }
         proposalToView = parseInt(proposalCounter.textContent);
