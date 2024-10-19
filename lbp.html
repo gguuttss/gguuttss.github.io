@@ -8,7 +8,7 @@
     <link href="images/webclip.png" rel="apple-touch-icon">
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <title>ILIS DAO - LBP</title>
-    <link href="css/style.css" rel="stylesheet" type="text/css">
+    <link href="css/style.css?v=1.2.1" rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
@@ -18,13 +18,18 @@
         <div class="navbar-container">
             <header class="navbar">
                 <div class="navbar-content">
-                    <div class="logo-site"><img src="images/stab_gov_portal_small.png" alt="Stabilis logo" /></div>
+                    <div class="logo-site">
+                        <a href="/">
+                            <img src="images/stab_gov_portal_small.png" alt="Stabilis logo" />
+                        </a>
+                    </div>
                     <button class="hamburger" id="hamburger">&#9776;</button>
                     <nav id="navLinks" class="nav-links">
                         <a class="selected" href="/lbp">LBP</a>
                         <a href="/membership">Membership</a>
                         <a href="/incentives">Incentives</a>
                         <a href="/governance">Governance</a>
+                        <a href="/swap" style="color: #00a3cc;">STAB App</a>
                     </nav>
                     <div class="cta">
                         <radix-connect-button id="buggedElement" style="--radix-connect-button-border-radius: 6px;" />
@@ -36,6 +41,7 @@
                 <a href="/membership">Membership</a>
                 <a href="/incentives">Incentives</a>
                 <a href="/governance">Governance</a>
+                <a href="/swap" style="color: #00a3cc;">STAB App</a>
             </nav>
         </div>
 
@@ -96,29 +102,67 @@
                 </div>
                 <div class="right-section">
                     <h2>LBP Statistics</h2>
-                    <p class="stat-line">Current Weights <span class="stat-value-small" id="apy-real">-/-</span>
-                    </p>
-                    <p class="stat-line">LBP Progress <span class="stat-value-small" id="progress">-/- days</span>
-                    </p>
-                    <p class="stat-line" id="ilis-price-line">Current ILIS Price <span class="stat-value-small" id="ilis-price">- XRD</span>
-                    </p>
-                    <p class="stat-line" id="current-fdv-line">Current ILIS FDV <span class="stat-value-small" id="current-fdv">-
-                            XRD</span>
-                    </p>
-                    <p class="stat-line"><span id="ilis-price-final-text">Extrapolated ILIS Price</span></span> <span
-                            class="stat-value-small" id="ilis-price-final">-
-                            XRD</span>
-                    </p>
-                    <p class="stat-line"><span id="final-fdv-text">Extrapolated ILIS FDV</span> <span
-                            class="stat-value-small" id="final-fdv">-
-                            XRD</span>
-                    </p>
+                    <div class="input-group">
+                        <div class="two-labels">
+                            <label class="left-label" style="margin-right: 10px">Current weights</label>
+                            <label class="right-label" id="apy-real" style="margin-left: 10px; text-align: right">-/- days</label>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <div class="two-labels">
+                            <label class="left-label" style="margin-right: 10px">LBP Progress</label>
+                            <label class="right-label" id="progress" style="margin-left: 10px; text-align: right">-/- days</label>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <div class="two-labels">
+                            <label class="left-label" id="ilis-price-line" style="margin-right: 10px">ILIS Price</label>
+                            <label class="right-label" id="ilis-price" style="margin-left: 10px; text-align: right">-</label>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <div class="two-labels">
+                            <label class="left-label" style="margin-right: 10px" id="current-fdv-line">Current ILIS FDV</label>
+                            <label class="right-label" id="current-fdv" style="margin-left: 10px; text-align: right">-</label>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <div class="two-labels">
+                            <label class="left-label" id="ilis-price-final-text" style="margin-right: 10px">Extr. ILIS Price</label>
+                            <label class="right-label" id="ilis-price-final" style="margin-left: 10px; text-align: right">-</label>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <div class="two-labels">
+                            <label class="left-label" id="final-fdv-text" style="margin-right: 10px">Extr. ILIS FDV</label>
+                            <label class="right-label" id="final-fdv" style="margin-left: 10px; text-align: right">-</label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <h3 class="light-header">XRD/ILIS PRICE</h3>
             <div id="chartContainer">
                 <canvas id="myChart"></canvas>
+            </div>
+
+            <div class="tbl-header" style="margin-top: 20px">
+                <table cellpadding="0" cellspacing="0" border="0">
+                <thead>
+                    <tr>
+                    <th>Time</th>
+                    <th>Type</th>
+                    <th>Traded amount</th>
+                    <th>Price</th>
+                    </tr>
+                </thead>
+                </table>
+            </div>
+            <div class="tbl-content">
+                <table cellpadding="0" cellspacing="0" border="0">
+                    <tbody id="table-body">
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -134,7 +178,8 @@
                 </div>
                 <div class="footer-section">
                     <h3>Information</h3>
-                    <a href="terms-and-conditions.html" target="_blank">Terms & Conditions</a>
+                    <a href="https://docs.ilikeitstable.com/miscellaneous/terms-and-conditions" target="_blank">Terms & Conditions</a>
+                    <a href="https://docs.ilikeitstable.com/miscellaneous/disclaimer" target="_blank">Disclaimer</a>
                     <a href="https://docs.ilikeitstable.com" target="_blank">Documentation</a>
                 </div>
                 <div class="footer-section logo-section">
@@ -153,8 +198,8 @@
                 navbarContainer.classList.toggle('scrolled', window.scrollY > 0);
             });
         </script>
-        <script src="dist/main.js?v=1.0.4"></script>
-        <script src="dist/784.main.js?v=1.0.4"></script>
+        <script src="dist/main.js?v=1.2.1"></script>
+        <script src="dist/784.main.js?v=1.2.1"></script>
         <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 </body>
 

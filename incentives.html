@@ -8,7 +8,7 @@
     <link href="images/webclip.png" rel="apple-touch-icon">
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <title>ILIS DAO - Incentives</title>
-    <link href="css/style.css" rel="stylesheet" type="text/css">
+    <link href="css/style.css?v=1.2.1" rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
@@ -18,13 +18,18 @@
         <div class="navbar-container">
             <header class="navbar">
                 <div class="navbar-content">
-                    <div class="logo-site"><img src="images/stab_gov_portal_small.png" alt="Stabilis logo" /></div>
+                    <div class="logo-site">
+                        <a href="/">
+                            <img src="images/stab_gov_portal_small.png" alt="Stabilis logo" />
+                        </a>
+                    </div>
                     <button class="hamburger" id="hamburger">&#9776;</button>
                     <nav id="navLinks" class="nav-links">
                         <a href="/lbp">LBP</a>
                         <a href="/membership">Membership</a>
                         <a class="selected" href="/incentives">Incentives</a>
                         <a href="/governance">Governance</a>
+                        <a href="/swap" style="color: #00a3cc;">STAB App</a>
                     </nav>
                     <div class="cta">
                         <radix-connect-button id="buggedElement" style="--radix-connect-button-border-radius: 6px;" />
@@ -36,6 +41,7 @@
                 <a href="/membership">Membership</a>
                 <a class="selected" href="/incentives">Incentives</a>
                 <a href="/governance">Governance</a>
+                <a href="/swap" style="color: #00a3cc;">STAB App</a>
             </nav>
         </div>
 
@@ -154,11 +160,23 @@
 
                     <div class="input-group">
                         <div class="two-labels">
-                            <label class="left-label" id="lock-reward-label">New stake</label>
+                            <label class="left-label" id="new-stake-albel">New stake</label>
                             <p class="right-label" style="display: flex; align-items: center; justify-content: center;">
                                 <span id="collateralAmount" style="margin-right:5px"></span> <span
                                     id="new-stake">0</span><img src="images/lplogo.png" alt="Logo" class="logo"
                                     id="col-logo-upper" style="margin-left: 10px"/>
+                            </p>
+                        </div>
+                        <div class="two-labels">
+                            <label class="left-label" id="weekly-rewards-label">Weekly rewards</label>
+                            <p class="right-label" style="display: flex; align-items: center; justify-content: center;">
+                                <span id="staking-rewards" style="margin-right: 10px">-</span>
+                            </p>
+                        </div>
+                        <div class="two-labels">
+                            <label class="left-label" id="unstake-delay-label">Unstake delay</label>
+                            <p class="right-label" style="display: flex; align-items: center; justify-content: center;">
+                                <span id="unstake-delay" style="margin-right: 10px">7 days</span>
                             </p>
                         </div>
                     </div>
@@ -186,6 +204,9 @@
                     </button>
                     <div class="warning-box" id="warning-box-stake" style="display: none; margin-top: 20px; text-align: center; cursor: auto">
                         <p class="paragraph-2" id="warning-message-stake"></p>
+                    </div>
+                    <div class="info-box" id="info-box-stake" style="display: none; margin-top: 20px; text-align: center; cursor: auto">
+                        <p class="paragraph-2" id="info-message-stake"></p>
                     </div>
                 </div>
                 <div class="right-section">
@@ -216,7 +237,7 @@
                             </p>
                         </div>
                         <div class="two-labels">
-                            <label class="left-label" id="lock-reward-label">New lock</label>
+                            <label class="left-label" id="new-lock-label">New lock</label>
                             <p class="right-label" style="display: flex; align-items: center; justify-content: center;">
                                 <span id="new-lock" style="margin-right: 11px">0</span> <span style="margin-right: 10px">days</span>
                             </p>
@@ -263,7 +284,8 @@
             </div>
             <div class="footer-section">
                 <h3>Information</h3>
-                <a href="terms-and-conditions.html" target="_blank">Terms & Conditions</a>
+                <a href="https://docs.ilikeitstable.com/miscellaneous/terms-and-conditions" target="_blank">Terms & Conditions</a>
+                <a href="https://docs.ilikeitstable.com/miscellaneous/disclaimer" target="_blank">Disclaimer</a>
                 <a href="https://docs.ilikeitstable.com" target="_blank">Documentation</a>
             </div>
             <div class="footer-section logo-section">
@@ -282,8 +304,8 @@
             navbarContainer.classList.toggle('scrolled', window.scrollY > 0);
         });
     </script>
-    <script src="dist/main.js?v=1.0.4"></script>
-    <script src="dist/784.main.js?v=1.0.4"></script>
+    <script src="dist/main.js?v=1.2.2"></script>
+    <script src="dist/784.main.js?v=1.2.2"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 </body>
 

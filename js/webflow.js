@@ -1,4 +1,4 @@
-import { RadixDappToolkit, DataRequestBuilder, RadixNetwork } from '@radixdlt/radix-dapp-toolkit'
+import { RadixDappToolkit, Logger, DataRequestBuilder, RadixNetwork } from '@radixdlt/radix-dapp-toolkit'
 import * as d3 from 'd3';
 import { Chart, registerables } from 'chart.js';
 import { BehaviorSubject, firstValueFrom, timeout, catchError, of } from 'rxjs';
@@ -6,71 +6,72 @@ import { distinctUntilChanged, filter } from 'rxjs/operators';
 Chart.register(...registerables);
 
 
-// You can create a dApp definition in the dev console at https://stokenet-console.radixdlt.com/dapp-metadata 
+// You can create a dApp definition in the dev console at https://mainnet-console.radixdlt.com/dapp-metadata 
 // then use that account for your dAppId
 
-const DEFAULT_ADDRESS = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec";
-let accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec";
+const DEFAULT_ADDRESS = "account_rdx12x96pjxqazraqf2f9pdqxsl0a2mpzgep6dfny039dhv8ksd33gc52m";
+let accountAddress = "account_rdx12x96pjxqazraqf2f9pdqxsl0a2mpzgep6dfny039dhv8ksd33gc52m";
 
-let accountAddressForDeployment = "account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd"
+let accountAddressForDeployment = "account_rdx12xl2meqtelz47mwp3nzd72jkwyallg5yxr9hkc75ac4qztsxulfpew"
 
-let hashToStore = "2e7eaac1752cb1971a01d876caef6c85b38654e4cbca547c0e690cdce44052d9"
-let storageKvs = "internal_keyvaluestore_tdx_2_1kpe22yzcpgxaxxk6nmcvyfut9lysj5lwttkdjstmz5a4uwfuyrxhc8"
-let storageComponent = "component_tdx_2_1cpd8dr5lza00jyk28npcu9qknn4j7ug26nmnhzwtsa6qhmr99enex6"
-let xrdAddress = "resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc"
-let ilisAddress = "resource_tdx_2_1tk9urmuml7vfl6j5e30dtglex85wzz07pq3gdmkpdd7nypr0x2k4mh"
-let ilisCtrlBadgeAddress = "resource_tdx_2_1t4qmpev6pnjy2t76j7ydgfq3ay2xznnq5gr3yzmmzyj8xqwqf767xm"
-let ociDappDef = "account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd"
-let morpherComponentAddress = "component_tdx_2_1cryq46xl9jxej3v8dr6q0lpnzhs4knlg6x2en6gynahghxztdvdp74"
-let incentiveInterval = 1
-let bootstrapLength = 1
+let hashToStore = "5a1e6657d375ba5c02e652df11fe4daae3b55e25c5ca17ba85954744247952ff"
+let hashToStore2 = "ea69ff86fa091c785b2e0ba3741aa7163ed101dad17696c332d89074c8fac221"
+let storageKvs = "internal_keyvaluestore_rdx1krupls6a9x689fnkcpr7nt7n5xl8zmk7gvm2d6rmavxjs6z92dllhg"
+let storageComponent = "component_rdx1crlx9t5hdz2yx494zhcqyquyhdmwvnuryqt4lty2d6tcng3elxtuee"
+let xrdAddress = "resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd"
+let ilisAddress = "resource_rdx1t4r86qqjtzl8620ahvsxuxaf366s6rf6cpy24psdkmrlkdqvzn47c2"
+let ilisCtrlBadgeAddress = "resource_rdx1tkay6uzp3ere9q6ccw346rs39w4mwdu6k6vxz43y4zkj9yy3zu4gx2"
+let ociDappDef = "account_rdx12x2ecj3kp4mhq9u34xrdh7njzyz0ewcz4szv0jw5jksxxssnjh7z6z"
+let morpherComponentAddress = "component_rdx1cp07hrz378zfugcf6h8f9usct4zqx7rdgjhxjwphkzxyv9h7l2q04s"
+let incentiveInterval = 7
+let bootstrapLength = 7
 
-let daoPackageAddress = "package_tdx_2_1p5fz3534hxypv4ftn2cun8r73ly5ugkxmyzf3qk8hesp3du24evc6h"
+let daoPackageAddress = "package_rdx1phynepmcrquypznw89ugjvv0mrarnc85mh3my2lmyh7rls3n6tz08t"
 
-let daoAddress = "component_tdx_2_1czr9gmaeqvtqae38kehdxu40y3j6fc643fdx7p9a7f0fc6q3sfyztn"
-let dAppIdDao = "account_tdx_2_1c8fadvp43lzn3t7cd07ln9j68wy0g3nu7xvsqdtq54497fruvyck7a"
-let accountLocker = "locker_tdx_2_1dzhsa0t4ptjgtyh8f6hned402duc05wjzsf0jvr725ujj7kzdgn5qp"
-let lbpComponentAddress = "component_tdx_2_1crra5tzyk2sqlg59l9wmda4x0xfxh90kgqka3mkdcsep989ftx9s5r"
-let lbpPoolAddress = "pool_tdx_2_1c5ka5ylujulqszv3c7u5axmpkcexxth4wh5ppwma8wvg4ftl9dnlzs"
-let stakingAddress = "component_tdx_2_1czakxq5ta95rry2n2pz927plfrvqn55c588qrnzyprhaw86zlsmq2q"
-let ilisPool = "pool_tdx_2_1cs8tnqvckummqujsnd6q8lx42qepcz67rwtzh8dq6v6wsf9nzsu7e5"
-let incentiveAddress = "component_tdx_2_1cr6pkmtvm2rdu86f5evshse3exxv366yexwqgfk4t06qdzp26awcn4"
-let governanceAddress = "component_tdx_2_1cpjdug2zrfpkeq0pflnw7eutkn30qvx45lsm4tt6yg0gmpwwx6xms3"
-let reentracyProxy = "component_tdx_2_1cpjdug2zrfpkeq0pflnw7eutkn30qvx45lsm4tt6yg0gmpwwx6xms3"
-let bootBadge = "resource_tdx_2_1thhfctt6xr2nc68c7rtqa0hfl9ws4xeule3j4vumhq0pqp7rtuu46c"
-let lbpPoolUnit = "resource_tdx_2_1th9r866524dwwepwxje5swplagd5gxqhpk4maaax0c3qwgwjyjh4q4"
-let poolIlisAddress = "resource_tdx_2_1tkzzwfgdgnajjc7fccqnq6lpuqrg77e70c9u32yj0f8lvzmly9wyca"
-let membershipIdAddress = "resource_tdx_2_1nt2sflp94mzge2l50qh7p3vxvsd66vwcpjr8nu38dwze67q3ks3yye"
-let membershipTransferAddress = "resource_tdx_2_1nfhksd7ag60e2p8s3w7ah73da7xhml7h6pqvqj0afr3rkk7erqfchk"
-let membershipUnstakeAddress = "resource_tdx_2_1n2w8ynyyjxnqjnt3mf33y9gy9x8qcem38h942dlfryrg90r2rrkyah"
-let incentiveIdAddress = "resource_tdx_2_1nfpq506lwsvfgxc3efa5lwtfhmwwwzvlzhr4d9lesncjyr9nfdxfd7"
-let incentiveTransferAddress = "resource_tdx_2_1nf4cdtflgq5ppddh5japddpm3fdx4tv0j06t7ld4v4c7zecnefy78t"
-let incentiveUnstakeAddress = "resource_tdx_2_1nfvhuyzxcmpky5tget66jtkzwnx4zkvwf97frz6rj54w702cr9z3sz"
-let proposalReceiptAddress = "resource_tdx_2_1nfcsf8shazua0tdeujzn3c2yl2tn07g3yveve7pzkx5p5603rhhnfz"
+let daoAddress = "component_rdx1cpj9kwxx4dqxu797dhkvtskhlxvxajl6ztkktxl9atqdtcqefk9dnh"
+let dAppIdDao = "account_rdx1c9ucwvhtwvhnvpf48z64ypmh58wx6mf2xjpp5eptp4n9mrkfgkkv22"
+let accountLocker = "locker_rdx1dq9efjs7h2cwgdfnjs0ryezdp7rxcl7w2h5swe28h3q90jeel0sqr7"
+let lbpComponentAddress = "component_rdx1czeaegqtsr6qw6pvrmfe9g2jcyflz5yx7fx0y2vwkgsyu7cuql2lrp"
+let lbpPoolAddress = "pool_rdx1ckq85p6azutzhjd2w075cpwd0t8fj6p4ks9r2ua838e9htyp5vs5v2"
+let stakingAddress = "component_rdx1czgeduf7xkzgrh8t5qrju6zejdcvfdu0wqqq6azgcs682afuxtjdv9"
+let ilisPool = "pool_rdx1cs9crdyffyfn48vcctfgkjtkau8mfdt2js07vw5fh79fk6aswzhtn3"
+let incentiveAddress = "component_rdx1cr6nsvdf5vuq97f3nqzjdqhh52439e0w6wm5nf2vc8ype6uz6843f9"
+let governanceAddress = "component_rdx1czh6hmmgzxqdv4dza3mnvhja4c6m3y9h5k4063x4vqn4h40lq04j2n"
+let reentracyProxy = "component_rdx1cqaqlhk288edgt0warjynh68900srmfel2emq4fy040fz8dqdzk0rj"
+let bootBadge = "resource_rdx1t5lh4sfru05ahcttnhterfhsjqaecd8qkwkr2fsvv0pqzaev8fgjl7"
+let lbpPoolUnit = "resource_rdx1tk8lhxv0m0npvzxmexk375dv9r8t0s6wq26yf3p7ktkleq7qzglhzl"
+let poolIlisAddress = "resource_rdx1t4xn9vp6sa953tv3gqlf7p7hek4anhz5wkxrffmwcr5wfw9ffvgyf6"
+let membershipIdAddress = "resource_rdx1ntsrpxwdvrnzt3kmkx7nlhvy8t5t2ckxqmp9ydpwf92ltjfwn07pkx"
+let membershipTransferAddress = "resource_rdx1ng2up00nfkdtf87ytrqvs6zvu6rgfwgwrw6ksyl6gnz4mpqaj4hhda"
+let membershipUnstakeAddress = "resource_rdx1nfxms582l535nd6ual0h0yk5tpegu9967rzkvwn7h4ym9numqfdwpy"
+let incentiveIdAddress = "resource_rdx1ng2nu559nw2lutyl48hafycj42km8qg7v0t4nnqkuwy74c56l3xruu"
+let incentiveTransferAddress = "resource_rdx1ntxajna45s0mqyspfd6hsq5jmxw673skpdr45xphmv8ew4k72j2sdg"
+let incentiveUnstakeAddress = "resource_rdx1n25n0u6v9js835tjdzqgfarvzygjntq5d4s74e4nfzjj4nf29tf2dp"
+let proposalReceiptAddress = "resource_rdx1ngwhlept050nw3evc6fk8stms9n44krh5f9efvl3clusuhlgsy5f8a"
 
-let stabPackageAddress = "package_tdx_2_1pk60t9hhf25m4t4mrfdy9w6mhgul5jfx2w0k9kuz7mvnhxnz0n3dl7"
+let stabPackageAddress = "package_rdx1pkgatd06tuuucchya5ctwfcvd0rgw3yvm5pp800942hd0u3w56n626"
 
-let stabComponentAddress = "component_tdx_2_1crgrtkgwfq04l69y5emg9rvgx0y4uz8vd9ufmu3gzjm2tgqjdn356n"
-let ctrlBadgeAddress = "resource_tdx_2_1tkpaqe9t7e3gc2mzqnxsrg08vu5qyxfywm77u8z842s9l32rrajv29"
-let stabAddress = "resource_tdx_2_1tkj84nc5xy7rgrtq3mz6ugxf3ztqk7dpchc0kgs7u07s7ugy7rrytv"
-let cdpAddress = "resource_tdx_2_1ngxn3t4sle965cg4vw3t5mhzz0xayz4dm3vj746d9yaz7dyyc5cdmy"
-let markerAddress = "resource_tdx_2_1nft8duf7sqq75w9cesy7zex6wzm4yg0k5lq5yyjdxqfahh8fa3zegq"
-let liqAddress = "resource_tdx_2_1ngnexzywt0uyujtm3khghfr3rle237n5tyfz8svrk2gkq3xr4vf4f8"
+let stabComponentAddress = "component_rdx1cq70cjajtvllgk9z9wm9l8v6w8hsgtlw530cdgpraxprn4yevg89kf"
+let ctrlBadgeAddress = "resource_rdx1thsc69k2lm99jduyyfct0yl0fsqud4h25wvavwp7p5zw65r5h65tx5"
+let stabAddress = "resource_rdx1t40lchq8k38eu4ztgve5svdpt0uxqmkvpy4a2ghnjcxjtdxttj9uam"
+let cdpAddress = "resource_rdx1ng373z7kqwvseu4d9rjdq3wux34zu7mtvg9255sl0j7dauuj67dfxz"
+let markerAddress = "resource_rdx1nggz77xqf9f5gnklq8vdc204neulhm88eu9z66l2d9meueqn34qtuq"
+let liqAddress = "resource_rdx1nfwchpaj9fq5uhg96c873xlw08e5hcvqacsn6gk5g8tv4w5tk44fl6"
 
-let proxyComponentAddress = "component_tdx_2_1cqgcrncu2edlkwc4ht68w4rmv0gdzwxv00y2d0xvzjygmgnag595r6"
-let dAppIdStab = "account_tdx_2_1c9ng02j7hkyv8t65tdhreh5ukdqf2xpfgrcz72l45x9upks0we92j7"
-let poolComponentAddress = "component_tdx_2_1cpqlrfv4xsnekzwpqgt5f00y5w75jq09qj0stes5nh09chzyywz9cm"
-let poolAddress = "pool_tdx_2_1c4wzvej460zx0yue35nclnkhcnwuhmez6gh5kjqkw6g3j7zq2ayl7a"
-let oracleComponent = "component_tdx_2_1czlqhe5zgr0c3t89l5asxm5z0lyw38qre8avhyca2vrjyzwphjhln6"
-let flashLoansComponent = 'component_tdx_2_1crk6srdg4v4fe32lv8525vrh04h6pjkdp47lc4sxewn8mzjmflcghr'
-let lpAddress = "resource_tdx_2_1t4nw3xcttpq3k3jkzfd0une3etmk7fynd7npugsm2meged27slc3x5"
-let flashLoanReceipt = "resource_tdx_2_1nttv0zur20a4narwgszrxyrksd9n2lkfszwjkggfwl2zsx6g33wg8y"
-let lpAddressForIncentives = "resource_tdx_2_1t4nw3xcttpq3k3jkzfd0une3etmk7fynd7npugsm2meged27slc3x5"
+let proxyComponentAddress = "component_rdx1cqecl844an5n8w7dpelwr6mxrgad2kzj57nl5064q64wxwyxaxxpuk"
+let dAppIdStab = "account_rdx1cydlgtkk5yp3jym4t89k8ffrg2ytnge83q3m6z4fuzg5geseawdv94"
+let poolComponentAddress = "component_rdx1cz9nke03hd9wgvkck0dw2tdcu4ex588e0c283lmu5f2are8e6h9rk2"
+let poolAddress = "pool_rdx1c4jj8lklg7edacflhk0tl202dzgawkujly4kqf0jfehyqd8watxw0r"
+let oracleComponent = "component_rdx1czc98y36sjzn3rzf60rjdc2ks33zlpn8lkv5nc7z30amhxzslccyvs"
+let flashLoansComponent = 'component_rdx1cpkz36wvyzce5vddewsu3g3nhgghr9d0ggkkvek3ly8rxrkckzsq7c'
+let lpAddress = "resource_rdx1t59m2c48gtrflsxms35d7alkggyed383fw0mfe98c3v3z6xcqds28h"
+let flashLoanReceipt = "resource_rdx1ngqggm445297u03dka8r86acvvf2vv5a74y0t0xjdpx5d7thactfa0"
+let lpAddressForIncentives = lpAddress
 let selectedResource = lpAddressForIncentives
 
-let lbpKvsHexes = ["5c0a0000000000000000", "5c0a0000000000000001", "5c0a0000000000000002"]
+let lbpKvsHexes = ["5c0a0000000000000000", "5c0a0100000000000000", "5c0a0200000000000000"]
 let xrdKeyHex = "5c805da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6"
-const earliestTimestamp = new Date("2024-10-12T03:04:13.615Z");
+const earliestTimestamp = new Date("2024-10-18T06:15:59.04Z");
 
 let ilisUnlockMultiplier = 2;
 let lbpUnlockMultiplier = 5;
@@ -80,17 +81,15 @@ let feeLbp = 0.002;
 let initialIlisWeight = 0.99;
 let initialXrdWeight = 0.01;
 
-const acceptedResources = [["XRD", xrdAddress, "", "images/radix-logo.svg", 1, 'XRD', 0],
-["Hermes LSU", "resource_tdx_2_1th9k30slgu9uekfu42llstgcq80dx8d59hxgexe5hdaqzyp8etc2dv", "validator_tdx_2_1s0l6946a2kx33vjmuuh3qrax3ueauznd2fc3d69md2exx29rcnjmnj", "https://hermesprotocol.io/assets/images/icon.svg", 1, 'LSU', 0],
-["Radst0kes LSU", "resource_tdx_2_1thutwwmqwk6z4vyju8v0fhdlxdhgj2h7kgc8822cfsdeyjp7e5j3hd", "validator_tdx_2_1sdvnyupyl2atq72f5lsq7lcyw3cc4vnevf05yvtemn5c8fyncvv3xw", "images/radstokes-logo.png", 1, 'LSU', 0]]
+const acceptedResources = [["XRD", xrdAddress, "", "images/radix-logo.svg", 1, 'XRD', 0]]
 const incentive_resources = [["LPSTAB", "images/lplogo.png", lpAddressForIncentives]]
 
 const addressSubject = new BehaviorSubject(DEFAULT_ADDRESS);
 let latestUpdateId = 0;
-const baseLink = "https://radix-files.vercel.app/";
-let network = RadixNetwork.Stokenet;
+const baseLink = "https://radix-files-mainnet.vercel.app/";
+let network = RadixNetwork.Mainnet;
 
-let dAppId = dAppIdDao;
+let dAppId = "account_rdx1c9ucwvhtwvhnvpf48z64ypmh58wx6mf2xjpp5eptp4n9mrkfgkkv22";
 let dAppName = 'ILIS DAO'
 if (window.location.pathname === "/borrow" || window.location.pathname === "/swap" || window.location.pathname === "/manage-loans" || window.location.pathname === "/liquidations") {
     dAppId = dAppIdStab;
@@ -497,15 +496,20 @@ if (window.location.pathname == "/deployment") {
             CALL_METHOD
             Address("${governanceAddress}")
             "create_proposal"
-            "Deploy and govern STAB Protocol"
-            "This is the same proposal as the last one you dummy. Just testin here."
+            "Accepting Operating Agreement and Establishing STAB Protocol Governance"
+            "This proposal aims to accept the newly updated Operational Agreement of the ILIS DAO, establish the DAO's governance over the STAB Protocol, implement incentives for using the protocol, allocate rewards for collateral price updaters, and adjust the DAO's voting parameters. It is the same as Proposal #1, but with correct on-chain execution."
             Enum<1u8>(
                 Array<Tuple>(
-                Tuple(
-                    "${storageKvs}",
-                    Address("${storageComponent}"),
-                    "${hashToStore}"
-                )
+                    Tuple(
+                        "${storageKvs}",
+                        Address("${storageComponent}"),
+                        "${hashToStore}"
+                    ),
+                    Tuple(
+                        "${storageKvs}",
+                        Address("${storageComponent}"),
+                        "${hashToStore2}"
+                    )
                 )
             )
             Address("${incentiveAddress}")
@@ -516,7 +520,8 @@ if (window.location.pathname == "/deployment") {
                 Decimal("200000"),
                 Decimal("1.001"),
                 365i64,
-                Decimal("5")
+                Decimal("1.005"),
+                Decimal("1")
             )
             false
             false
@@ -588,27 +593,6 @@ if (window.location.pathname == "/deployment") {
 
             CALL_METHOD
             Address("${accountAddressForDeployment}")
-            "create_proof_of_non_fungibles"
-            Address("${membershipIdAddress}")
-            Array<NonFungibleLocalId>(
-                NonFungibleLocalId("#1#")
-            )
-            ;
-
-            POP_FROM_AUTH_ZONE
-            Proof("member_id_proof")
-            ;
-
-            CALL_METHOD
-            Address("${governanceAddress}")
-            "vote_on_proposal"
-            0u64
-            true
-            Proof("member_id_proof")
-            ;
-
-            CALL_METHOD
-            Address("${accountAddressForDeployment}")
             "deposit"
             Bucket("proposal_receipt")
             ;
@@ -650,7 +634,7 @@ if (window.location.pathname == "/deployment") {
     }
 }
 
-
+let xrdLbpPrice;
 let selectedText;
 let xrdPrice;
 let interestRate;
@@ -744,6 +728,12 @@ let stakingAmount;
 let collateralsKvs;
 let lbpEnded = false;
 let realChart;
+let currentLpReward;
+let currentLpStaked;
+let lpStabValue;
+let currentIlisReward;
+let currentIlisStaked;
+let membershipApy;
 
 function resizeChart() {
     const chartContainer = document.getElementById('chartContainer');
@@ -777,7 +767,6 @@ function generateDownloadLinks(files, baseLink) {
   }
   
   function displayAttachmentLinks(links) {
-    console.log(links);
     const attachmentsElement = document.getElementById('attachments');
     attachmentsElement.innerHTML = ''; // Clear any existing content
   
@@ -934,7 +923,7 @@ function toastMe(txId, action, kind) {
         Toastify({
             text: `${action} successful! Click for more info.`,
             duration: 5000,
-            destination: `https://stokenet-dashboard.radixdlt.com/transaction/${txId}`,
+            destination: `https://dashboard.radixdlt.com/transaction/${txId}`,
             newWindow: true,
             close: true,
             gravity: "top", // `top` or `bottom`
@@ -1035,16 +1024,24 @@ function setSwapButton() {
 function setLbpSwapButton() {
     var swapButton = document.getElementById('sell');
     var enable = true;
+    console.log(walletIlis, walletXrd);
     if (isConnected == false) {
         enable = false;
-    } else if (sell == true && parseFloat(document.getElementById('amount-sell').value) > walletXrd) {
+        console.log("numba1");
+    } else if (lbpSell == true && parseFloat(document.getElementById('amount-sell').value) > walletXrd) {
         enable = false;
-    } else if (sell == false && parseFloat(document.getElementById('amount-sell').value) > walletIlis) {
+        console.log("numba2");
+        console.log(lbpSell);
+    } else if (lbpSell == false && parseFloat(document.getElementById('amount-sell').value) > walletIlis) {
         enable = false;
+        console.log("numba3");
+        console.log(lbpSell);
     } else if (document.getElementById('amount-sell').value == '') {
         enable = false;
+        console.log("numba4");
     } else if (parseFloat(document.getElementById('amount-sell').value) == 0) {
         enable = false;
+        console.log("numba5");
     }
 
     if (enable) {
@@ -1060,12 +1057,15 @@ function setLbpSwapButton() {
 function setProvideButton() {
     var provideButton = document.getElementById('provide');
     var enable = true;
+    var message = "";
     if (isConnected == false) {
         enable = false;
     } else if (parseFloat(document.getElementById('amount-stab-provide-lp').value) > walletStab) {
         enable = false;
+        message = "Not enough STAB in wallet."
     } else if (parseFloat(document.getElementById('amount-xrd-provide-lp').value) > walletXrd) {
         enable = false;
+        message = "Not enough XRD in wallet."
     } else if (document.getElementById('amount-xrd-provide-lp').value == '' || document.getElementById('amount-stab-provide-lp').value == '') {
         enable = false;
     } else if (parseFloat(document.getElementById('amount-xrd-provide-lp').value) == 0 || parseFloat(document.getElementById('amount-stab-provide-lp').value) == 0) {
@@ -1078,6 +1078,13 @@ function setProvideButton() {
     } else {
         provideButton.style.backgroundColor = "hsl(0, 0%, 0%)";
         provideButton.disabled = true;
+    }
+
+    if (message != "") {
+        document.getElementById("provide-warning").style.display = "block";
+        document.getElementById("provide-warning-text").textContent = message;
+    } else {
+        document.getElementById("provide-warning").style.display = "none";
     }
 }
 
@@ -1133,7 +1140,7 @@ function setCloseLoanButton() {
     var message = "";
     if (isConnected == false) {
         enable = false;
-    } else if (parseFloat(debtAmount) > walletStab) {
+    } else if (parseFloat(debtAmount) > walletStab && status != "Closed") {
         enable = false;
         message = "Insufficient STAB to close loan.";
     } else if (selectedCdp == undefined) {
@@ -1220,6 +1227,7 @@ function setAddColButton() {
 }
 
 function setRemoveColButton() {
+    console.log(newCr);
     var sliderCol = document.getElementById('slider-col');
     updateSliderBackground(sliderCol);
     document.getElementById('new-cr').style.color = "";
@@ -1232,16 +1240,20 @@ function setRemoveColButton() {
         enable = false;
     } else if (selectedCdp == undefined) {
         enable = false;
+        console.log("1");
     } else if (status == "Liquidated" || status == "ForceLiquidated" || status == "Closed") {
         enable = false;
+        console.log("2");
     } else if (newCr < 150) {
         enable = false;
         onlyButton = true;
+        console.log("3");
         document.getElementById('new-cr').style.color = "red";
     } else if (document.getElementById('amount-to-remove').value == '' || parseFloat(document.getElementById('amount-to-remove').value) == 0) {
         enable = false;
         onlyButton = true;
         zeroInput = true;
+        console.log("4");
     }
 
     if (enable) {
@@ -1280,7 +1292,6 @@ function setRemoveColButton() {
                 document.getElementById('amount-to-remove').disabled = false;
             }
             document.getElementById('max-new-cr').disabled = false;
-            console.log("only button");
         }
     }
 }
@@ -1356,7 +1367,7 @@ function setAddDebtButton() {
         enable = false;
     } else if (status == "Liquidated" || status == "ForceLiquidated" || status == "Closed") {
         enable = false;
-    } else if (parseFloat(document.getElementById('amount-to-remove-debt').value) > walletStab) {
+    } else if (parseFloat(document.getElementById('amount-to-remove-debt').value) > walletStab && addingDebt == false) {
         enable = false;
         onlyButton = true;
     } else if (newCrDebt < 150) {
@@ -1516,6 +1527,11 @@ function setStakeButton() {
     if (stake == true && votingUntil > nowLbpTime && window.location.pathname == "/membership" && (document.getElementById('amount-to-stake').value != '' && parseFloat(document.getElementById('amount-to-stake').value) != 0)) {
         infoMessage = "Be careful, this ID is currently voting. Proposals you have already voted on will NOT be affected by your increase in voting power, and votes are non-updatable!";
     }
+    if (stake == true && lockedUntil > nowLbpTime && (document.getElementById('amount-to-stake').value != '' && parseFloat(document.getElementById('amount-to-stake').value) != 0)) {
+        if (selectedId) {
+            infoMessage = "Be careful, stake in this ID is locked. Staking more to this ID will automatically lock up the new stake too, though you will receive appropriate rewards.";
+        }
+    }
     if (claimablePeriods != 0) {
         enableButton = false;
         enableInput = false;
@@ -1555,13 +1571,11 @@ function setStakeButton() {
     } else {
         document.getElementById('warning-box-stake').style.display = 'none';
     }
-    if (window.location.pathname == "/membership") {
-        if (infoMessage != "") {
-            document.getElementById('info-box-stake').style.display = 'block';
-            document.getElementById('info-message-stake').textContent = infoMessage;
-        } else {
-            document.getElementById('info-box-stake').style.display = 'none';
-        }
+    if (infoMessage != "") {
+        document.getElementById('info-box-stake').style.display = 'block';
+        document.getElementById('info-message-stake').textContent = infoMessage;
+    } else {
+        document.getElementById('info-box-stake').style.display = 'none';
     }
 }
 
@@ -1589,7 +1603,7 @@ function setLockButton() {
             message = "No ILIS to pay unlock fee.";
         }
     }
-    if (walletIlis < currentRequiredPayment) {
+    if (walletIlis < currentRequiredPayment && lock == false) {
         enableButton = false;
         if (selectedId) {
             message = "Insufficient ILIS in wallet.";
@@ -1659,7 +1673,6 @@ function setNewIdButton() {
 function setUnstakeFinishButton() {
     var unstakeFinishButton = document.getElementById('claim-unstaked-button');
     var enableButton = true;
-    console.log("hello");
     if (isConnected == false) {
         enableButton = false;
     }
@@ -1679,7 +1692,6 @@ function setClaimButton() {
     if (window.location.pathname == "/incentives") {
         var claimButton = document.getElementById('claim-periods-button');
         var enableButton = true;
-        console.log(selectedId);
         if (isConnected == false) {
             enableButton = false;
         }
@@ -1756,6 +1768,7 @@ function getWeights() {
 
 function calculateLbpChange() {
     getWeights();
+    console.log("wehere");
     if (lbpEnded == false) {
         setLbpSwapButton();
         var inputAmount = parseFloat(document.getElementById('amount-sell').value);
@@ -1777,7 +1790,6 @@ function calculateLbpChange() {
             percentage.style.color = "green";
             document.getElementById('percentage-change').childNodes[0].nodeValue = "+" + percentageChange.toFixed(2) + "%";
         } else {
-            console.log("buy side");
             let outputAmount = (parsedXrdPoolAmount * (1 - feeLbp) * inputAmount * ilisWeight)
                 / (parsedIlisPoolAmount * xrdWeight + inputAmount * ilisWeight * (1 - feeLbp));
             swapReceive.value = outputAmount;
@@ -1797,37 +1809,48 @@ function calculateLbpChange() {
 
 function parseLbpLedger(response) {
     // Check if the response has the expected structure
-    if (!response.entries || !response.entries[0] || !response.entries[0].value || !response.entries[0].value.programmatic_json) {
+    if (!response.entries || response.entries.length === 0 || !response.entries[0].value || !response.entries[0].value.programmatic_json) {
         console.error('Unexpected API response structure');
         return [];
     }
 
-    const elements = response.entries[0].value.programmatic_json.elements;
+    // Initialize an array to hold all parsed elements
+    const allParsedElements = [];
 
-    // Map each element to the desired format
-    return elements.map(element => {
-        if (element.fields && element.fields.length === 2) {
-            const [firstField, secondField] = element.fields;
-            
-            if (secondField.fields && secondField.fields.length === 2) {
-                return [
-                    parseFloat(firstField.value),
-                    [
-                        parseFloat(secondField.fields[0].value),
-                        parseFloat(secondField.fields[1].value)
-                    ]
-                ];
+    // Iterate over each entry in the response
+    response.entries.forEach(entry => {
+        const elements = entry.value.programmatic_json.elements;
+
+        // Map each element to the desired format
+        const parsedElements = elements.map(element => {
+            if (element.fields && element.fields.length === 2) {
+                const [firstField, secondField] = element.fields;
+
+                if (secondField.fields && secondField.fields.length === 2) {
+                    return [
+                        parseFloat(firstField.value),
+                        [
+                            parseFloat(secondField.fields[0].value),
+                            parseFloat(secondField.fields[1].value)
+                        ]
+                    ];
+                }
             }
-        }
-        
-        console.error('Unexpected element structure', element);
-        return null;
-    }).filter(item => item !== null); // Remove any null items if parsing failed
+
+            console.error('Unexpected element structure', element);
+            return null;
+        }).filter(item => item !== null); // Remove any null items if parsing failed
+
+        // Concatenate the parsed elements to the allParsedElements array
+        allParsedElements.push(...parsedElements);
+    });
+
+    return allParsedElements; // Return the combined results
 }
 
 async function checkMarking(amount) {
     // URL to get the gateway status
-    const statusUrl = "https://stokenet.radixdlt.com/status/gateway-status";
+    const statusUrl = "https://mainnet.radixdlt.com/status/gateway-status";
 
     const headers = {
         "Content-Type": "application/json"
@@ -1848,7 +1871,7 @@ async function checkMarking(amount) {
         const endEpochExclusive = currentEpoch + 2;
 
         // URL to send the POST request to
-        const url = "https://stokenet.radixdlt.com/transaction/preview";
+        const url = "https://mainnet.radixdlt.com/transaction/preview";
 
         // Base manifest string
         let manifestString = '';
@@ -1858,7 +1881,7 @@ async function checkMarking(amount) {
             CALL_METHOD
                 Address("${proxyComponentAddress}")
                 "mark_for_liquidation"
-                Address("resource_tdx_2_1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxtfd2jc")
+                Address("${xrdAddress}")
                 ;
             `;
 
@@ -1869,7 +1892,7 @@ async function checkMarking(amount) {
         // Add the remaining part of the manifest
         manifestString += `
             CALL_METHOD
-                Address("account_tdx_2_168z9kn6xeg7s0m7qsgdf5wmvsh0v656ndkh295d8p4j5lu47ta5rnv")
+                Address("account_rdx12x96pjxqazraqf2f9pdqxsl0a2mpzgep6dfny039dhv8ksd33gc52m")
                 "deposit_batch"
                 Expression("ENTIRE_WORKTOP");
             `;
@@ -1928,7 +1951,7 @@ async function checkMarking(amount) {
 
 async function checkLiquidation(toSkip) {
     // URL to get the gateway status
-    const statusUrl = "https://stokenet.radixdlt.com/status/gateway-status";
+    const statusUrl = "https://mainnet.radixdlt.com/status/gateway-status";
 
     const headers = {
         "Content-Type": "application/json"
@@ -1949,11 +1972,11 @@ async function checkLiquidation(toSkip) {
         const endEpochExclusive = currentEpoch + 2;
 
         // URL to send the POST request to
-        const url = "https://stokenet.radixdlt.com/transaction/preview";
+        const url = "https://mainnet.radixdlt.com/transaction/preview";
 
         // Repeat the specified part of the manifest
         let manifest = `CALL_METHOD
-            Address("account_tdx_2_168z9kn6xeg7s0m7qsgdf5wmvsh0v656ndkh295d8p4j5lu47ta5rnv")
+            Address("account_rdx12x96pjxqazraqf2f9pdqxsl0a2mpzgep6dfny039dhv8ksd33gc52m")
             "create_proof_of_amount"
             Address("${ctrlBadgeAddress}")
             Decimal("0.75");
@@ -1977,7 +2000,7 @@ async function checkLiquidation(toSkip) {
             NonFungibleLocalId("#0#");
 
         CALL_METHOD
-            Address("account_tdx_2_168z9kn6xeg7s0m7qsgdf5wmvsh0v656ndkh295d8p4j5lu47ta5rnv")
+            Address("account_rdx12x96pjxqazraqf2f9pdqxsl0a2mpzgep6dfny039dhv8ksd33gc52m")
             "deposit_batch"
             Expression("ENTIRE_WORKTOP");
             `;
@@ -2117,7 +2140,7 @@ async function checkVoting() {
         return;
     }
     // URL to get the gateway status
-    const statusUrl = "https://stokenet.radixdlt.com/status/gateway-status";
+    const statusUrl = "https://mainnet.radixdlt.com/status/gateway-status";
 
     const headers = {
         "Content-Type": "application/json"
@@ -2138,12 +2161,12 @@ async function checkVoting() {
         const endEpochExclusive = currentEpoch + 2;
 
         // URL to send the POST request to
-        const url = "https://stokenet.radixdlt.com/transaction/preview";
+        const url = "https://mainnet.radixdlt.com/transaction/preview";
 
         // Base manifest string
         
         let manifestString = `
-        CALL_METHOD
+            CALL_METHOD
             Address("${accountAddress}")
             "create_proof_of_non_fungibles"
             Address("${membershipIdAddress}")
@@ -2223,7 +2246,7 @@ async function update_id() {
         };
         if (selectedId != undefined) {
             document.getElementById('warning-message-id-select').style.display = 'none';
-            await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+            await fetch("https://mainnet.radixdlt.com/state/non-fungible/data", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -2312,7 +2335,7 @@ async function update_id() {
         idsReadyToUnstake = [];
 
         if (membership_unstake_receipts.length > 0) {
-            await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+            await fetch("https://mainnet.radixdlt.com/state/non-fungible/data", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -2385,11 +2408,11 @@ async function update_id() {
 }
 
 async function fetchData(address) {
-    const url_fetch_ids = "https://stokenet.radixdlt.com/state/entity/details";
+    const url_fetch_ids = "https://mainnet.radixdlt.com/state/entity/details";
     const addresses = [address, proxyComponentAddress, poolComponentAddress, stabAddress,
                         poolAddress, stakingAddress, lbpPoolAddress, lbpComponentAddress,
                         incentiveAddress, governanceAddress, daoAddress, ilisPool,
-                        poolIlisAddress, stabComponentAddress];
+                        poolIlisAddress, stabComponentAddress, lpAddress];
 
     const requestBody = {
         "addresses": addresses,
@@ -2406,7 +2429,7 @@ async function fetchData(address) {
         }
     };
 
-    if (address !== "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec") {
+    if (address !== "account_rdx12x96pjxqazraqf2f9pdqxsl0a2mpzgep6dfny039dhv8ksd33gc52m") {
         accountAddress = address;
         if (window.location.pathname !== "/deployment") {
             restoreButtonLabels();
@@ -2421,7 +2444,7 @@ async function fetchData(address) {
         selectedCdp = undefined;
         selectedMarker = undefined;
         selectedId = undefined;
-        accountAddress = "account_tdx_2_129kt8327ulqyq0ahdh74plu0r23qn9jugxppehggtp27m9n063heec"
+        accountAddress = "account_rdx12x96pjxqazraqf2f9pdqxsl0a2mpzgep6dfny039dhv8ksd33gc52m"
     }
     stab_ids = []
     cdp_ids = []
@@ -2507,7 +2530,7 @@ async function fetchData(address) {
             };
 
             // Make the API request
-            await fetch('https://stokenet.radixdlt.com/state/non-fungible/data', {
+            await fetch('https://mainnet.radixdlt.com/state/non-fungible/data', {
                 method: 'POST', // Specify the HTTP method
                 headers: {
                     'Content-Type': 'application/json', // Set the content type to JSON
@@ -2528,7 +2551,7 @@ async function fetchData(address) {
                 });
         }
 
-        const timeResponse = await fetch('https://stokenet.radixdlt.com/status/gateway-status', {
+        const timeResponse = await fetch('https://mainnet.radixdlt.com/status/gateway-status', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -2555,7 +2578,7 @@ async function fetchData(address) {
             const ledgerKvsRequest = {
                 "key_value_store_address": ledgerKvs,
                 "keys": [
-                    ...kvsHexesToUse.map(hex => ({ "key_hex": hex })),
+                    ...kvsHexesToUse.map(hex => ({ "key_hex": hex })), // Map each hex to an object
                     {
                         "key_json": {
                             "kind": "Tuple",
@@ -2570,7 +2593,7 @@ async function fetchData(address) {
                 ]
             };
 
-            const ledgerState = await fetch('https://stokenet.radixdlt.com/state/key-value-store/data', {
+            const ledgerState = await fetch('https://mainnet.radixdlt.com/state/key-value-store/data', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -2579,6 +2602,8 @@ async function fetchData(address) {
             });
 
             const ledgerStateData = await ledgerState.json();
+            console.log("supmydude");
+            console.log(ledgerStateData);
             ledgerData = parseLbpLedger(ledgerStateData);
         }
         return sortedItems;
@@ -2595,7 +2620,7 @@ async function update_governance() {
         };
         if (selectedId != undefined) {
             document.getElementById('warning-message-id-select').style.display = 'none';
-            await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+            await fetch("https://mainnet.radixdlt.com/state/non-fungible/data", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -2629,6 +2654,10 @@ async function update_governance() {
             document.getElementById('warning-message-id-select').style.display = 'block';
         }
 
+        if (proposalToView == 2 || proposalToView == -1) {
+
+        }
+
         if (maxProposals >= 0 && proposalToView != -1) {
             let request2 = {
                 "key_value_store_address": proposalsKvs,
@@ -2650,7 +2679,7 @@ async function update_governance() {
                 ]
             };
 
-            await fetch("https://stokenet.radixdlt.com/state/key-value-store/data", {
+            await fetch("https://mainnet.radixdlt.com/state/key-value-store/data", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -2670,13 +2699,13 @@ async function update_governance() {
                 var votesAgainst = proposalData[5].value;
                 var totalVotes = parseFloat(votesFor) + parseFloat(votesAgainst);
                 if (status != "Building") {
-                    document.getElementById('votes-for').textContent = parseFloat(votesFor).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " (" + ((votesFor / totalVotes) * 100).toFixed(2) + "%)";
-                    document.getElementById('votes-against').textContent = parseFloat(votesAgainst).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " (" + ((votesAgainst / totalVotes) * 100).toFixed(2) + "%)";
+                    document.getElementById('votes-for').textContent = parseFloat(votesFor * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " (" + ((votesFor / totalVotes) * 100).toFixed(2) + "%)";
+                    document.getElementById('votes-against').textContent = parseFloat(votesAgainst * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " (" + ((votesAgainst / totalVotes) * 100).toFixed(2) + "%)";
                 } else {
                     document.getElementById('votes-for').textContent = "-";
                     document.getElementById('votes-against').textContent = "-";
                 }
-                document.getElementById('quorum').textContent = parseFloat(totalVotes).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " / " + parseFloat(quorum).toLocaleString('en-US', { maximumFractionDigits: 2 });
+                document.getElementById('quorum').textContent = parseFloat(totalVotes * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " / " + parseFloat(quorum).toLocaleString('en-US', { maximumFractionDigits: 2 });
             
                 if (proposalData[2].variant_name == "Some") {
                     const attachmentList = proposalData[2].fields[0].elements;
@@ -2709,7 +2738,7 @@ async function update_governance() {
                 var votesAgainst = 0;
                 var totalVotes = parseFloat(votesFor) + parseFloat(votesAgainst);
                 document.getElementById('votes-for').textContent = parseFloat(votesFor).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " (" + ((votesFor / totalVotes) * 100).toFixed(2) + "%)";
-                document.getElementById('votes-against').textContent = parseFloat(votesAgainst).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " (" + ((votesAgainst / totalVotes) * 100).toFixed(2) + "%)";
+                document.getElementById('votes-against').textContent = parseFloat(votesAgainst * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " (" + ((votesAgainst / totalVotes) * 100).toFixed(2) + "%)";
                 document.getElementById('quorum').textContent = "N/A";
                 const downloadLinks = ["https://radix-files-mainnet.vercel.app/file/internal_keyvaluestore_rdx1krupls6a9x689fnkcpr7nt7n5xl8zmk7gvm2d6rmavxjs6z92dllhg/921fb2f9f9136488abe035d4278740dc7d9c0daffee822e8f1be4e5dba82046c"]
                 displayAttachmentLinks(downloadLinks);
@@ -2728,7 +2757,7 @@ async function update_incentives() {
         };
         if (selectedId != undefined) {
             document.getElementById('warning-message-id-select').style.display = 'none';
-            await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+            await fetch("https://mainnet.radixdlt.com/state/non-fungible/data", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -2774,12 +2803,22 @@ async function update_incentives() {
             document.getElementById('days-to-lock').value = 0;
             document.getElementById('ilis-reward').textContent = 0;
 
+            getWeights();
+            var ilisPrice = ((parseFloat(xrdLbpPoolAmount) * parseFloat(ilisWeight)) / (parseFloat(ilisLbpPoolAmount) * parseFloat(xrdWeight))) * parseFloat(xrdLbpPrice);
+            var reward = parseFloat(currentLpReward) * (parseFloat(amountStaked)) / (parseFloat(currentLpStaked));
+            var rewardValue = parseFloat(reward) * parseFloat(ilisPrice);
+            console.log(rewardValue);
+            console.log(ilisPrice);
+
             if (stake == true) {
                 document.getElementById('max-new-stake').textContent = "max. " + (parseFloat(walletResource)).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " LPSTAB";
                 document.getElementById('new-stake').textContent = (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " LPSTAB";
+                document.getElementById('staking-rewards').textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked)))).toFixed(1) + "% APY)";
+                console.log(parseFloat(currentLpReward) * amountStaked / parseFloat(currentLpStaked));
             } else {
                 document.getElementById('max-new-stake').textContent = "Unstake all";
                 document.getElementById('new-stake').textContent = (parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " LPSTAB";
+                document.getElementById('staking-rewards').textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked)))).toFixed(1) + "% APY)";
             }
 
             lockNow = Math.max(0, ((lockedUntil - nowLbpTime) / 60 / 60 / 24));
@@ -2808,7 +2847,7 @@ async function update_incentives() {
         idsReadyToUnstake = [];
 
         if (incentive_unstake_receipts.length > 0) {
-            await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+            await fetch("https://mainnet.radixdlt.com/state/non-fungible/data", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -2894,7 +2933,7 @@ async function update_liq() {
             };
 
             try {
-                let response = await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+                let response = await fetch("https://mainnet.radixdlt.com/state/non-fungible/data", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -2918,7 +2957,7 @@ async function update_liq() {
                     "non_fungible_ids": [data.non_fungible_ids[0].data.programmatic_json.fields[2].value],
                 };
 
-                response = await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+                response = await fetch("https://mainnet.radixdlt.com/state/non-fungible/data", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -3044,7 +3083,7 @@ async function update_cdp() {
         };
 
 
-        await fetch("https://stokenet.radixdlt.com/state/non-fungible/data", {
+        await fetch("https://mainnet.radixdlt.com/state/non-fungible/data", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -3296,7 +3335,7 @@ function restoreButtonLabels() {
 // Instantiate DappToolkit
 const rdt = RadixDappToolkit({
     dAppDefinitionAddress: dAppId,
-    networkId: network, // network ID 2 is for the stokenet test network 1 is for mainnet
+    networkId: network, // network ID 2 is for the mainnet test network 1 is for mainnet
     applicationName: dAppName,
     applicationVersion: '1.0.0',
 })
@@ -3321,7 +3360,7 @@ if (window.location.pathname === '/borrow' || window.location.pathname === '/man
         validatorAddresses.push(validatorAddress);
     }
 
-    let url = "https://stokenet.radixdlt.com/state/entity/details";
+    let url = "https://mainnet.radixdlt.com/state/entity/details";
 
     let data = {
         "addresses": resourceAddresses,
@@ -3335,7 +3374,7 @@ if (window.location.pathname === '/borrow' || window.location.pathname === '/man
         }
     };
 
-    let url_2 = "https://stokenet.radixdlt.com/state/validators/list";
+    let url_2 = "https://mainnet.radixdlt.com/state/validators/list";
     let data_2 = {
         "at_ledger_state": null
     };
@@ -3409,8 +3448,18 @@ function useData(data) {
     internalPrice = data[1].details.state.fields[15].fields[4].value;
     console.log(data);
     xrdPrice = data[1].details.state.fields[10].value;
+    xrdLbpPrice = data[1].details.state.fields[10].value;
+    console.log(xrdPrice);
     if (window.location.pathname === '/membership' || window.location.pathname === '/governance') {
         poolMultiplier = data[11].fungible_resources.items[0].vaults.items[0].amount / data[12].details.total_supply;
+        currentIlisReward = data[5].details.state.fields[7].fields[3].value;
+        currentIlisStaked = data[5].details.state.fields[7].fields[1].value * poolMultiplier;
+        console.log(currentIlisReward);
+        console.log(currentIlisStaked);
+        membershipApy = 365 * currentIlisReward / currentIlisStaked;
+        if (window.location.pathname === '/membership') {
+            document.getElementById('staking-rewards').textContent = (100 * membershipApy).toFixed(2) + "%";
+        }
     } else {
         poolMultiplier = 1;
     }
@@ -3631,8 +3680,11 @@ function useData(data) {
     quorum = data[9].details.state.fields[9].fields[2].value;
     interestRate = (100 * ((data[1].details.state.fields[15].fields[6].value ** (24 * 60 * 365)) - 1)).toFixed(2);
     currentIncentivePeriod = data[8].details.state.fields[2].value;
+    currentLpStaked = data[8].details.state.fields[12].entries[0].value.fields[1].value;
+    currentLpReward = data[8].details.state.fields[12].entries[0].value.fields[3].value;
     maxProposals = data[9].details.state.fields[8].value - 1;
     proposalsKvs = data[9].details.state.fields[7].value;
+    lpStabValue = 2 * xrdPrice * xrdPoolAmount / parseFloat(data[14].details.total_supply);
 
     if (proposalToView == -1 && window.location.pathname === '/governance') {
         document.getElementById('prop-id-counter').textContent = maxProposals;
@@ -3651,7 +3703,7 @@ function useData(data) {
         setRemoveLpButton();
         async function fetchData2() {
             try {
-                const response = await fetch('https://stokenet.radixdlt.com/status/gateway-status', {
+                const response = await fetch('https://mainnet.radixdlt.com/status/gateway-status', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -3665,9 +3717,9 @@ function useData(data) {
             }
             const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
 
-            const entityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
-            const entityPageUrl = 'https://stokenet.radixdlt.com/state/entity/page/fungibles';
-            const customEntityDetailsUrl = 'https://stokenet.radixdlt.com/state/entity/details';
+            const entityDetailsUrl = 'https://mainnet.radixdlt.com/state/entity/details';
+            const entityPageUrl = 'https://mainnet.radixdlt.com/state/entity/page/fungibles';
+            const customEntityDetailsUrl = 'https://mainnet.radixdlt.com/state/entity/details';
 
             const entityDetailsPayload = (timestamp) => ({
                 addresses: [
@@ -3860,10 +3912,10 @@ function useData(data) {
         document.getElementById('apy-real').textContent = (ilisWeight * 100).toFixed(1) + "/" + (xrdWeight * 100).toFixed(1);
         document.getElementById('progress').textContent = ((lbpDuration / 60 / 60 / 24) * lbpProgress).toFixed(2) + "/" + (lbpDuration / 60 / 60 / 24).toFixed(2) + " days";
         if (lbpEnded == false) {
-            document.getElementById('current-fdv').textContent = (((xrdLbpPoolAmount * ilisWeight) / (ilisLbpPoolAmount * xrdWeight)) * 100000000).toLocaleString('en-US', { maximumFractionDigits: 0 }) + " XRD";
-            document.getElementById('ilis-price').textContent = ((xrdLbpPoolAmount * ilisWeight) / (ilisLbpPoolAmount * xrdWeight)).toFixed(4) + " XRD";
-            document.getElementById('final-fdv').textContent = (((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5)) * 100000000).toLocaleString('en-US', { maximumFractionDigits: 0 }) + " XRD";
-            document.getElementById('ilis-price-final').textContent = (((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5))).toFixed(4) + " XRD";
+            document.getElementById('current-fdv').textContent = "$"+((((xrdLbpPoolAmount * ilisWeight) / (ilisLbpPoolAmount * xrdWeight)) * 100000000) * xrdLbpPrice).toLocaleString('en-US', { maximumFractionDigits: 0 });
+            document.getElementById('ilis-price').textContent = ((xrdLbpPoolAmount * ilisWeight) / (ilisLbpPoolAmount * xrdWeight)).toFixed(4) + " XRD = " + "$"+(((xrdLbpPoolAmount * ilisWeight) / (ilisLbpPoolAmount * xrdWeight)) * xrdLbpPrice).toFixed(5);
+            document.getElementById('final-fdv').textContent = "$"+(((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5)) * 100000000 * xrdLbpPrice).toLocaleString('en-US', { maximumFractionDigits: 0 });
+            document.getElementById('ilis-price-final').textContent = (((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5))).toFixed(4) + " XRD = $"+(((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5)) * xrdLbpPrice).toFixed(5);
         } else {
             document.getElementById('current-fdv-line').style.display = "none";
             document.getElementById('ilis-price-line').style.display = "none";
@@ -4346,7 +4398,7 @@ function useData(data) {
         };
 
         // Make the API request
-        fetch('https://stokenet.radixdlt.com/state/key-value-store/data', {
+        fetch('https://mainnet.radixdlt.com/state/key-value-store/data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -4386,8 +4438,8 @@ function useData(data) {
         dropdownContent.innerHTML = '';
         var cdpExists = false;
         var counter;
-        if (data.length > 13) {
-            counter = data[14].length - 1;
+        if (data.length > 14) {
+            counter = data[15].length - 1;
         }
         // Get the dropdown element
         cdp_ids.forEach(id => {
@@ -4396,13 +4448,13 @@ function useData(data) {
             }
             var name = "Receipt " + id;
             var logoUrl = 'images/receipt.png'
-            while (data[14][counter].is_burned == true && counter > 0) {
+            while (data[15][counter].is_burned == true && counter > 0) {
                 counter -= 1;
             }
-            const resource = acceptedResources.find(ar => ar[1] === data[14][counter].data.programmatic_json.fields[0].value);
+            const resource = acceptedResources.find(ar => ar[1] === data[15][counter].data.programmatic_json.fields[0].value);
             validatorMultiplier = resource[4];
-            var cr = ((data[14][counter].data.programmatic_json.fields[3].value / data[14][counter].data.programmatic_json.fields[4].value) * xrdPrice * 100 / internalPrice / validatorMultiplier);
-            var status = data[14][counter].data.programmatic_json.fields[6].variant_name;
+            var cr = ((data[15][counter].data.programmatic_json.fields[3].value / data[15][counter].data.programmatic_json.fields[4].value) * xrdPrice * 100 / internalPrice / validatorMultiplier);
+            var status = data[15][counter].data.programmatic_json.fields[6].variant_name;
 
             if (status != "Liquidated" && status != "ForceLiquidated") {
                 var subtext = status + ", CR: " + (cr * 1).toFixed(2) + "%";
@@ -4524,7 +4576,7 @@ function useData(data) {
 }
 
 async function getFungibleResources(accountAddress) {
-    const response = await fetch('https://stokenet.radixdlt.com/state/entity/details', {
+    const response = await fetch('https://mainnet.radixdlt.com/state/entity/details', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -4838,7 +4890,11 @@ if (window.location.pathname === '/swap') {
         }
         document.getElementById("swap-logo-1").setAttribute("src", source2);
         document.getElementById("swap-logo-2").setAttribute("src", source1);
-        sell = !sell;
+        if (sell) {
+            sell = false;
+        } else {
+            sell = true;
+        }
         inputFieldSwap.value = "0";
         swapReceive.value = "0";
         if (sell == true) {
@@ -6347,7 +6403,11 @@ if (window.location.pathname === '/governance') {
 
     plusSymbolProp.onclick = function () {
         if (parseInt(proposalCounter.textContent) < maxProposals) {
-            proposalCounter.textContent = parseInt(proposalCounter.textContent) + 1;
+            var nextProposal = parseInt(proposalCounter.textContent) + 1;
+            if (proposalToView == -1) {
+                nextProposal = 2;
+            }
+            proposalCounter.textContent = nextProposal;
             minusSymbolProp.disabled = false;
             minusSymbolProp.style.backgroundColor = "";
         } else {
@@ -6357,14 +6417,21 @@ if (window.location.pathname === '/governance') {
         update_governance();
     }
     minusSymbolProp.onclick = function () {
+        var nextProposal = parseInt(proposalCounter.textContent);
         if (parseInt(proposalCounter.textContent) > -1) {
-            proposalCounter.textContent = parseInt(proposalCounter.textContent) - 1;
+            nextProposal -= 1;
+            if (proposalToView == 2) {
+                proposalCounter.textContent = -1
+                nextProposal = -1;
+            } else {
+                proposalCounter.textContent = parseInt(proposalCounter.textContent) - 1;
+            }   
             plusSymbolProp.disabled = false;
         }
         if (parseInt(proposalCounter.textContent) == -1) {
             minusSymbolProp.disabled = true;
         }
-        proposalToView = parseInt(proposalCounter.textContent);
+        proposalToView = nextProposal;
         update_governance();
     }
 
@@ -6513,10 +6580,17 @@ if (window.location.pathname === '/incentives') {
     var inputAmount = document.getElementById("amount-to-stake");
     var maxButton = document.getElementById("max-new-stake");
     var newStake = document.getElementById("new-stake");
+    var newReward = document.getElementById("staking-rewards");
     var sliderLock = document.getElementById("slider-lock");
     var inputAmountLock = document.getElementById("days-to-lock");
     var maxButtonLock = document.getElementById("max-new-lock");
     var newLock = document.getElementById("new-lock");
+
+    console.log(xrdLbpPoolAmount);
+    console.log(ilisWeight);
+    console.log(ilisLbpPoolAmount);
+    console.log(xrdWeight);
+    console.log(xrdLbpPrice);
 
     maxButtonLock.style.cursor = 'pointer';
     maxButton.style.cursor = 'pointer';
@@ -6530,14 +6604,23 @@ if (window.location.pathname === '/incentives') {
     });
 
     slider.oninput = function () {
+        getWeights();
+        var ilisPrice = ((parseFloat(xrdLbpPoolAmount) * parseFloat(ilisWeight)) / (parseFloat(ilisLbpPoolAmount) * parseFloat(xrdWeight))) * parseFloat(xrdLbpPrice);
         if (stake) {
             stakingAmount = this.value;
             newStake.textContent = (parseFloat(this.value) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
             inputAmount.value = this.value;
+            var reward = parseFloat(currentLpReward) * (parseFloat(amountStaked) + parseFloat(stakingAmount)) / (parseFloat(currentLpStaked) + parseFloat(stakingAmount));
+            var rewardValue = parseFloat(reward) * parseFloat(ilisPrice);
+            console.log((parseFloat(currentLpStaked) + parseFloat(stakingAmount)));
+            newReward.textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked) + parseFloat(stakingAmount)))).toFixed(1) + "% APY)";
         } else {
             stakingAmount = this.value;
             newStake.textContent = (-this.value + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
             inputAmount.value = this.value;
+            var reward = parseFloat(currentLpReward) * (parseFloat(amountStaked) - parseFloat(stakingAmount)) / (parseFloat(currentLpStaked) - parseFloat(stakingAmount));
+            var rewardValue = parseFloat(reward) * parseFloat(ilisPrice);
+            newReward.textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked) - parseFloat(stakingAmount)))).toFixed(1) + "% APY)";
         }
         setStakeButton();
         setLockButton();
@@ -6547,6 +6630,8 @@ if (window.location.pathname === '/incentives') {
     }
 
     inputAmount.oninput = function () {
+        getWeights();
+        var ilisPrice = ((parseFloat(xrdLbpPoolAmount) * parseFloat(ilisWeight)) / (parseFloat(ilisLbpPoolAmount) * parseFloat(xrdWeight))) * parseFloat(xrdLbpPrice);
         if (stake) {
             var input = this.value === '' ? 0 : parseFloat(this.value);
             if (input > walletResource) {
@@ -6555,6 +6640,9 @@ if (window.location.pathname === '/incentives') {
             }     
             newStake.textContent = (input + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
             slider.value = input;
+            var reward = parseFloat(currentLpReward) * (parseFloat(amountStaked) + parseFloat(input)) / (parseFloat(currentLpStaked) + parseFloat(input));
+            var rewardValue = parseFloat(reward) * parseFloat(ilisPrice);
+            newReward.textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked) + parseFloat(input)))).toFixed(1) + "% APY)";
         } else {
             var input = this.value === '' ? 0 : parseFloat(this.value);
             if (input > parseFloat(amountStaked) * poolMultiplier) {
@@ -6563,6 +6651,9 @@ if (window.location.pathname === '/incentives') {
             }
             newStake.textContent = (input).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
             slider.value = input;
+            var reward = parseFloat(currentLpReward) * (parseFloat(amountStaked) - parseFloat(input)) / (parseFloat(currentLpStaked) - parseFloat(input));
+            var rewardValue = parseFloat(reward) * parseFloat(ilisPrice);
+            newReward.textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked) - parseFloat(input)))).toFixed(1) + "% APY)";
         }
         setStakeButton();
         setLockButton();
@@ -6573,15 +6664,23 @@ if (window.location.pathname === '/incentives') {
     }
 
     maxButton.onclick = function () {
+        getWeights();
+        var ilisPrice = ((parseFloat(xrdLbpPoolAmount) * parseFloat(ilisWeight)) / (parseFloat(ilisLbpPoolAmount) * parseFloat(xrdWeight))) * parseFloat(xrdLbpPrice);
         if (!maxButton.disabled) {
             if (stake) {
                 slider.value = walletResource;
                 newStake.textContent = (parseFloat(walletResource) + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 });
                 inputAmount.value = walletResource;
+                var reward = parseFloat(currentLpReward) * (parseFloat(amountStaked) + parseFloat(walletResource)) / (parseFloat(currentLpStaked) + parseFloat(walletResource));
+                var rewardValue = parseFloat(reward) * parseFloat(ilisPrice);
+                newReward.textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked) + parseFloat(walletResource)))).toFixed(1) + "% APY)";
             } else {
                 newStake.textContent = "New stake: 0 ILIS";
                 slider.value = parseFloat(amountStaked) * poolMultiplier;
                 inputAmount.value = slider.value;
+                var reward = 0;
+                var rewardValue = parseFloat(reward) * parseFloat(ilisPrice);
+                newReward.textContent = "0 ILIS (-% APY)";
             }
         } 
         setStakeButton();
@@ -6906,6 +7005,12 @@ if (window.location.pathname === '/incentives') {
             Enum<1u8>(
                 Proof("id")
             )
+        ;
+
+        CALL_METHOD
+            Address("${accountAddress}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP")
         ;
       `
         console.log('staking manifest: ', manifest)
@@ -7418,6 +7523,9 @@ if (window.location.pathname === '/manage-loans') {
 
     inputAmount.oninput = function () {
         if (addingCollateral) {
+            if (parseFloat(this.value) > availableCollateral) {
+                this.value = availableCollateral;
+            }
             newCr = getUpToDateCr(parseFloat(this.value) + parseFloat(collateralAmount), debtAmount, validatorMultiplier) * 100;
             document.getElementById("new-cr").textContent = "New CR: " + (newCr).toFixed(2) + "%";
             if (this.value != "") {
@@ -7429,15 +7537,19 @@ if (window.location.pathname === '/manage-loans') {
             setAddColButton();
         } else {
             newCr = getUpToDateCr(parseFloat(collateralAmount) - parseFloat(this.value), debtAmount, validatorMultiplier) * 100;
+            if (newCr < 150) {
+                inputAmount.value = (collateralAmount - getNecessaryCollateral(debtAmount, 1.5, validatorMultiplier));
+                newCr = 150;
+            }
             realInputCol = newCr;
             document.getElementById("new-cr").textContent = "New CR: " + (newCr).toFixed(2) + "%";
             if (this.value != "") {
                 slider.value = maxCr - newCr;
-                newCr = slider.value;
             } else {
                 slider.value = slider.min;
                 document.getElementById("new-cr").textContent = "New CR: " + maxCr + "%";
             }
+            console.log(realInputCol);
             setRemoveColButton();
         }
         updateSliderBackground(slider);
@@ -7506,12 +7618,16 @@ if (window.location.pathname === '/manage-loans') {
             setRemoveDebtButton();
         } else {
             newCrDebt = getUpToDateCr(parseFloat(collateralAmount), (parseFloat(debtAmount) + parseFloat(this.value)), validatorMultiplier) * 100;
+            if (newCrDebt < 150) {
+                newCrDebt = 150;
+                inputAmountDebt.value = (getNecessaryStab(collateralAmount, 1.5, validatorMultiplier) - debtAmount);
+            }
             realInputDebt = newCrDebt;
             console.log(newCrDebt);
             document.getElementById("new-cr-debt").textContent = "New CR: " + (newCrDebt).toFixed(2) + "%";
             if (this.value != "") {
                 sliderDebt.value = maxCrDebt - newCrDebt;
-                newCrDebt = sliderDebt.value;
+                //newCrDebt = sliderDebt.value;
             } else {
                 sliderDebt.value = sliderDebt.min;
                 document.getElementById("new-cr-debt").textContent = "New CR: " + maxCrDebt + "%";
@@ -8456,8 +8572,7 @@ if (window.location.pathname === '/borrow') {
     Address("${proxyComponentAddress}")
     "open_cdp"
     Bucket("collateral")
-    Decimal("${mintAmount}")
-    false;
+    Decimal("${mintAmount}");
     CALL_METHOD
     Address("${accountAddress}")
     "deposit_batch"
@@ -8507,11 +8622,59 @@ function createChart(lbpLength, initialDataWithoutNow) {
     const cutoffPoint = (initialData[initialData.length - 1][0]) * lbpLength;
     const data = initialData.concat(dataExtrapolated);
 
+    console.log(data);
+
+    const dataWithoutLastTwoElements = data.slice(0, -2);
+    let tableArray = [];
+
+    for (let i = 1; i < dataWithoutLastTwoElements.length; i++) {
+        var time = (lbpDuration / 60) * (lbpProgress - dataWithoutLastTwoElements[i][0]);
+        var timeValue = `${Math.ceil(time)}m ago`
+        if (time > 60) {
+            var minutes = time % 60;
+            timeValue = `${Math.floor(time / 60)}h ${minutes.toFixed(0)}m ago`
+        }
+        var xrdDifference = dataWithoutLastTwoElements[i][1][0] - dataWithoutLastTwoElements[i-1][1][0];
+        var ilisDifference = dataWithoutLastTwoElements[i][1][1] - dataWithoutLastTwoElements[i-1][1][1];
+        var type = "buy";
+        if (ilisDifference > 0) {
+            type = "sell"
+        }
+        var absIlis = Math.abs(ilisDifference).toFixed(2) + " ILIS";
+        var buyValue = Math.abs(xrdDifference).toFixed(2) + " XRD = $" + Math.abs(xrdDifference * xrdPrice).toFixed(2);
+        tableArray.push([timeValue, type, absIlis, buyValue])
+    }
+
+
+    const tableBody = document.getElementById('table-body');
+    
+    // Function to generate table rows from the array in reverse order
+    function generateTableRowsInReverse(data) {
+        for (let i = data.length - 1; i >= 0; i--) {
+            const item = data[i]; // Get the current sub-array
+            const row = document.createElement('tr'); // Create a new row
+            item.forEach(cellData => {
+                const cell = document.createElement('td'); // Create a new cell
+                cell.textContent = cellData; // Set the cell's text
+                if (cellData == "sell") {
+                    cell.style.color = "red";
+                }
+                if (cellData == "buy") {
+                    cell.style.color = "green";
+                }
+                row.appendChild(cell); // Append the cell to the row
+            });
+            tableBody.appendChild(row); // Append the row to the table body
+        }
+    }
+
+    generateTableRowsInReverse(tableArray);
+
     if (lbpEnded == true) {
         xrdLbpPoolAmount = data[data.length - 1][1][0];
         ilisLbpPoolAmount = data[data.length - 1][1][1];
-        document.getElementById('final-fdv').textContent = (((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5)) * 100000000).toLocaleString('en-US', { maximumFractionDigits: 0 }) + " XRD";
-        document.getElementById('ilis-price-final').textContent = (((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5))).toLocaleString('en-US', { maximumFractionDigits: 4 }) + " XRD";
+        document.getElementById('final-fdv').textContent = "$"+(((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5)) * 100000000 * xrdLbpPrice).toLocaleString('en-US', { maximumFractionDigits: 0 });
+        document.getElementById('ilis-price-final').textContent = "$"+(((xrdLbpPoolAmount * 0.5) / (ilisLbpPoolAmount * 0.5)) * xrdLbpPrice).toLocaleString('en-US', { maximumFractionDigits: 4 }) + " XRD";
         document.getElementById('lbp-end-text').textContent = "Thanks for participating in the ILIS LBP! The LBP has ended and the price progression can be seen in the chart below. The resulting liquidity has been added to the Ociswap ILIS/XRD pool, go there or to any other DEX to swap ILIS.";
     }
 
@@ -8652,7 +8815,11 @@ function createChart(lbpLength, initialDataWithoutNow) {
                     min: 0, // Minimum value for x-axis
                     max: lbpLength, // Maximum value for x-axis
                     ticks: {
-                        color: 'white'  // Change x-axis ticks color to white
+                        color: 'white',  // Change x-axis ticks color to white
+                        callback: function(value) {
+                            // Format the value to remove unnecessary decimal places
+                            return Number.isInteger(value) ? value : parseFloat(value).toFixed(0);
+                        }
                     }
                 },
                 y: {

@@ -8,7 +8,7 @@
     <link href="images/webclip.png" rel="apple-touch-icon">
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <title>STAB app - Liquidations</title>
-    <link href="css/style.css" rel="stylesheet" type="text/css">
+    <link href="css/style.css?v=1.2.1" rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
@@ -18,13 +18,18 @@
         <div class="navbar-container">
             <header class="navbar">
                 <div class="navbar-content">
-                    <div class="logo-site"><img src="images/stab_app_portal_small.png" alt="Stabilis logo" /></div>
+                    <div class="logo-site">
+                        <a href="/">
+                            <img src="images/stab_app_portal_small.png" alt="Stabilis logo" />
+                        </a>
+                    </div>
                     <button class="hamburger" id="hamburger">&#9776;</button>
                     <nav id="navLinks" class="nav-links">
                         <a href="/swap">Swap</a>
                         <a href="/borrow">Borrow</a>
                         <a href="/manage-loans">Manage loans</a>
                         <a class="selected" href="/liquidations">Liquidations</a>
+                        <a href="/lbp" style="color: #00a3cc;">DAO Portal</a>
                     </nav>
                     <div class="cta">
                         <radix-connect-button id="buggedElement" style="--radix-connect-button-border-radius: 6px;" />
@@ -33,9 +38,10 @@
             </header>
             <nav id="navLinks-hamburger" class="nav-links-hamburger" style="display:none">
                 <a href="/swap">Swap</a>
-                <a class="selected" href="/borrow">Borrow</a>
+                <a href="/borrow">Borrow</a>
                 <a href="/manage-loans">Manage loans</a>
-                <a href="/liquidations">Liquidations</a>
+                <a class="selected" href="/liquidations">Liquidations</a>
+                <a href="/lbp" style="color: #00a3cc;">DAO Portal</a>
             </nav>
         </div>
 
@@ -185,7 +191,8 @@
             </div>
             <div class="footer-section">
                 <h3>Information</h3>
-                <a href="terms-and-conditions.html" target="_blank">Terms & Conditions</a>
+                <a href="https://docs.ilikeitstable.com/miscellaneous/terms-and-conditions" target="_blank">Terms & Conditions</a>
+                <a href="https://docs.ilikeitstable.com/miscellaneous/disclaimer" target="_blank">Disclaimer</a>
                 <a href="https://docs.ilikeitstable.com" target="_blank">Documentation</a>
             </div>
             <div class="footer-section logo-section">
@@ -204,8 +211,8 @@
             navbarContainer.classList.toggle('scrolled', window.scrollY > 0);
         });
     </script>
-    <script src="dist/main.js?v=1.0.4"></script>
-    <script src="dist/784.main.js?v=1.0.4"></script>
+    <script src="dist/main.js?v=1.2.1"></script>
+    <script src="dist/784.main.js?v=1.2.1"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 </body>
 

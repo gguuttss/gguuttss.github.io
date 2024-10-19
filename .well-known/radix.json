@@ -1,13 +1,10 @@
 {
   "dApps": [
     {
-      "dAppDefinitionAddress": "account_tdx_2_1c8fadvp43lzn3t7cd07ln9j68wy0g3nu7xvsqdtq54497fruvyck7a"
+      "dAppDefinitionAddress": "account_rdx1c9ucwvhtwvhnvpf48z64ypmh58wx6mf2xjpp5eptp4n9mrkfgkkv22"
     },
     {
-      "dAppDefinitionAddress": "account_tdx_2_1c9ng02j7hkyv8t65tdhreh5ukdqf2xpfgrcz72l45x9upks0we92j7"
-    },
-    {
-      "dAppDefinitionAddress": "account_tdx_2_12yjctk8r4csusav9c7z9a7j9vahmnnhnht5ym2ffngh9rqyajsgsdd"
+      "dAppDefinitionAddress": "account_rdx1cydlgtkk5yp3jym4t89k8ffrg2ytnge83q3m6z4fuzg5geseawdv94"
     }
   ]
 }
