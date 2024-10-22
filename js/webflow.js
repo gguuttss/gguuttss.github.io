@@ -2281,6 +2281,7 @@ async function update_id() {
                     }
                 } else {
                     document.getElementById('voting-until').textContent = "Not voting";
+                    votingUntil = nowLbpTime;
                 }
                 var ilisUndelegatingUntilOption = data.non_fungible_ids[0].data.programmatic_json.fields[5].variant_name;
                 if (ilisUndelegatingUntilOption == "Some") {
@@ -2916,6 +2917,18 @@ async function update_incentives() {
         setClaimButton();
         setNewIdButton();
         setUnstakeFinishButton();
+
+        getWeights();
+        var ilisPrice = ((parseFloat(xrdLbpPoolAmount) * parseFloat(ilisWeight)) / (parseFloat(ilisLbpPoolAmount) * parseFloat(xrdWeight))) * parseFloat(xrdLbpPrice);
+        if (!selectedId) {
+            var reward = parseFloat(currentLpReward) / (parseFloat(currentLpStaked));
+            var rewardValue = parseFloat(reward) * parseFloat(ilisPrice);
+            console.log((parseFloat(currentLpStaked) + parseFloat(stakingAmount)));
+            document.getElementById("weekly-rewards-label").textContent = "APY";
+            document.getElementById("staking-rewards").textContent = (100 * 52 * rewardValue / (parseFloat(lpStabValue))).toFixed(1) + "%";
+        } else {
+            document.getElementById("weekly-rewards-label").textContent = "Weekly rewards";
+        }
     }
 }
 
@@ -3694,7 +3707,7 @@ function useData(data) {
     if (window.location.pathname === '/' || window.location.pathname === '/secret_index' || window.location.pathname === '/index') {
         document.getElementById('interest-rate').textContent = interestRate;
         document.getElementById('circulating-counter').textContent = (1 * data[3].details.total_supply).toFixed(0);
-        document.getElementById('price-counter').textContent = (xrdPrice * stabXrdRatio).toFixed(2);
+        document.getElementById('price-counter').textContent = ((xrdPoolAmount / stabPoolAmount) * xrdPrice).toFixed(3);
     }
 
     if (window.location.pathname === '/swap') {
@@ -4286,7 +4299,7 @@ function useData(data) {
         incentive_resources.forEach(id => {
             var name = id[0];
             var logoUrl = id[1];
-            var subtext = "ILIS DAO Incentivized Resource";
+            var subtext = "Incentivized Resource";
 
             // Create a new option
             var option = document.createElement('div');
@@ -6613,14 +6626,14 @@ if (window.location.pathname === '/incentives') {
             var reward = parseFloat(currentLpReward) * (parseFloat(amountStaked) + parseFloat(stakingAmount)) / (parseFloat(currentLpStaked) + parseFloat(stakingAmount));
             var rewardValue = parseFloat(reward) * parseFloat(ilisPrice);
             console.log((parseFloat(currentLpStaked) + parseFloat(stakingAmount)));
-            newReward.textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked) + parseFloat(stakingAmount)))).toFixed(1) + "% APY)";
+            newReward.textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked) + parseFloat(stakingAmount)))).toFixed(1) + "% APY)";
         } else {
             stakingAmount = this.value;
             newStake.textContent = (-this.value + parseFloat(amountStaked) * poolMultiplier).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " LPSTAB";
             inputAmount.value = this.value;
             var reward = parseFloat(currentLpReward) * (parseFloat(amountStaked) - parseFloat(stakingAmount)) / (parseFloat(currentLpStaked) - parseFloat(stakingAmount));
             var rewardValue = parseFloat(reward) * parseFloat(ilisPrice);
-            newReward.textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked) - parseFloat(stakingAmount)))).toFixed(1) + "% APY)";
+            newReward.textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked) - parseFloat(stakingAmount)))).toFixed(1) + "% APY)";
         }
         setStakeButton();
         setLockButton();
@@ -6642,7 +6655,7 @@ if (window.location.pathname === '/incentives') {
             slider.value = input;
             var reward = parseFloat(currentLpReward) * (parseFloat(amountStaked) + parseFloat(input)) / (parseFloat(currentLpStaked) + parseFloat(input));
             var rewardValue = parseFloat(reward) * parseFloat(ilisPrice);
-            newReward.textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked) + parseFloat(input)))).toFixed(1) + "% APY)";
+            newReward.textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked) + parseFloat(input)))).toFixed(1) + "% APY)";
         } else {
             var input = this.value === '' ? 0 : parseFloat(this.value);
             if (input > parseFloat(amountStaked) * poolMultiplier) {
@@ -6653,7 +6666,7 @@ if (window.location.pathname === '/incentives') {
             slider.value = input;
             var reward = parseFloat(currentLpReward) * (parseFloat(amountStaked) - parseFloat(input)) / (parseFloat(currentLpStaked) - parseFloat(input));
             var rewardValue = parseFloat(reward) * parseFloat(ilisPrice);
-            newReward.textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked) - parseFloat(input)))).toFixed(1) + "% APY)";
+            newReward.textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked) - parseFloat(input)))).toFixed(1) + "% APY)";
         }
         setStakeButton();
         setLockButton();
@@ -6673,14 +6686,14 @@ if (window.location.pathname === '/incentives') {
                 inputAmount.value = walletResource;
                 var reward = parseFloat(currentLpReward) * (parseFloat(amountStaked) + parseFloat(walletResource)) / (parseFloat(currentLpStaked) + parseFloat(walletResource));
                 var rewardValue = parseFloat(reward) * parseFloat(ilisPrice);
-                newReward.textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 2 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked) + parseFloat(walletResource)))).toFixed(1) + "% APY)";
+                newReward.textContent = (reward).toLocaleString('en-US', { maximumFractionDigits: 1 }) + " ILIS (" + (100 * 52 * rewardValue / (parseFloat(lpStabValue) * (parseFloat(amountStaked) + parseFloat(walletResource)))).toFixed(1) + "% APY)";
             } else {
                 newStake.textContent = "New stake: 0 ILIS";
                 slider.value = parseFloat(amountStaked) * poolMultiplier;
                 inputAmount.value = slider.value;
                 var reward = 0;
                 var rewardValue = parseFloat(reward) * parseFloat(ilisPrice);
-                newReward.textContent = "0 ILIS (-% APY)";
+                newReward.textContent = "0 ILIS";
             }
         } 
         setStakeButton();
