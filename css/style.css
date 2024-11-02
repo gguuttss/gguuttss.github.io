@@ -958,6 +958,11 @@ footer {
 .dropdown-custom {
     position: relative;
     display: inline-block;
+    min-width: 225px;
+}
+
+.dropdown-custom.smaller {
+    min-width: 150px;
 }
 
 .dropdown-custom-content {
@@ -986,6 +991,11 @@ footer {
     display: flex;
     align-items: center;
     cursor: pointer;
+    min-width: 225px;
+}
+
+.dropdown-custom-option.smaller {
+    min-width: 150px;
 }
 
 .dropdown-custom-option.littlewarning {
@@ -1153,4 +1163,14 @@ td {
 
 ::-webkit-scrollbar-thumb {
     -webkit-box-shadow: inset 0 0 6px #1ba9a08a;
+}
+
+textarea {
+    width: 100%; /* Full width */
+    height: 300px; /* Height of the textarea */
+    font-size: 16px; /* Font size */
+    padding: 10px; /* Padding inside the textarea */
+    border: 1px solid #ccc; /* Border style */
+    border-radius: 4px; /* Rounded corners */
+    resize: both; /* Allow resizing */
 }

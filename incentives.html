@@ -8,7 +8,7 @@
     <link href="images/webclip.png" rel="apple-touch-icon">
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <title>ILIS DAO - Incentives</title>
-    <link href="css/style.css?v=1.2.1" rel="stylesheet" type="text/css">
+    <link href="css/style.css?v=1.2.2" rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
@@ -53,15 +53,6 @@
 
         <div class="total-content-wrapper">
             <div class="statistics">
-                <div class="stat-box"
-                    style="position:relative; box-sizing: border-box; outline: 4px solid #00a3cc; outline-offset:-4px;">
-                    <div class="dropdown-custom id">
-                        <button type="button" class="dropdown-custom-button id"><b id="membership-id-button">Select Incentives ID</b> <i class="chevron-down" data-feather="chevron-down"></i><i
-                                class="chevron-up" data-feather="chevron-up" style="display:none"></i></button>
-                        <div class="dropdown-custom-content id">
-                        </div>
-                    </div>
-                </div>
                 <button class="wallet-necessary transaction-button bottom" id="new-id">
                     <i class="spin" data-feather="refresh-cw"
                         style="margin-right: 5px; display: none; vertical-align: middle"></i>
@@ -72,6 +63,15 @@
                         style="display:none">CONNECT
                         WALLET</b> <b class="button-waiting" style="display:none">CONFIRM IN WALLET...</b>
                 </button>
+                <div class="stat-box"
+                    style="position:relative; box-sizing: border-box; outline: 4px solid #00a3cc; outline-offset:-4px;">
+                    <div class="dropdown-custom id">
+                        <button type="button" class="dropdown-custom-button id"><b id="membership-id-button">Select Incentives ID</b> <i class="chevron-down" data-feather="chevron-down"></i><i
+                                class="chevron-up" data-feather="chevron-up" style="display:none"></i></button>
+                        <div class="dropdown-custom-content id">
+                        </div>
+                    </div>
+                </div>
                 <div class="stat-box"
                     style="position:relative; box-sizing: border-box; outline: 4px solid #00a3cc; outline-offset:-4px;">
                     <div class="dropdown-custom resource">
@@ -267,6 +267,9 @@
                     <div class="warning-box" id="warning-box-lock" style="display: none; margin-top: 20px; text-align: center; cursor: auto">
                         <p class="paragraph-2" id="warning-message-lock"></p>
                     </div>
+                    <div class="info-box" id="info-box-lock" style="display: none; margin-top: 20px; text-align: center; cursor: auto">
+                        <p class="paragraph-2" id="info-message-lock"></p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -304,8 +307,8 @@
             navbarContainer.classList.toggle('scrolled', window.scrollY > 0);
         });
     </script>
-    <script src="dist/main.js?v=1.2.4"></script>
-    <script src="dist/784.main.js?v=1.2.4"></script>
+    <script src="dist/main.js?v=1.2.7"></script>
+    <script src="dist/784.main.js?v=1.2.7"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 </body>
 
