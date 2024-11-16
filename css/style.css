@@ -1,3 +1,21 @@
+.token-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1; /* Ensures consistent text alignment */
+    margin: 0; /* Remove any default paragraph margins */
+}
+
+.token-display img {
+    margin-right: 8px; /* Consistent spacing between logo and text */
+}
+
+.token-display span {
+    display: inline-flex;
+    align-items: center;
+    height: 100%;
+}
+
 .hero-wrapper {
     text-align: center;
 }

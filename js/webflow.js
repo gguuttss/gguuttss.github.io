@@ -25,6 +25,9 @@ let ilisCtrlBadgeAddress = "resource_rdx1tkay6uzp3ere9q6ccw346rs39w4mwdu6k6vxz43
 let ociDappDef = "account_rdx12x2ecj3kp4mhq9u34xrdh7njzyz0ewcz4szv0jw5jksxxssnjh7z6z"
 let morpherComponentAddress = "component_rdx1cp07hrz378zfugcf6h8f9usct4zqx7rdgjhxjwphkzxyv9h7l2q04s"
 let ociPool = "pool_rdx1ck0daslg9anw64t5ytq0g4svmuj85jwvrrhgz2005exh8gt6qxle4w"
+let lpOciAddress = "resource_rdx1t4vvunhvl24nrc8hh99dujuumyllvvsurvu72keaeh74e25358nhah"
+let c9LiquidityAddress = "resource_rdx1ngt09n8lg292hnzwvz5j6hl0aexja9ggh84qyam3xk3vcala72c2um"
+let c9PoolAddress = "component_rdx1cpqcstnjnj5cpag7wc04y6t4azrfxjtr3g53jdpv4y72m0lpp8qkf4"
 let incentiveInterval = 7
 let bootstrapLength = 7
 
@@ -71,6 +74,9 @@ let lpAddress = "resource_rdx1t59m2c48gtrflsxms35d7alkggyed383fw0mfe98c3v3z6xcqd
 let flashLoanReceipt = "resource_rdx1ngqggm445297u03dka8r86acvvf2vv5a74y0t0xjdpx5d7thactfa0"
 let lpAddressForIncentives = lpAddress
 let selectedResource = lpAddressForIncentives
+let selectedIncentive = "Native STAB/XRD LP"
+let airdropperComponent = "component_rdx1czqa7dy572axllzl6mx57tgrz90rv36wggxn8ltneelj27688nr4jq"
+let airdropperBadge = "resource_rdx1tk8cn3qwy89mk2xf9uwzyha9zpclrmwys47lwwx2c34690uwuv37p5"
 
 let lbpKvsHexes = ["5c0a0000000000000000", "5c0a0100000000000000", "5c0a0200000000000000"]
 let xrdKeyHex = "5c805da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6"
@@ -86,9 +92,16 @@ let initialXrdWeight = 0.01;
 
 const acceptedResources =   [
     ["XRD", xrdAddress, "", "images/radix-logo.svg", 1, 'XRD', 0, 1, "5c805da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6"],
-    ["LPLSU", lpLsuAddress, "", "images/lsulp.png", 1, 'LPLSU', 0, 1, "5c805ded045268f3d05dec859e7ce13e18f778218dc4f2768c1859fa90c09c32"],
+    ["LPLSU", lpLsuAddress, "", "images/lsulp.png", 1, 'LSULP', 0, 1, "5c805ded045268f3d05dec859e7ce13e18f778218dc4f2768c1859fa90c09c32"],
 ]
 const incentive_resources = [["LPSTAB", "images/lplogo.png", lpAddressForIncentives]]
+const incentive_actions = 
+    [
+        ["Native STAB/XRD LP", "images/lplogo.png", 25000, "Get rewarded for supplying STAB/XRD liquidity to the protocol-native pool by holding LPSTAB.", "http://ilikeitstable.com/swap"],
+        ["Native STAB Borrow", "images/stablogo.png", 100000, "Get rewarded for borrowing STAB. Rewards scale with outstanding debt owned by this account.", "http://ilikeitstable.com/borrow"],
+        ["C9 STAB/xUSDC LP", "images/usdclogo.png", 25000, "Get rewarded for supplying STAB/xUSDC liquidity to the CaviarNine pool. Only liquidity between 95-105% of STAB's peg is counted.", "https://www.caviarnine.com/earn/shape-liquidity/pool/component_rdx1cpqcstnjnj5cpag7wc04y6t4azrfxjtr3g53jdpv4y72m0lpp8qkf4"],
+        ["Ociswap ILIS/XRD LP", "images/ilislogo.png", 50000, "Get rewarded for supplying ILIS/XRD liquidity to the Ociswap BasicPool.", "https://ociswap.com/pools/component_rdx1czfuwcgnn7dxjjmz9zcacr347ahkuguz7vr9mcdkmywldg0f7qlylp"]
+    ]
 
 const addressSubject = new BehaviorSubject(DEFAULT_ADDRESS);
 let latestUpdateId = 0;
@@ -145,20 +158,48 @@ async function fetchResourceData() {
             const entries = data.entries;
             entries.forEach(entry => {
                 const fields = entry.value.programmatic_json.fields;
+                var usdPriceOfResource = 0;
+                var addressOfResource;
+                fields.forEach(field => {
+                    if (field.field_name === "usd_price") {
+                        usdPriceOfResource = parseFloat(field.value);
+                    }
+                    if (field.field_name === "resource_address") {
+                        addressOfResource = field.value;
+                    }
+                });
 
+                if (addressOfResource == 'resource_rdx1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxradxrd') {
+                    xrdPrice = usdPriceOfResource;
+                }
+            });
+            entries.forEach(entry => {
+                const fields = entry.value.programmatic_json.fields;
+                var usdPriceOfResource = 0;
+                var amountOfResource = 0;
+                var addressOfResource;
+                console.log("wwwwwwwww");
+                console.log(fields);
                 fields.forEach(field => {
                     if (field.field_name === "usd_price") {
                         acceptedResources[i][7] = parseFloat(field.value);
+                        usdPriceOfResource = parseFloat(field.value);
                     }
                     if (field.field_name === "minted_stab") {
                         mintedStab += parseFloat(field.value);
-                    } else if (field.field_name === "collateral_amount") {
-                        collateralAmountInProtocol += parseFloat(field.value);
+                    }
+                    if (field.field_name === "collateral_amount") {
+                        amountOfResource = parseFloat(field.value);
+                    }
+                    if (field.field_name === "resource_address") {
+                        addressOfResource = field.value;
                     }
                 });
+
+                collateralAmountInProtocol += amountOfResource * (usdPriceOfResource / xrdPrice);
             });
             if (window.location.pathname == "/borrow") {
-                document.getElementById('stab-cr').textContent = (((collateralAmountInProtocol * parseFloat(xrdPrice)) / (mintedStab * parseFloat(internalPrice))) * 100).toFixed(2) + "%";
+                document.getElementById('stab-cr').textContent = (((collateralAmountInProtocol * xrdPrice) / (mintedStab * parseFloat(internalPrice))) * 100).toFixed(2) + "%";
             }
         } catch (error) {
             console.error('Error:', error);
@@ -726,6 +767,8 @@ let stab_ids = [];
 let cdp_ids = [];
 let marker_ids = [];
 let incentive_ids = [];
+let c9_ids = [];
+let c9_liqs = [];
 let incentive_unstake_receipts = [];
 let membership_unstake_receipts = [];
 let currentIncentivePeriod;
@@ -738,6 +781,7 @@ let walletIlis;
 let walletResource;
 let walletXrd;
 let walletLp;
+let walletLpOci;
 let walletStab;
 let formattedWallet;
 let xrdPoolAmount;
@@ -817,11 +861,17 @@ let realChart;
 let currentLpReward;
 let currentLpStaked;
 let lpStabValue;
+let lpStabSupply;
+let lpOciSupply;
+let lpOciValue;
+let daoOciLpSupply = 2015280.70
 let currentIlisReward;
 let currentIlisStaked;
 let membershipApy;
 let resourcePrice;
 let mintedStab;
+let ilisValue;
+let circulatingStab;
 
 function resizeChart() {
     const chartContainer = document.getElementById('chartContainer');
@@ -1263,7 +1313,7 @@ function setAddColButton() {
         enable = false;
     } else if (selectedCdp == undefined) {
         enable = false;
-    } else if (status == "Liquidated" || status == "ForceLiquidated" || status == "Closed") {
+    } else if (status == "Liquidated" || status == "Redeemed" || status == "Closed") {
         enable = false;
     } else if (parseFloat(document.getElementById('amount-to-remove').value) > availableCollateral) {
         enable = false;
@@ -1329,7 +1379,7 @@ function setRemoveColButton() {
     } else if (selectedCdp == undefined) {
         enable = false;
         console.log("1");
-    } else if (status == "Liquidated" || status == "ForceLiquidated" || status == "Closed") {
+    } else if (status == "Liquidated" || status == "Redeemed" || status == "Closed") {
         enable = false;
         console.log("2");
     } else if (newCr < 150) {
@@ -1396,7 +1446,7 @@ function setRemoveDebtButton() {
         enable = false;
     } else if (selectedCdp == undefined) {
         enable = false;
-    } else if (status == "Liquidated" || status == "ForceLiquidated" || status == "Closed") {
+    } else if (status == "Liquidated" || status == "Redeemed" || status == "Closed") {
         enable = false;
     } else if (parseFloat(document.getElementById('amount-to-remove-debt').value) > walletStab) {
         enable = false;
@@ -1453,7 +1503,7 @@ function setAddDebtButton() {
         enable = false;
     } else if (selectedCdp == undefined) {
         enable = false;
-    } else if (status == "Liquidated" || status == "ForceLiquidated" || status == "Closed") {
+    } else if (status == "Liquidated" || status == "Redeemed" || status == "Closed") {
         enable = false;
     } else if (parseFloat(document.getElementById('amount-to-remove-debt').value) > walletStab && addingDebt == false) {
         enable = false;
@@ -1584,7 +1634,7 @@ function setStakeButton() {
             message = "No ILIS to stake in wallet.";
         }
     }
-    if (walletResource == 0 && stake == true && window.location.pathname == "/incentives") {
+    if (walletResource == 0 && stake == true && window.location.pathname == "/incentives-old") {
         enableButton = false;
         enableInput = false;
         if (selectedId) {
@@ -1793,7 +1843,7 @@ function setUnstakeFinishButton() {
 }
 
 function setClaimButton() {
-    if (window.location.pathname == "/incentives") {
+    if (window.location.pathname == "/incentives-old") {
         var claimButton = document.getElementById('claim-periods-button');
         var enableButton = true;
         if (isConnected == false) {
@@ -2428,6 +2478,94 @@ async function checkManifest(net) {
     }
 }
 
+async function getC9Data(lowestTick, highestTick) {
+    var statusUrl = "https://mainnet.radixdlt.com/status/gateway-status";
+    var url = "https://mainnet.radixdlt.com/transaction/preview";
+
+    const headers = {
+        "Content-Type": "application/json"
+    };
+
+    try {
+        // Fetch the gateway status to get the current epoch
+        const statusResponse = await fetch(statusUrl, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({}) // Sending an empty body
+        });
+        const statusData = await statusResponse.json();
+
+        // Extract the current epoch
+        const currentEpoch = statusData.ledger_state.epoch;
+        const startEpochInclusive = currentEpoch;
+        const endEpochExclusive = currentEpoch + 2;
+
+        var manifestString =
+            `CALL_METHOD
+                Address("component_rdx1cpqcstnjnj5cpag7wc04y6t4azrfxjtr3g53jdpv4y72m0lpp8qkf4")
+                "get_bins_below"
+                Enum<1u8>(
+                ${highestTick}u32
+                )
+                Enum<1u8>(
+                ${lowestTick}u32
+                )
+                Enum<0u8>( )
+            ;
+
+            CALL_METHOD
+                Address("component_rdx1cpqcstnjnj5cpag7wc04y6t4azrfxjtr3g53jdpv4y72m0lpp8qkf4")
+                "get_bins_above"
+                Enum<1u8>(
+                ${lowestTick}u32
+                )
+                Enum<1u8>(
+                ${highestTick}u32
+                )
+                Enum<0u8>( )
+            ;
+
+            CALL_METHOD
+                Address("component_rdx1cpqcstnjnj5cpag7wc04y6t4azrfxjtr3g53jdpv4y72m0lpp8qkf4")
+                "get_price"
+            ;`
+
+        // JSON payload
+        const payload = {
+            "manifest": manifestString,
+            "start_epoch_inclusive": startEpochInclusive,
+            "end_epoch_exclusive": endEpochExclusive,
+            "tip_percentage": 0,
+            "nonce": 1,
+            "signer_public_keys": [
+                {
+                    "key_type": "EcdsaSecp256k1",
+                    "key_hex": "0305684de356f5126befda977935827f6f74ca3b7865cd8516ca72ef7afc8c0e06"
+                }
+            ],
+            "flags": {
+                "use_free_credit": true,
+                "assume_all_signature_proofs": true,
+                "skip_epoch_check": true,
+                "disable_auth_checks": false,
+            }
+        };
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload)
+        });
+
+        const responseData = await response.json();
+
+        return responseData;
+    } catch (error) {
+        console.error("Error:", error);
+        throw error;
+    }
+}
+
 async function update_id() {
     if (window.location.pathname === '/membership') {
         let request = {
@@ -2605,7 +2743,8 @@ async function fetchData(address) {
     const addresses = [address, proxyComponentAddress, poolComponentAddress, stabAddress,
                         poolAddress, stakingAddress, lbpPoolAddress, lbpComponentAddress,
                         incentiveAddress, governanceAddress, daoAddress, ilisPool,
-                        poolIlisAddress, stabComponentAddress, lpAddress, ociPool];
+                        poolIlisAddress, stabComponentAddress, lpAddress, ociPool,
+                        lpOciAddress, c9PoolAddress];
 
     const requestBody = {
         "addresses": addresses,
@@ -2644,6 +2783,7 @@ async function fetchData(address) {
     }
     stab_ids = []
     cdp_ids = []
+    c9_ids = []
     marker_ids = []
     incentive_ids = []
     membership_unstake_receipts = []
@@ -2714,6 +2854,11 @@ async function fetchData(address) {
                             marker_ids = marker_ids.concat(vault.items.filter(item => !marker_ids.includes(item)));
                         });
                     }
+                    if (nfrItem.resource_address === c9LiquidityAddress && nfrItem.vaults) {
+                        nfrItem.vaults.items.forEach(vault => {
+                            c9_ids = c9_ids.concat(vault.items.filter(item => !c9_ids.includes(item)));
+                        });
+                    }
                 });
             }
         });
@@ -2741,6 +2886,35 @@ async function fetchData(address) {
                 })
                 .then(data => {
                     sortedItems.push(data.non_fungible_ids); // Write the response data to the console
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error); // Handle any errors
+                });
+        }
+
+        if (c9_ids.length > 0) {
+            // Define the data for the request
+            const requestDataC9 = {
+                "resource_address": c9LiquidityAddress,
+                "non_fungible_ids": c9_ids
+            };
+
+            // Make the API request
+            await fetch('https://mainnet.radixdlt.com/state/non-fungible/data', {
+                method: 'POST', // Specify the HTTP method
+                headers: {
+                    'Content-Type': 'application/json', // Set the content type to JSON
+                },
+                body: JSON.stringify(requestDataC9), // Convert the data to JSON string
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json(); // Parse the JSON from the response
+                })
+                .then(data => {
+                    c9_liqs = data.non_fungible_ids; // Write the response data to the console
                 })
                 .catch(error => {
                     console.error('There was a problem with the fetch operation:', error); // Handle any errors
@@ -2812,6 +2986,17 @@ async function fetchData(address) {
 
 async function update_governance() {
     if (window.location.pathname === '/governance') {
+        var warning = document.getElementById('info-message-stake');
+        var warningBox = document.getElementById('info-box-stake');
+        if (proposalToView == -1 || proposalToView == 2) {
+            warningBox.style.display = "block"
+            warning.textContent = "As Proposal #0 and #1 contained errors, they are omitted from the interface to prevent confusion."
+        } else if (proposalToView == 4) {
+            warningBox.style.display = "block"
+            warning.textContent = "The attachment fails to mention that the to be incentivized CaviarNine and Ociswap pools will respectively be component_rdx1cpqcstnjnj5cpag7wc04y6t4azrfxjtr3g53jdpv4y72m0lpp8qkf4 and component_rdx1czfuwcgnn7dxjjmz9zcacr347ahkuguz7vr9mcdkmywldg0f7qlylp."
+        } else {
+            warningBox.style.display = "none"
+        }
         let request = {
             "resource_address": membershipIdAddress,
             "non_fungible_ids": [selectedId],
@@ -2891,6 +3076,9 @@ async function update_governance() {
                 document.getElementById('proposal-title').textContent = "Proposal #" + proposalToView + ": " + proposalData[0].value;
                 document.getElementById('proposal-description').textContent = proposalData[1].value;
                 var status = proposalData[10].variant_name;
+                if (status == "ForceLiquidated") {
+                    status = "Redeemed"
+                }
                 document.getElementById('status').textContent = status;
                 document.getElementById('deadline').textContent = new Date(parseInt(proposalData[7].value) * 1000).toLocaleString();
                 var votesFor = proposalData[4].value;
@@ -2948,7 +3136,7 @@ async function update_governance() {
 }
 
 async function update_incentives() {
-    if (window.location.pathname === '/incentives') {
+    if (window.location.pathname === '/incentives-old') {
         let request = {
             "resource_address": incentiveIdAddress,
             "non_fungible_ids": [selectedId],
@@ -3130,6 +3318,185 @@ async function update_incentives() {
     }
 }
 
+async function update_new_incentives() {
+    const MIN_PRICE = 0.000000000001892254;
+    const TICK_SIZE = 1.001; // Represents a 0.1% (10 basis points) increment
+
+    function calculateTick(price) {
+        const tick = Math.log(price / MIN_PRICE) / Math.log(TICK_SIZE);
+        
+        return Math.round(tick);
+    }
+
+    const button = document.getElementById('claim-unstaked-button');
+
+    function updateButtonLink(newUrl) {
+        button.onclick = () => {
+            window.open(newUrl, '_blank');
+        };
+    }
+
+    if (window.location.pathname === '/incentives') {
+        console.log(c9_liqs);
+        if (selectedIncentive == "Native STAB/XRD LP") {
+            document.getElementById('warning-message').style.display = 'block';
+            var circulatingResource = lpStabSupply;
+            var heldResource = walletLp;
+            var resourceValue = lpStabValue;
+            var liqOne = (walletLp / circulatingResource) * xrdPoolAmount;
+            var liqTwo = (walletLp / circulatingResource) * stabPoolAmount;
+            var weeklyReward = incentive_actions[0][2];
+            var fraction = heldResource / circulatingResource;
+            var reward = fraction * weeklyReward;
+            var apy = ((weeklyReward * parseFloat(ilisValue)) / (circulatingResource * resourceValue)) * 52 * 100;
+            console.log(weeklyReward, ilisValue, circulatingResource, resourceValue);
+            document.getElementById('total-weekly-rewards').textContent = weeklyReward  + " ILIS";
+            document.getElementById('apy').textContent = apy.toFixed(2) + "%";
+            document.getElementById('approximate-weekly-rewards').textContent = reward.toFixed(2) + " ILIS";
+            document.getElementById('token-held-1').textContent = liqOne.toFixed(2) + " XRD";
+            document.getElementById('token-held-2').textContent = liqTwo.toFixed(2) + " STAB";
+            document.getElementById('incentive-title').textContent = "Liquidity Supplied";
+            document.getElementById('text').textContent = incentive_actions[0][3];
+            updateButtonLink(incentive_actions[0][4]);
+            document.getElementById('incentive-name').textContent = "STAB/XRD LP";
+            document.getElementById('incentive-logo-1').src = "https://ilikeitstable.com/images/radix-logo.svg"
+            document.getElementById('incentive-logo-2').src = "https://ilikeitstable.com/images/stablogo.png"
+        } else {
+            document.getElementById('warning-message').style.display = 'none';
+        }
+
+        if (selectedIncentive == "C9 STAB/xUSDC LP") {
+            var lowestTick = Math.floor(calculateTick(internalPrice * 0.95) / 10) * 10;
+            var highestTick = Math.floor(calculateTick(internalPrice * 1.05) / 10) * 10;
+            const data = await getC9Data(lowestTick, highestTick)
+            var activeX = parseFloat(bigData[17].details.state.fields[5].value);
+            var activeY = parseFloat(bigData[17].details.state.fields[6].value);
+            var activeTotal = parseFloat(bigData[17].details.state.fields[7].value);
+            var currentBin = parseInt(bigData[17].details.state.fields[1].fields[1].fields[0].fields[0].value)
+            var dataUsdEntries = data.receipt.output[0].programmatic_json.elements;
+            var dataStabEntries = data.receipt.output[1].programmatic_json.elements;
+            var stabPrice = parseFloat(data.receipt.output[2].programmatic_json.fields[0].value);
+            var totalStab = 0;
+            var userStab = 0;
+            var userRealStab = 0;
+            var userRealUsd = 0;
+
+            dataUsdEntries.forEach(entry => {
+                totalStab += parseFloat(entry.fields[1].value) * (1 / stabPrice);
+            });
+
+            dataStabEntries.forEach(entry => {
+                totalStab += parseFloat(entry.fields[1].value);
+            });
+
+            c9_liqs.forEach(liq => {
+                liq.data.programmatic_json.fields[0].entries.forEach(bin => {
+                    if (parseInt(bin.key.value) <= highestTick && parseInt(bin.key.value) >= lowestTick) {
+                        if (parseInt(bin.key.value) < currentBin) {
+                            userStab += parseFloat(bin.value.value) * (1 / stabPrice);
+                            userRealUsd += parseFloat(bin.value.value);
+                        } else if (parseInt(bin.key.value) == currentBin) {
+                            var liqShare = parseFloat(bin.value.value) / activeTotal;
+                            userStab += activeX * liqShare + activeY * liqShare * (1 / stabPrice);
+                            userRealStab += activeX * liqShare;
+                            userRealUsd += activeY * liqShare;
+                        } else {
+                            userStab += parseFloat(bin.value.value);
+                            userRealStab += parseFloat(bin.value.value);
+                        }
+                    }
+                });
+            });
+            var circulatingResource = totalStab;
+            var heldResource = userStab;
+            var resourceValue = stabPrice;
+            var liqOne = userRealStab;
+            var liqTwo = userRealUsd;
+            var weeklyReward = incentive_actions[2][2];
+            var fraction = heldResource / circulatingResource;
+            var reward = fraction * weeklyReward;
+            var apy = ((weeklyReward * parseFloat(ilisValue)) / (circulatingResource * resourceValue)) * 52 * 100;
+            console.log(weeklyReward, ilisValue, circulatingResource, resourceValue);
+            document.getElementById('total-weekly-rewards').textContent = weeklyReward  + " ILIS";
+            document.getElementById('apy').textContent = apy.toFixed(2) + "%";
+            document.getElementById('approximate-weekly-rewards').textContent = reward.toFixed(2) + " ILIS";
+            document.getElementById('token-held-1').textContent = liqOne.toFixed(2) + " STAB";
+            document.getElementById('token-held-2').textContent = liqTwo.toFixed(2) + " xUSDC";
+            document.getElementById('incentive-title').textContent = "Liquidity Supplied";
+            document.getElementById('text').textContent = incentive_actions[2][3];
+            updateButtonLink(incentive_actions[2][4]);
+            document.getElementById('incentive-name').textContent = "STAB/xUSDC LP";
+            document.getElementById('incentive-logo-1').src = "https://ilikeitstable.com/images/stablogo.png"
+            document.getElementById('incentive-logo-2').src = "https://ilikeitstable.com/images/usdclogo.png"
+        }
+        
+        if (selectedIncentive == "Native STAB Borrow") {
+            var circulatingResource = circulatingStab;
+            var heldResource = 0;
+            var stabLoans;
+            if (bigData.length > 17) {
+                stabLoans = bigData[18];
+            } else {
+                stabLoans = []
+            }
+            stabLoans.forEach((loan, _index) => {
+                if (loan.is_burned == false && (loan.data.programmatic_json.fields[6].variant_name == "Healthy" || loan.data.programmatic_json.fields[6].variant_name == "Marked")) {
+                    heldResource += parseFloat(loan.data.programmatic_json.fields[4].value);
+                }
+            });
+            var resourceValue = (xrdPoolAmount / stabPoolAmount) * xrdPrice * 2.5;
+            var liqOne = heldResource;
+            var weeklyReward = incentive_actions[1][2];
+            var fraction = heldResource / circulatingResource;
+            var reward = fraction * weeklyReward;
+            var apy = ((weeklyReward * parseFloat(ilisValue)) / (circulatingResource * resourceValue)) * 52 * 100;
+            console.log(weeklyReward, ilisValue, circulatingResource, resourceValue);
+            document.getElementById('total-weekly-rewards').textContent = weeklyReward  + " ILIS";
+            document.getElementById('apy').textContent = apy.toFixed(2) + "%";
+            document.getElementById('approximate-weekly-rewards').textContent = reward.toFixed(2) + " ILIS";
+            document.getElementById('token-held-1').textContent = liqOne.toFixed(2) + " STAB";
+            document.getElementById('token-held-2-section').style.display = "none";
+            document.getElementById('incentive-title').textContent = "Amount Borrowed";
+            document.getElementById('text').textContent = incentive_actions[1][3];
+            updateButtonLink(incentive_actions[2][4]);
+            document.getElementById('incentive-name').textContent = "STAB Borrow";
+            document.getElementById('incentive-logo-1').src = "https://ilikeitstable.com/images/stablogo.png";
+            document.getElementById('apy-title').textContent = "APY*"
+            document.getElementById('info-apy-message').style.display = "flex";
+        } else {
+            document.getElementById('token-held-2-section').style.display = "flex";
+            document.getElementById('apy-title').textContent = "APY";
+            document.getElementById('info-apy-message').style.display = "none";
+        }
+        if (selectedIncentive == "Ociswap ILIS/XRD LP") {
+            var circulatingResource = lpOciSupply - daoOciLpSupply;
+            var heldResource = walletLpOci;
+            console.log(heldResource);
+            var resourceValue = lpOciValue;
+            console.log(lpOciValue);
+            console.log(circulatingResource);
+            var liqOne = (walletLpOci / (circulatingResource + daoOciLpSupply)) * xrdLbpPoolAmount;
+            var liqTwo = (walletLpOci / (circulatingResource + daoOciLpSupply)) * ilisLbpPoolAmount;
+            var weeklyReward = incentive_actions[3][2];
+            var fraction = heldResource / circulatingResource;
+            var reward = fraction * weeklyReward;
+            var apy = ((weeklyReward * parseFloat(ilisValue)) / (circulatingResource * resourceValue)) * 52 * 100;
+            console.log(weeklyReward, ilisValue, circulatingResource, resourceValue);
+            document.getElementById('total-weekly-rewards').textContent = weeklyReward  + " ILIS";
+            document.getElementById('apy').textContent = apy.toFixed(2) + "%";
+            document.getElementById('approximate-weekly-rewards').textContent = reward.toFixed(2) + " ILIS";
+            document.getElementById('token-held-1').textContent = liqOne.toFixed(2) + " XRD";
+            document.getElementById('token-held-2').textContent = liqTwo.toFixed(2) + " ILIS";
+            document.getElementById('incentive-title').textContent = "Liquidity Supplied";
+            document.getElementById('text').textContent = incentive_actions[3][3];
+            updateButtonLink(incentive_actions[3][4]);
+            document.getElementById('incentive-name').textContent = "ILIS/XRD LP";
+            document.getElementById('incentive-logo-1').src = "https://ilikeitstable.com/images/radix-logo.svg"
+            document.getElementById('incentive-logo-2').src = "https://ilikeitstable.com/images/ilislogo.png"
+        }
+    }
+}
+
 async function update_liq() {
     if (window.location.pathname === '/liquidations') {
         if (selectedMarker === undefined) {
@@ -3195,6 +3562,9 @@ async function update_liq() {
                     upToDateCr = getUpToDateCr(collateralAmount, debtAmount, validatorMultiplier);
                     cr = upToDateCr * 100;
                     status = data2.non_fungible_ids[0].data.programmatic_json.fields[6].variant_name;
+                    if (status == "ForceLiquidated") {
+                        status = "Redeemed"
+                    }
                     collateralName = getResourceName(resourceAddress);                    
                 } else {
                     parentAddress = "-";
@@ -3314,6 +3684,9 @@ async function update_cdp() {
                 collateralAmount = data.non_fungible_ids[0].data.programmatic_json.fields[3].value;
                 debtAmount = data.non_fungible_ids[0].data.programmatic_json.fields[4].value;
                 status = data.non_fungible_ids[0].data.programmatic_json.fields[6].variant_name;
+                if (status == "ForceLiquidated") {
+                    status = "Redeemed"
+                }
                 upToDateCr = getUpToDateCr(collateralAmount, debtAmount, validatorMultiplier);
                 cr = upToDateCr;
                 availableCollateral = Math.max(getResourceAmountWallet(resourceAddress, unfilteredResources) - 0.0001, 0);
@@ -3384,7 +3757,7 @@ async function update_cdp() {
         document.getElementById('cr').textContent = (upToDateCr * 100).toFixed(2) + "%";
         buttonText.textContent = "CLOSE LOAN";
 
-        if ((status == "Liquidated" || status == "ForceLiquidated") && collateralAmount > 0) {
+        if ((status == "Liquidated" || status == "Redeemed") && collateralAmount > 0) {
             buttonText.textContent = "RETRIEVE COLLATERAL";
             buttonText.color = 'white';
             button.backgroundColor = 'black';
@@ -3409,7 +3782,7 @@ async function update_cdp() {
             button.backgroundColor = '';
             buttonText.color = '';
         }
-        else if (status == "Closed" || (collateralAmount == 0 && (status == "Liquidated" || status == "ForceLiquidated"))) {
+        else if (status == "Closed" || (collateralAmount == 0 && (status == "Liquidated" || status == "Redeemed"))) {
             buttonText.textContent = "BURN LOAN RECEIPT";
             if (status == "Closed") {
                 document.getElementById('status').style.color = 'black';
@@ -3677,10 +4050,12 @@ function useData(data) {
     internalPrice = data[1].details.state.fields[15].fields[4].value;
     console.log(data);
     xrdPrice = data[1].details.state.fields[10].value;
+    circulatingStab = data[3].details.total_supply;
     resourcePrice = xrdPrice;
     stabResourceRatio = internalPrice / resourcePrice;
     acceptedResources[0][7] = xrdPrice;
     xrdLbpPrice = data[1].details.state.fields[10].value;
+    ilisValue = parseFloat(data[15].fungible_resources.items[0].vaults.items[0].amount) / parseFloat(data[15].fungible_resources.items[1].vaults.items[0].amount) * xrdPrice
     console.log(xrdPrice);
     if (window.location.pathname === '/membership' || window.location.pathname === '/governance') {
         poolMultiplier = data[11].fungible_resources.items[0].vaults.items[0].amount / data[12].details.total_supply;
@@ -3901,12 +4276,13 @@ function useData(data) {
             });
         }
     });
-
+    bigData = data;
     console.log(data);
     walletIlis = Math.max(getResourceAmountWallet(ilisAddress, unfilteredResources) - 0.0001, 0);
     walletResource = Math.max(getResourceAmountWallet(selectedResource, unfilteredResources)- 0.0001, 0);
     walletXrd = Math.max(getResourceAmountWallet(xrdAddress, unfilteredResources)- 0.0001, 0);
     walletLp = Math.max(getResourceAmountWallet(lpAddress, unfilteredResources)- 0.0001, 0);
+    walletLpOci = Math.max(getResourceAmountWallet(lpOciAddress, unfilteredResources)- 0.0001, 0);
     walletStab = Math.max(getResourceAmountWallet(stabAddress, unfilteredResources)- 0.0001, 0);
     xrdPoolAmount = getResourceAmount(xrdAddress, data, 4);
     stabPoolAmount = getResourceAmount(stabAddress, data, 4);
@@ -3924,7 +4300,10 @@ function useData(data) {
     currentLpReward = data[8].details.state.fields[12].entries[0].value.fields[3].value;
     maxProposals = data[9].details.state.fields[8].value - 1;
     proposalsKvs = data[9].details.state.fields[7].value;
-    lpStabValue = 2 * xrdPrice * xrdPoolAmount / parseFloat(data[14].details.total_supply);
+    lpStabSupply = parseFloat(data[14].details.total_supply);
+    lpStabValue = 2 * xrdPrice * xrdPoolAmount / lpStabSupply;
+    lpOciSupply =  parseFloat(data[16].details.total_supply);
+    lpOciValue = 2 * xrdPrice * xrdLbpPoolAmount / lpOciSupply;
 
     if (proposalToView == -1 && window.location.pathname === '/governance') {
         document.getElementById('prop-id-counter').textContent = maxProposals;
@@ -4448,7 +4827,7 @@ function useData(data) {
         }
     }
 
-    if (window.location.pathname === '/incentives') {
+    if (window.location.pathname === '/incentives-old') {
         var dropdownContent = document.querySelector('.dropdown-custom-content.id');
         dropdownContent.innerHTML = '';
 
@@ -4607,6 +4986,76 @@ function useData(data) {
         }
     }
 
+    if (window.location.pathname === '/incentives') {
+        incentive_actions.forEach(id => {
+            var name = id[0];
+            var logoUrl = id[1];
+            var subtext = "Incentivized Action";
+
+            // Create a new option
+            var option = document.createElement('div');
+            option.className = 'dropdown-custom-option resource';
+            option.dataset.logoUrl = logoUrl;
+            option.setAttribute('tabindex', '0'); // Make the option focusable
+
+            // Add the logo image to the option
+            var logoImage = document.createElement('img');
+            logoImage.src = logoUrl;
+            logoImage.alt = 'Logo';
+            logoImage.style.borderRadius = '0';
+            option.appendChild(logoImage);
+
+            // Add the text to the option
+            var optionText = document.createElement('div');
+            optionText.className = 'option-text';
+
+            var optionTitle = document.createElement('div');
+            optionTitle.className = 'option-title';
+            optionTitle.textContent = name;
+            optionText.appendChild(optionTitle);
+
+            var optionSubtext = document.createElement('div');
+            optionSubtext.className = 'option-subtext';
+            optionSubtext.textContent = subtext;
+            optionText.appendChild(optionSubtext);
+
+            option.appendChild(optionText);
+
+            // Attach the click event listener
+            option.addEventListener('click', function () {
+                // Remove the 'selected' class from all options
+                var options = document.querySelectorAll('.dropdown-custom-option.resource');
+                options.forEach(function (otherOption) {
+                    otherOption.classList.remove('selected');
+                });
+
+                // Add the 'selected' class to the clicked option
+                option.classList.add('selected');
+
+                // Set the button text to the option title
+                var dropdownButton = document.querySelector('.dropdown-custom-button.resource b');
+                dropdownButton.textContent = name;
+
+                // Hide the dropdown content
+                var dropdownContent = document.querySelector('.dropdown-custom-content.resource');
+                dropdownContent.style.display = 'none';
+                setChevron(dropdownContent);
+
+                selectedIncentive = id[0];
+
+                update_new_incentives();
+            });
+
+            if (name === "Native STAB/XRD LP") {
+                option.click();
+            }
+
+            // Append the new option to the dropdown content
+            var dropdownContent = document.querySelector('.dropdown-custom-content.resource');
+            dropdownContent.appendChild(option);
+        });
+    }
+
     if (window.location.pathname === '/borrow') {
         document.getElementById('interest-rate').textContent = interestRate + "% APY";
         var number1 = (1 * data[3].details.total_supply).toFixed(0);
@@ -4625,8 +5074,8 @@ function useData(data) {
         dropdownContent.innerHTML = '';
         var cdpExists = false;
         var counter;
-        if (data.length > 15) {
-            counter = data[16].length - 1;
+        if (data.length > 17) {
+            counter = data[18].length - 1;
         }
 
         cdp_ids.sort((a, b) => {
@@ -4641,19 +5090,22 @@ function useData(data) {
             }
             var name = "Receipt " + id;
             var logoUrl = 'images/receipt.png'
-            while (data[16][counter].is_burned == true && counter > 0) {
+            while (data[18][counter].is_burned == true && counter > 0) {
                 counter -= 1;
             }
             console.log(counter);
             console.log(id);
-            const resource = acceptedResources.find(ar => ar[1] === data[16][counter].data.programmatic_json.fields[0].value);
+            const resource = acceptedResources.find(ar => ar[1] === data[18][counter].data.programmatic_json.fields[0].value);
             validatorMultiplier = resource[4];
             resourcePrice = resource[7];
             stabResourceRatio = internalPrice / resourcePrice;
-            var cr = ((data[16][counter].data.programmatic_json.fields[3].value / data[16][counter].data.programmatic_json.fields[4].value) * resourcePrice * 100 / internalPrice / validatorMultiplier);
-            var status = data[16][counter].data.programmatic_json.fields[6].variant_name;
+            var cr = ((data[18][counter].data.programmatic_json.fields[3].value / data[18][counter].data.programmatic_json.fields[4].value) * resourcePrice * 100 / internalPrice / validatorMultiplier);
+            var status = data[18][counter].data.programmatic_json.fields[6].variant_name;
+            if (status == "ForceLiquidated") {
+                status = "Redeemed"
+            }
 
-            if (status != "Liquidated" && status != "ForceLiquidated") {
+            if (status != "Liquidated" && status != "Redeemed") {
                 var subtext = status + ", CR: " + (cr * 1).toFixed(2) + "%";
             } else {
                 var subtext = status;
@@ -4769,6 +5221,7 @@ function useData(data) {
         update_liq();
         update_id();
         update_incentives();
+        update_new_incentives();
         update_governance();
 }
 
@@ -6811,6 +7264,38 @@ if (window.location.pathname === '/governance') {
 }
 
 if (window.location.pathname === '/incentives') {
+    // Get the dropdown button and content
+    var dropdownButton2 = document.querySelector('.dropdown-custom-button.resource');
+    var dropdownContent2 = document.querySelector('.dropdown-custom-content.resource');
+
+    // Add click event listeners to each option
+    var options2 = document.querySelectorAll('.dropdown-custom-option.resource');
+
+    // Show the dropdown content when the button is clicked
+    dropdownButton2.addEventListener('click', function () {
+        if (dropdownButton2.disabled) {
+            return;
+        }
+        if (dropdownContent2 !== undefined) {
+            var display = dropdownContent2.style.display;
+            dropdownContent2.style.display = display === 'block' ? 'none' : 'block';
+            setChevron(dropdownContent2);
+        }
+        var options2 = document.querySelectorAll('.dropdown-custom-option.resource');
+
+        // Check if there are any options
+        if (options2.length === 0) {
+            // If not, display a message
+            if (isConnected) {
+                alert('No Incentives ID in wallet. Please create one.');
+            } else {
+                alert('Please connect your wallet.');
+            }
+        }
+    });
+}
+
+if (window.location.pathname === '/incentives-old') {
     var slider = document.getElementById("slider-stake");
     var inputAmount = document.getElementById("amount-to-stake");
     var maxButton = document.getElementById("max-new-stake");
@@ -8445,7 +8930,7 @@ if (window.location.pathname === '/manage-loans') {
                     button.style.backgroundColor = '';
                 });
 
-        } else if (status == "Liquidated" || status == "ForceLiquidated") {
+        } else if (status == "Liquidated" || status == "Redeemed") {
             let manifest = `
             CALL_METHOD
               Address("${accountAddress}")
