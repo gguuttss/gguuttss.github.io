@@ -1090,8 +1090,8 @@ function toastMe(txId, action, kind) {
 
 }
 
-function getUpToDateCr(currentCollateralAmount, currentDebtAmount, validatorMultiplier) {
-    return (resourcePrice * (currentCollateralAmount / currentDebtAmount)) / (validatorMultiplier * internalPrice);
+function getUpToDateCr(currentCollateralAmount, currentDebtAmount, validatorMultiplier, resourcePriceHere) {
+    return (resourcePriceHere * (currentCollateralAmount / currentDebtAmount)) / (validatorMultiplier * internalPrice);
 }
 
 function getNecessaryCollateral(debtAmount, cr, validatorMultiplier) {
@@ -2446,7 +2446,7 @@ async function checkManifest(net) {
                 "use_free_credit": true,
                 "assume_all_signature_proofs": true,
                 "skip_epoch_check": true,
-                "disable_auth_checks": false,
+                "disable_auth_checks": true,
             }
         };
 
@@ -2560,6 +2560,116 @@ async function getC9Data(lowestTick, highestTick) {
         const responseData = await response.json();
 
         return responseData;
+    } catch (error) {
+        console.error("Error:", error);
+        throw error;
+    }
+}
+
+async function setLowestCr(resourcePrice, resourceAddress) {
+    var statusUrl = "https://mainnet.radixdlt.com/status/gateway-status";
+    var url = "https://mainnet.radixdlt.com/transaction/preview";
+
+    const headers = {
+        "Content-Type": "application/json"
+    };
+
+    try {
+        // Fetch the gateway status to get the current epoch
+        const statusResponse = await fetch(statusUrl, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({}) // Sending an empty body
+        });
+        const statusData = await statusResponse.json();
+
+        // Extract the current epoch
+        const currentEpoch = statusData.ledger_state.epoch;
+        const startEpochInclusive = currentEpoch;
+        const endEpochExclusive = currentEpoch + 2;
+
+        var manifestString =
+            `CALL_METHOD
+                Address("${stabComponentAddress}")
+                "free_stab"
+                Decimal("100000000");
+
+            TAKE_ALL_FROM_WORKTOP
+                Address("${stabAddress}")
+                Bucket("stab");
+
+            CALL_METHOD
+                Address("${proxyComponentAddress}")
+                "force_liquidate"
+                Address("${resourceAddress}")
+                Bucket("stab");
+
+            CALL_METHOD
+                Address("account_rdx12xl2meqtelz47mwp3nzd72jkwyallg5yxr9hkc75ac4qztsxulfpew")
+                "try_deposit_batch_or_abort"
+                Expression("ENTIRE_WORKTOP")
+                None
+            ;`
+
+        // JSON payload
+        const payload = {
+            "manifest": manifestString,
+            "start_epoch_inclusive": startEpochInclusive,
+            "end_epoch_exclusive": endEpochExclusive,
+            "tip_percentage": 0,
+            "nonce": 1,
+            "signer_public_keys": [
+                {
+                    "key_type": "EcdsaSecp256k1",
+                    "key_hex": "0305684de356f5126befda977935827f6f74ca3b7865cd8516ca72ef7afc8c0e06"
+                }
+            ],
+            "flags": {
+                "use_free_credit": true,
+                "assume_all_signature_proofs": true,
+                "skip_epoch_check": true,
+                "disable_auth_checks": true,
+            }
+        };
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload)
+        });
+
+        const responseData = await response.json();
+        const idOfLowestCr = responseData?.receipt?.events[3]?.data?.programmatic_json?.fields[0]?.value || "none";
+
+        var lowestCr = "< 150%";
+
+        if (idOfLowestCr !== "none") {
+            let request = {
+                "resource_address": cdpAddress,
+                "non_fungible_ids": [idOfLowestCr],
+            };
+    
+            const responseCdp = await fetch("https://mainnet.radixdlt.com/state/non-fungible/data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request)
+            });
+    
+            const responseCdpData = await responseCdp.json();   
+            resourceAddress = responseCdpData.non_fungible_ids[0].data.programmatic_json.fields[0].value;
+            const resource = acceptedResources.find(ar => ar[1] === resourceAddress);
+            var resourcePriceToInput = resource[7];
+            collateralAmount = responseCdpData.non_fungible_ids[0].data.programmatic_json.fields[3].value;
+            debtAmount = responseCdpData.non_fungible_ids[0].data.programmatic_json.fields[4].value;
+    
+            console.log(idOfLowestCr, debtAmount, collateralAmount, resourcePriceToInput);
+            lowestCr = (getUpToDateCr(collateralAmount, debtAmount, 1, resourcePriceToInput) * 100).toFixed(2) + "%";
+        }
+
+        document.getElementById('lowest-cr').textContent = lowestCr;
+        
     } catch (error) {
         console.error("Error:", error);
         throw error;
@@ -3559,7 +3669,7 @@ async function update_liq() {
                     console.log(collateralAmount);
                     console.log(debtAmount);
                     console.log(validatorMultiplier);
-                    upToDateCr = getUpToDateCr(collateralAmount, debtAmount, validatorMultiplier);
+                    upToDateCr = getUpToDateCr(collateralAmount, debtAmount, validatorMultiplier, resourcePrice);
                     cr = upToDateCr * 100;
                     status = data2.non_fungible_ids[0].data.programmatic_json.fields[6].variant_name;
                     if (status == "ForceLiquidated") {
@@ -3687,11 +3797,11 @@ async function update_cdp() {
                 if (status == "ForceLiquidated") {
                     status = "Redeemed"
                 }
-                upToDateCr = getUpToDateCr(collateralAmount, debtAmount, validatorMultiplier);
+                upToDateCr = getUpToDateCr(collateralAmount, debtAmount, validatorMultiplier, resourcePrice, resourcePrice);
                 cr = upToDateCr;
                 availableCollateral = Math.max(getResourceAmountWallet(resourceAddress, unfilteredResources) - 0.0001, 0);
                 if (addingCollateral) {
-                    maxCr = getUpToDateCr(parseFloat(availableCollateral) + parseFloat(collateralAmount), debtAmount, validatorMultiplier) * 100;
+                    maxCr = getUpToDateCr(parseFloat(availableCollateral) + parseFloat(collateralAmount), debtAmount, validatorMultiplier, resourcePrice) * 100;
                     newCr = (upToDateCr * 100).toFixed(2);
                     var slider = document.getElementById('slider-col');
                     slider.min = newCr;
@@ -3708,7 +3818,7 @@ async function update_cdp() {
 
                 if (addingDebt == false) {
                     var minDebtAmount = Math.max(debtAmount - walletStab, 1);
-                    maxCrDebt = getUpToDateCr(parseFloat(collateralAmount), minDebtAmount, validatorMultiplier) * 100;
+                    maxCrDebt = getUpToDateCr(parseFloat(collateralAmount), minDebtAmount, validatorMultiplier, resourcePrice) * 100;
                     newCrDebt = (upToDateCr * 100).toFixed(2);
                     var slider = document.getElementById('slider-debt');
                     slider.min = newCrDebt;
@@ -4178,6 +4288,7 @@ function useData(data) {
                         document.getElementById("ratio-suffix").innerHTML = "STAB/" + selectedText;
                     }
                     setBorrowButton();
+                    setLowestCr(resourcePrice, address);
                 });
 
                 if (firstOption) {
@@ -8246,7 +8357,7 @@ if (window.location.pathname === '/manage-loans') {
             if (parseFloat(this.value) > availableCollateral) {
                 this.value = availableCollateral;
             }
-            newCr = getUpToDateCr(parseFloat(this.value) + parseFloat(collateralAmount), debtAmount, validatorMultiplier) * 100;
+            newCr = getUpToDateCr(parseFloat(this.value) + parseFloat(collateralAmount), debtAmount, validatorMultiplier, resourcePrice) * 100;
             document.getElementById("new-cr").textContent = "New CR: " + (newCr).toFixed(2) + "%";
             if (this.value != "") {
                 slider.value = newCr;
@@ -8256,7 +8367,7 @@ if (window.location.pathname === '/manage-loans') {
             }
             setAddColButton();
         } else {
-            newCr = getUpToDateCr(parseFloat(collateralAmount) - parseFloat(this.value), debtAmount, validatorMultiplier) * 100;
+            newCr = getUpToDateCr(parseFloat(collateralAmount) - parseFloat(this.value), debtAmount, validatorMultiplier, resourcePrice) * 100;
             if (newCr < 150) {
                 inputAmount.value = (collateralAmount - getNecessaryCollateral(debtAmount, 1.5, validatorMultiplier));
                 newCr = 150;
@@ -8324,7 +8435,7 @@ if (window.location.pathname === '/manage-loans') {
             if (this.value > maxStabToUse) {
                 this.value = maxStabToUse;
             }
-            newCrDebt = getUpToDateCr(parseFloat(collateralAmount), debtAmount - parseFloat(this.value), validatorMultiplier) * 100;
+            newCrDebt = getUpToDateCr(parseFloat(collateralAmount), debtAmount - parseFloat(this.value), validatorMultiplier, resourcePrice) * 100;
             if (newCrDebt < 0) {
                 newCrDebt = 0;
             }
@@ -8337,7 +8448,7 @@ if (window.location.pathname === '/manage-loans') {
             }
             setRemoveDebtButton();
         } else {
-            newCrDebt = getUpToDateCr(parseFloat(collateralAmount), (parseFloat(debtAmount) + parseFloat(this.value)), validatorMultiplier) * 100;
+            newCrDebt = getUpToDateCr(parseFloat(collateralAmount), (parseFloat(debtAmount) + parseFloat(this.value)), validatorMultiplier, resourcePrice) * 100;
             if (newCrDebt < 150) {
                 newCrDebt = 150;
                 inputAmountDebt.value = (getNecessaryStab(collateralAmount, 1.5, validatorMultiplier) - debtAmount);
