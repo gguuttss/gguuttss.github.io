@@ -1192,3 +1192,13 @@ textarea {
     border-radius: 4px; /* Rounded corners */
     resize: both; /* Allow resizing */
 }
+
+textarea.loan-id {
+    width: 100%; /* Full width */
+    height: 40px; /* Height of the textarea */
+    font-size: 16px; /* Font size */
+    padding: 10px; /* Padding inside the textarea */
+    border: 1px solid #ccc; /* Border style */
+    border-radius: 4px; /* Rounded corners */
+    resize: both; /* Allow resizing */
+}

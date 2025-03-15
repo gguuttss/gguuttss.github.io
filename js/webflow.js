@@ -28,6 +28,10 @@ let ociPool = "pool_rdx1ck0daslg9anw64t5ytq0g4svmuj85jwvrrhgz2005exh8gt6qxle4w"
 let lpOciAddress = "resource_rdx1t4vvunhvl24nrc8hh99dujuumyllvvsurvu72keaeh74e25358nhah"
 let c9LiquidityAddress = "resource_rdx1ngt09n8lg292hnzwvz5j6hl0aexja9ggh84qyam3xk3vcala72c2um"
 let c9PoolAddress = "component_rdx1cpqcstnjnj5cpag7wc04y6t4azrfxjtr3g53jdpv4y72m0lpp8qkf4"
+let lpOciAddressNew = "resource_rdx1t4qxj7nnm0sra6f6j9jq73erd489hdad6jp92hggtfwgwy9p2mgn76"
+let ociPoolNew = "pool_rdx1c5cyh7lhxly2mxzsmrs4c99vhxt9jzap3gaf7s8h0h68fqlpfht0un"
+let defiPool = "pool_rdx1c4c277rrwq7qr348pf3ggy3ja8j5v7ykxec65c267dcq00w3egn9dk"
+let lpDefiAddress = "resource_rdx1t4z3dn6u57kj069wru4tkmdrx8njz2d9a5rlfsphs87cyuaj9tufv0"
 let incentiveInterval = 7
 let bootstrapLength = 7
 
@@ -92,15 +96,16 @@ let initialXrdWeight = 0.01;
 
 const acceptedResources =   [
     ["XRD", xrdAddress, "", "images/radix-logo.svg", 1, 'XRD', 0, 1, "5c805da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6"],
-    ["LPLSU", lpLsuAddress, "", "images/lsulp.png", 1, 'LSULP', 0, 1, "5c805ded045268f3d05dec859e7ce13e18f778218dc4f2768c1859fa90c09c32"],
+    ["LSULP", lpLsuAddress, "", "images/lsulp.png", 1, 'LSULP', 0, 1, "5c805ded045268f3d05dec859e7ce13e18f778218dc4f2768c1859fa90c09c32"],
 ]
-const incentive_resources = [["LPSTAB", "images/lplogo.png", lpAddressForIncentives]]
+const incentive_resources = [["LPSTAB", "images/lplogo_real.png", lpAddressForIncentives]]
 const incentive_actions = 
     [
-        ["Native STAB/XRD LP", "images/lplogo.png", 25000, "Get rewarded for supplying STAB/XRD liquidity to the protocol-native pool by holding LPSTAB.", "http://ilikeitstable.com/swap"],
-        ["Native STAB Borrow", "images/stablogo.png", 100000, "Get rewarded for borrowing STAB. Rewards scale with outstanding debt owned by this account.", "http://ilikeitstable.com/borrow"],
-        ["C9 STAB/xUSDC LP", "images/usdclogo.png", 25000, "Get rewarded for supplying STAB/xUSDC liquidity to the CaviarNine pool. Only liquidity between 95-105% of STAB's peg is counted.", "https://www.caviarnine.com/earn/shape-liquidity/pool/component_rdx1cpqcstnjnj5cpag7wc04y6t4azrfxjtr3g53jdpv4y72m0lpp8qkf4"],
-        ["Ociswap ILIS/XRD LP", "images/ilislogo.png", 50000, "Get rewarded for supplying ILIS/XRD liquidity to the Ociswap BasicPool.", "https://ociswap.com/pools/component_rdx1czfuwcgnn7dxjjmz9zcacr347ahkuguz7vr9mcdkmywldg0f7qlylp"]
+        ["Native STAB/XRD LP", "images/lplogo_real.png", 25000, "Get rewarded for supplying STAB/XRD liquidity to the protocol-native pool by holding LPSTAB.", "http://ilikeitstable.com/swap"],
+        ["Native STAB Borrow", "images/stablogo.png", 75000, "Get rewarded for borrowing STAB. Rewards scale with outstanding debt owned by this account.", "http://ilikeitstable.com/borrow"],
+        ["C9 STAB/xUSDC LP", "images/usdclogo.png", 50000, "Get rewarded for supplying STAB/xUSDC liquidity to the CaviarNine pool. Only liquidity between 95-105% of STAB's peg is counted.", "https://www.caviarnine.com/earn/shape-liquidity/pool/component_rdx1cpqcstnjnj5cpag7wc04y6t4azrfxjtr3g53jdpv4y72m0lpp8qkf4"],
+        ["Ociswap ILIS/XRD LP", "https://ociswap.com/icons/lp_token.png", 50000, "Get rewarded for supplying ILIS/XRD liquidity to the Ociswap FlexPool.", "https://ociswap.com/pools/component_rdx1cr9tj8xd5cjs9mzkqdnamrzq0xgy4eylk75vhqqzka5uxsxatv4wxd"],
+        ["DefiPlaza ILIS LP", "images/defiplaza-icon.png", 50000, "Get rewarded for supplying ILIS liquidity to DefiPlaza.", "https://radix.defiplaza.net/liquidity/add/resource_rdx1t4r86qqjtzl8620ahvsxuxaf366s6rf6cpy24psdkmrlkdqvzn47c2?direction=base"]
     ]
 
 const addressSubject = new BehaviorSubject(DEFAULT_ADDRESS);
@@ -195,15 +200,142 @@ async function fetchResourceData() {
                         addressOfResource = field.value;
                     }
                 });
-
-                collateralAmountInProtocol += amountOfResource * (usdPriceOfResource / xrdPrice);
             });
-            if (window.location.pathname == "/borrow") {
-                document.getElementById('stab-cr').textContent = (((collateralAmountInProtocol * xrdPrice) / (mintedStab * parseFloat(internalPrice))) * 100).toFixed(2) + "%";
-            }
         } catch (error) {
             console.error('Error:', error);
         }
+    }
+}
+
+async function taxHelp(id, nextUpdate, allData) {
+    id = id.replace(/#/g, '');
+    const finished_id = `#${id}#`;
+
+    const headers = {
+        "Content-Type": "application/json"
+    };
+
+    let payload;
+
+    if (nextUpdate == 0) {
+        payload = {
+            "resource_address": cdpAddress,
+            "non_fungible_ids": [finished_id]
+        };
+    } else {
+        payload = {
+            "resource_address": cdpAddress,
+            "non_fungible_ids": [finished_id],
+            "at_ledger_state": {
+                "state_version": nextUpdate
+            }
+        };
+    }
+
+    let url = "https://mainnet.radixdlt.com/state/non-fungible/data";
+
+    // Send the POST request
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(payload)
+    });
+
+    // Parse and save the response to a variable
+    let responseData = await response.json();
+    console.log(responseData);
+
+    if (responseData.non_fungible_ids.length > 0) {
+        if (responseData.non_fungible_ids[0].is_burned !== true) {
+            responseData.non_fungible_ids[0].data.programmatic_json.fields.push(responseData.ledger_state.proposer_round_timestamp);
+            allData.unshift(responseData.non_fungible_ids[0].data.programmatic_json.fields);
+        }
+        taxHelp(id, responseData.non_fungible_ids[0].last_updated_at_state_version - 1, allData);
+    } else {
+        document.getElementById("all-permutations").innerHTML = "";
+        let lastCollateralAmount = 0;
+        let lastStabDebt = 0;
+        let lastState = "Non-Existing";
+
+        console.log(allData);
+        allData.forEach(item => {
+            let newCollateralAmount = parseFloat(item[3].value);
+            let newDebtAmount = parseFloat(item[4].value);
+            let newState = item[6].variant_name;
+
+            if (newState == "ForceLiquidated") {
+                newState = "Redeemed";
+            }
+
+            if (newState == "Liquidated" || newState == "Redeemed" || newState == "Closed") {
+                newDebtAmount = 0;
+            } 
+
+            let list = document.getElementById("all-permutations");
+
+            // Create main list item for this state
+            let newItem = document.createElement("li");
+            newItem.textContent = `Change to loan at ${item[8]}`;
+            list.appendChild(newItem);
+
+            // Create a sublist for this state
+            let subList = document.createElement("ul");
+
+            // "State Now" sublist
+            let stateNowItem = document.createElement("li");
+            stateNowItem.textContent = "State Now:";
+            let stateNowSubList = document.createElement("ul");
+
+            let collateralItem = document.createElement("li");
+            collateralItem.textContent = `Collateral: ${newCollateralAmount}`;
+            stateNowSubList.appendChild(collateralItem);
+
+            let debtItem = document.createElement("li");
+            debtItem.textContent = `Debt: ${newDebtAmount}`;
+            stateNowSubList.appendChild(debtItem);
+
+            let state = document.createElement("li");
+            state.textContent = `State of loan: ${newState}`;
+            stateNowSubList.appendChild(state);
+
+            stateNowItem.appendChild(stateNowSubList);
+            subList.appendChild(stateNowItem);
+
+            // "Change from last state" sublist
+            let changeItem = document.createElement("li");
+            changeItem.textContent = "Change from last state:";
+            let changeSubList = document.createElement("ul");
+
+            let collateralChange = document.createElement("li");
+            collateralChange.textContent = `Collateral Change: ${newCollateralAmount - lastCollateralAmount}`;
+            changeSubList.appendChild(collateralChange);
+
+            let debtChange = document.createElement("li");
+            debtChange.textContent = `Debt Change: ${newDebtAmount - lastStabDebt}`;
+            changeSubList.appendChild(debtChange);
+
+            let newStateValue = document.createElement("li");
+            newStateValue.textContent = `State changed from ${lastState} to ${newState}`;
+            changeSubList.appendChild(newStateValue);
+
+            changeItem.appendChild(changeSubList);
+            subList.appendChild(changeItem);
+
+            // Append sublist to main item
+            newItem.appendChild(subList);
+
+            // Update last values for next iteration
+            lastCollateralAmount = newCollateralAmount;
+            lastStabDebt = newDebtAmount;
+            lastState = newState;
+        });
+    }
+}
+
+
+if (window.location.pathname == "/tax-helper") {
+    document.getElementById('tax-help').onclick = async function () {
+        taxHelp(document.getElementById('id-input').value, 0, []);
     }
 }
 
@@ -555,7 +687,7 @@ if (window.location.pathname == "/deployment") {
             Address("${lpAddress}")
             "icon_url"
             Enum<13u8>(
-                "https://ilikeitstable.com/images/lplogo.png"
+                "https://ilikeitstable.com/images/lplogo_real.png"
             )
             ;
 
@@ -782,6 +914,8 @@ let walletResource;
 let walletXrd;
 let walletLp;
 let walletLpOci;
+let walletLpDefi;
+let walletLpOciNew;
 let walletStab;
 let formattedWallet;
 let xrdPoolAmount;
@@ -824,6 +958,9 @@ let realInputCol;
 let cantLiqWithSkips;
 let ilisLbpPoolAmount;
 let xrdLbpPoolAmount;
+let ilisLbpPoolAmountNew;
+let xrdLbpPoolAmountNew;
+let ilisLbpPoolAmountDefi;
 let ilisWeight;
 let xrdWeight;
 let lbpProgress;
@@ -863,6 +1000,11 @@ let currentLpStaked;
 let lpStabValue;
 let lpStabSupply;
 let lpOciSupply;
+let lpOciSupplyNew;
+let lpDefiSupply;
+let ociNewFraction;
+let ociOldFraction;
+let defiFraction;
 let lpOciValue;
 let daoOciLpSupply = 2015280.70
 let currentIlisReward;
@@ -2132,13 +2274,7 @@ async function checkLiquidation(toSkip) {
         const url = "https://mainnet.radixdlt.com/transaction/preview";
 
         // Repeat the specified part of the manifest
-        let manifest = `CALL_METHOD
-            Address("account_rdx12x96pjxqazraqf2f9pdqxsl0a2mpzgep6dfny039dhv8ksd33gc52m")
-            "create_proof_of_amount"
-            Address("${ctrlBadgeAddress}")
-            Decimal("0.75");
-
-
+        let manifest = `
         CALL_METHOD
             Address("${stabComponentAddress}")
             "free_stab"
@@ -2152,8 +2288,9 @@ async function checkLiquidation(toSkip) {
             Address("${proxyComponentAddress}")
             "liquidate_position_without_marker"
             Bucket("stab")
-            true
-            ${toSkip}i64
+            Enum<1u8>(
+                ${toSkip}i64
+            )
             NonFungibleLocalId("#0#");
 
         CALL_METHOD
@@ -2438,8 +2575,8 @@ async function checkManifest(net) {
             "nonce": 1,
             "signer_public_keys": [
                 {
-                    "key_type": "EcdsaSecp256k1",
-                    "key_hex": "0305684de356f5126befda977935827f6f74ca3b7865cd8516ca72ef7afc8c0e06"
+                    "key_type": "EddsaEd25519",
+                    "key_hex": "f634f20d242bf66e1fffa840acb9a77c84fca9edb3f390e83cf60f6b5e25d1ec"
                 }
             ],
             "flags": {
@@ -2850,14 +2987,34 @@ async function update_id() {
 
 async function fetchData(address) {
     const url_fetch_ids = "https://mainnet.radixdlt.com/state/entity/details";
-    const addresses = [address, proxyComponentAddress, poolComponentAddress, stabAddress,
+    const firstAddresses = [address, proxyComponentAddress, poolComponentAddress, stabAddress,
                         poolAddress, stakingAddress, lbpPoolAddress, lbpComponentAddress,
                         incentiveAddress, governanceAddress, daoAddress, ilisPool,
                         poolIlisAddress, stabComponentAddress, lpAddress, ociPool,
                         lpOciAddress, c9PoolAddress];
 
+    const secondAddresses =  [lpOciAddressNew, ociPoolNew, defiPool,
+    lpDefiAddress];
+
+    const addresses = firstAddresses.concat(secondAddresses);
+
     const requestBody = {
-        "addresses": addresses,
+        "addresses": firstAddresses,
+        "aggregation_level": "Vault",
+        "opt_ins": {
+            "ancestor_identities": false,
+            "component_royalty_vault_balance": false,
+            "package_royalty_vault_balance": false,
+            "non_fungible_include_nfids": true,
+            "explicit_metadata": [
+                "name",
+                "description"
+            ]
+        }
+    };
+
+    const requestBody2 = {
+        "addresses": secondAddresses,
         "aggregation_level": "Vault",
         "opt_ins": {
             "ancestor_identities": false,
@@ -2916,16 +3073,32 @@ async function fetchData(address) {
             body: JSON.stringify(requestBody)
         });
 
+        const fetchPromise3 = fetch(url_fetch_ids, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody2)
+        });
+
         // Wait for both fetch requests to complete
-        const [/*response1,*/response2] = await Promise.all([/*fetchPromise1, */fetchPromise2]);
+        const [/*response1,*/response2, response3] = await Promise.all([/*fetchPromise1, */fetchPromise2, fetchPromise3]);
 
         // Check the status of the responses
-        if (/*!response1.ok || */!response2.ok) {
+        if (/*!response1.ok || */!response2.ok || !response3.ok) {
             throw new Error(`HTTP error! status: ${response2.status/*change this shit to 1*/}, ${response2.status}`);
         }
 
         // Parse the responses as JSON
-        const [/*data1, */data2] = await Promise.all([/*response1.json(), */response2.json()]);
+        var [/*data1, */data2, data3] = await Promise.all([/*response1.json(), */response2.json(), response3.json()]);
+
+        console.log(data2, data3);
+
+        var mergedItems = data2.items.concat(data3.items);
+
+        data2.items = mergedItems;
+
+        console.log(data2);
 
         // Extract the reward_amount values
         /*const rewardAmounts = data1.entries
@@ -3002,34 +3175,80 @@ async function fetchData(address) {
                 });
         }
 
-        if (c9_ids.length > 0) {
-            // Define the data for the request
-            const requestDataC9 = {
-                "resource_address": c9LiquidityAddress,
-                "non_fungible_ids": c9_ids
-            };
+        const timeResponseForC9 = await fetch('https://mainnet.radixdlt.com/status/gateway-status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            // Include any necessary body data in string format
+        });
+        const timeDataForC9 = await timeResponseForC9.json();
+        const date = timeDataForC9.ledger_state.proposer_round_timestamp;
 
-            // Make the API request
-            await fetch('https://mainnet.radixdlt.com/state/non-fungible/data', {
-                method: 'POST', // Specify the HTTP method
-                headers: {
-                    'Content-Type': 'application/json', // Set the content type to JSON
-                },
-                body: JSON.stringify(requestDataC9), // Convert the data to JSON string
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok ' + response.statusText);
-                    }
-                    return response.json(); // Parse the JSON from the response
-                })
-                .then(data => {
-                    c9_liqs = data.non_fungible_ids; // Write the response data to the console
-                })
-                .catch(error => {
-                    console.error('There was a problem with the fetch operation:', error); // Handle any errors
-                });
+        let payloadC9 = {
+            "address": accountAddress,
+            "resource_address": c9LiquidityAddress,
+            "opt_ins": {
+                "non_fungible_include_nfids": true
+            },
+            "at_ledger_state": {
+                "timestamp": date
+            }
         }
+
+        let found_ids = [];
+
+        await fetch('https://mainnet.radixdlt.com/state/entity/page/non-fungible-vaults/', {
+            method: 'POST', // Specify the HTTP method
+            headers: {
+                'Content-Type': 'application/json', // Set the content type to JSON
+            },
+            body: JSON.stringify(payloadC9), // Convert the data to JSON string
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.json(); // Parse the JSON from the response
+            })
+            .then(data => {
+                if (data.items.length > 0) {
+                    found_ids = data.items[0].items; // Write the response data to the console
+                    console.log(c9_liqs);
+                }
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error); // Handle any errors
+            });
+
+
+        const requestDataC9 = {
+            "resource_address": c9LiquidityAddress,
+            "non_fungible_ids": found_ids
+        };
+
+        // Make the API request
+        await fetch('https://mainnet.radixdlt.com/state/non-fungible/data', {
+            method: 'POST', // Specify the HTTP method
+            headers: {
+                'Content-Type': 'application/json', // Set the content type to JSON
+            },
+            body: JSON.stringify(requestDataC9), // Convert the data to JSON string
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.json(); // Parse the JSON from the response
+            })
+            .then(data => {
+                console.log("Gotchu fam");
+                c9_liqs = data.non_fungible_ids; // Write the response data to the console
+                console.log(c9_liqs);
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error); // Handle any errors
+            });
 
         const timeResponse = await fetch('https://mainnet.radixdlt.com/status/gateway-status', {
             method: 'POST',
@@ -3447,8 +3666,11 @@ async function update_new_incentives() {
     }
 
     if (window.location.pathname === '/incentives') {
-        console.log(c9_liqs);
         if (selectedIncentive == "Native STAB/XRD LP") {
+            document.getElementById('total-rewards-title').textContent = "Total Weekly Rewards";
+            document.getElementById('info-apy-message-text').textContent = "stabnativetext.";
+            document.getElementById('info-apy-message').style.display = "none";
+            document.getElementById('token-held-2-section').style.display = "flex";
             document.getElementById('warning-message').style.display = 'block';
             var circulatingResource = lpStabSupply;
             var heldResource = walletLp;
@@ -3476,8 +3698,13 @@ async function update_new_incentives() {
         }
 
         if (selectedIncentive == "C9 STAB/xUSDC LP") {
+            document.getElementById('total-rewards-title').textContent = "Total Weekly Rewards";
+            document.getElementById('info-apy-message').style.display = "flex";
+            document.getElementById('token-held-2-section').style.display = "flex";
+            document.getElementById('info-apy-message-text').textContent = "Only liquidity provided between 95%-105% of STAB's peg is counted towards your rewards. Half of the rewards go to liquidity provided below 100% peg, and the other half of the rewards go to liquidity provided above 100% peg. Your personal APY can deviate from the average APY depending on where you provide liquidity.";
             var lowestTick = Math.floor(calculateTick(internalPrice * 0.95) / 10) * 10;
             var highestTick = Math.floor(calculateTick(internalPrice * 1.05) / 10) * 10;
+            var currentTick = Math.floor(calculateTick(internalPrice) / 10) * 10;
             const data = await getC9Data(lowestTick, highestTick)
             var activeX = parseFloat(bigData[17].details.state.fields[5].value);
             var activeY = parseFloat(bigData[17].details.state.fields[6].value);
@@ -3485,51 +3712,121 @@ async function update_new_incentives() {
             var currentBin = parseInt(bigData[17].details.state.fields[1].fields[1].fields[0].fields[0].value)
             var dataUsdEntries = data.receipt.output[0].programmatic_json.elements;
             var dataStabEntries = data.receipt.output[1].programmatic_json.elements;
+            console.log(data);
             var stabPrice = parseFloat(data.receipt.output[2].programmatic_json.fields[0].value);
-            var totalStab = 0;
-            var userStab = 0;
+            var totalStabAbovePeg = 0;
+            var totalStabBelowPeg = 0;
+            var userStabBelowPeg = 0;
+            var userStabAbovePeg = 0;
             var userRealStab = 0;
             var userRealUsd = 0;
 
             dataUsdEntries.forEach(entry => {
-                totalStab += parseFloat(entry.fields[1].value) * (1 / stabPrice);
+                if (parseInt(entry.fields[0].value) > currentTick) {
+                    totalStabAbovePeg += parseFloat(entry.fields[1].value) * (1 / stabPrice);
+                }
+                if (parseInt(entry.fields[0].value) < currentTick) {
+                    totalStabBelowPeg += parseFloat(entry.fields[1].value) * (1 / stabPrice);
+                }
+                if (parseInt(entry.fields[0].value) == currentTick) {
+                    totalStabAbovePeg += 0.5 * parseFloat(entry.fields[1].value) * (1 / stabPrice);
+                    totalStabBelowPeg += 0.5 * parseFloat(entry.fields[1].value) * (1 / stabPrice);
+                }
             });
 
             dataStabEntries.forEach(entry => {
-                totalStab += parseFloat(entry.fields[1].value);
+                if (entry.fields[0].value > currentTick) {
+                    totalStabAbovePeg += parseFloat(entry.fields[1].value);
+                }
+                if (entry.fields[0].value < currentTick) {
+                    totalStabBelowPeg += parseFloat(entry.fields[1].value);
+                }
+                if (entry.fields[0].value == currentTick) {
+                    totalStabAbovePeg += 0.5 * parseFloat(entry.fields[1].value);
+                    totalStabBelowPeg += 0.5 * parseFloat(entry.fields[1].value);
+                }
             });
 
             c9_liqs.forEach(liq => {
                 liq.data.programmatic_json.fields[0].entries.forEach(bin => {
-                    if (parseInt(bin.key.value) <= highestTick && parseInt(bin.key.value) >= lowestTick) {
+                    if (parseInt(bin.key.value) <= highestTick && parseInt(bin.key.value) >= lowestTick && parseInt(bin.key.value) > currentTick) {
                         if (parseInt(bin.key.value) < currentBin) {
-                            userStab += parseFloat(bin.value.value) * (1 / stabPrice);
+                            userStabAbovePeg += parseFloat(bin.value.value) * (1 / stabPrice);
                             userRealUsd += parseFloat(bin.value.value);
                         } else if (parseInt(bin.key.value) == currentBin) {
                             var liqShare = parseFloat(bin.value.value) / activeTotal;
-                            userStab += activeX * liqShare + activeY * liqShare * (1 / stabPrice);
+                            userStabAbovePeg += activeX * liqShare + activeY * liqShare * (1 / stabPrice);
                             userRealStab += activeX * liqShare;
                             userRealUsd += activeY * liqShare;
                         } else {
-                            userStab += parseFloat(bin.value.value);
+                            userStabAbovePeg += parseFloat(bin.value.value);
+                            userRealStab += parseFloat(bin.value.value);
+                        }
+                    }
+                    if (parseInt(bin.key.value) <= highestTick && parseInt(bin.key.value) >= lowestTick && parseInt(bin.key.value) < currentTick) {
+                        if (parseInt(bin.key.value) < currentBin) {
+                            userStabBelowPeg += parseFloat(bin.value.value) * (1 / stabPrice);
+                            userRealUsd += parseFloat(bin.value.value);
+                        } else if (parseInt(bin.key.value) == currentBin) {
+                            var liqShare = parseFloat(bin.value.value) / activeTotal;
+                            userStabBelowPeg += activeX * liqShare + activeY * liqShare * (1 / stabPrice);
+                            userRealStab += activeX * liqShare;
+                            userRealUsd += activeY * liqShare;
+                        } else {
+                            userStabBelowPeg += parseFloat(bin.value.value);
+                            userRealStab += parseFloat(bin.value.value);
+                        }
+                    }
+                    if (parseInt(bin.key.value) <= highestTick && parseInt(bin.key.value) >= lowestTick && parseInt(bin.key.value) == currentTick) {
+                        if (parseInt(bin.key.value) < currentBin) {
+                            userStabBelowPeg += 0.5 * parseFloat(bin.value.value) * (1 / stabPrice);
+                            userStabAbovePeg += 0.5 * parseFloat(bin.value.value) * (1 / stabPrice);
+                            userRealUsd += parseFloat(bin.value.value);
+                        } else if (parseInt(bin.key.value) == currentBin) {
+                            var liqShare = parseFloat(bin.value.value) / activeTotal;
+                            userStabAbovePeg += 0.5 * activeX * liqShare + activeY * liqShare * (1 / stabPrice);
+                            userStabBelowPeg += 0.5 * activeX * liqShare + activeY * liqShare * (1 / stabPrice);
+                            userRealStab += activeX * liqShare;
+                            userRealUsd += activeY * liqShare;
+                        } else {
+                            userStabAbovePeg += 0.5 * parseFloat(bin.value.value);
+                            userStabBelowPeg += 0.5 * parseFloat(bin.value.value);
                             userRealStab += parseFloat(bin.value.value);
                         }
                     }
                 });
             });
-            var circulatingResource = totalStab;
-            var heldResource = userStab;
             var resourceValue = stabPrice;
             var liqOne = userRealStab;
             var liqTwo = userRealUsd;
             var weeklyReward = incentive_actions[2][2];
-            var fraction = heldResource / circulatingResource;
-            var reward = fraction * weeklyReward;
-            var apy = ((weeklyReward * parseFloat(ilisValue)) / (circulatingResource * resourceValue)) * 52 * 100;
+            var fractionAbovePeg;
+            var fractionBelowPeg;
+            if (totalStabAbovePeg > 0) {
+                fractionAbovePeg = userStabAbovePeg / totalStabAbovePeg;
+            } else {
+                fractionAbovePeg = 0;
+            }
+            if (totalStabBelowPeg > 0) {
+                fractionBelowPeg = userStabBelowPeg / totalStabBelowPeg;
+            } else {
+                fractionBelowPeg = 0;
+            }
+            console.log(totalStabBelowPeg);
+            console.log(totalStabAbovePeg);
+            var reward = fractionAbovePeg * weeklyReward / 2 + fractionBelowPeg * weeklyReward / 2;
+            var apy = ((weeklyReward * parseFloat(ilisValue)) / ((totalStabAbovePeg + totalStabBelowPeg) * resourceValue)) * 52 * 100;
             console.log(weeklyReward, ilisValue, circulatingResource, resourceValue);
             document.getElementById('total-weekly-rewards').textContent = weeklyReward  + " ILIS";
             document.getElementById('apy').textContent = apy.toFixed(2) + "%";
             document.getElementById('approximate-weekly-rewards').textContent = reward.toFixed(2) + " ILIS";
+            document.getElementById('personal-apy-section').style.display = "flex";
+            if (userStabAbovePeg + userStabBelowPeg > 0) {
+                document.getElementById('personal-apy').textContent = "Personal APY: " + (((reward * parseFloat(ilisValue)) / ((userStabAbovePeg + userStabBelowPeg) * resourceValue)) * 52 * 100).toFixed(2) + "%";
+            } else {
+                document.getElementById('personal-apy').textContent = "Personal APY: -%";
+            }
+            
             document.getElementById('token-held-1').textContent = liqOne.toFixed(2) + " STAB";
             document.getElementById('token-held-2').textContent = liqTwo.toFixed(2) + " xUSDC";
             document.getElementById('incentive-title').textContent = "Liquidity Supplied";
@@ -3538,22 +3835,26 @@ async function update_new_incentives() {
             document.getElementById('incentive-name').textContent = "STAB/xUSDC LP";
             document.getElementById('incentive-logo-1').src = "https://ilikeitstable.com/images/stablogo.png"
             document.getElementById('incentive-logo-2').src = "https://ilikeitstable.com/images/usdclogo.png"
+        } else {
+            document.getElementById('personal-apy-section').style.display = "none";
         }
         
         if (selectedIncentive == "Native STAB Borrow") {
+            document.getElementById('total-rewards-title').textContent = "Total Weekly Rewards";
+            document.getElementById('info-apy-message').style.display = "flex";
             var circulatingResource = circulatingStab;
             var heldResource = 0;
             var stabLoans;
-            if (bigData.length > 17) {
-                stabLoans = bigData[18];
+            if (bigData.length > 22) {
+                stabLoans = bigData[22];
+                stabLoans.forEach((loan, _index) => {
+                    if (loan.is_burned == false && (loan.data.programmatic_json.fields[6].variant_name == "Healthy" || loan.data.programmatic_json.fields[6].variant_name == "Marked")) {
+                        heldResource += parseFloat(loan.data.programmatic_json.fields[4].value);
+                    }
+                });
             } else {
                 stabLoans = []
             }
-            stabLoans.forEach((loan, _index) => {
-                if (loan.is_burned == false && (loan.data.programmatic_json.fields[6].variant_name == "Healthy" || loan.data.programmatic_json.fields[6].variant_name == "Marked")) {
-                    heldResource += parseFloat(loan.data.programmatic_json.fields[4].value);
-                }
-            });
             var resourceValue = (xrdPoolAmount / stabPoolAmount) * xrdPrice * 2.5;
             var liqOne = heldResource;
             var weeklyReward = incentive_actions[1][2];
@@ -3573,25 +3874,31 @@ async function update_new_incentives() {
             document.getElementById('incentive-logo-1').src = "https://ilikeitstable.com/images/stablogo.png";
             document.getElementById('apy-title').textContent = "APY*"
             document.getElementById('info-apy-message').style.display = "flex";
+            document.getElementById('info-apy-message-text').textContent = "The APY is calculated under the assumption of a 250% collateralization ratio.";
         } else {
-            document.getElementById('token-held-2-section').style.display = "flex";
             document.getElementById('apy-title').textContent = "APY";
-            document.getElementById('info-apy-message').style.display = "none";
         }
         if (selectedIncentive == "Ociswap ILIS/XRD LP") {
-            var circulatingResource = lpOciSupply - daoOciLpSupply;
-            var heldResource = walletLpOci;
-            console.log(heldResource);
-            var resourceValue = lpOciValue;
-            console.log(lpOciValue);
-            console.log(circulatingResource);
-            var liqOne = (walletLpOci / (circulatingResource + daoOciLpSupply)) * xrdLbpPoolAmount;
-            var liqTwo = (walletLpOci / (circulatingResource + daoOciLpSupply)) * ilisLbpPoolAmount;
+            document.getElementById('total-rewards-title').textContent = "Total Weekly Rewards*";
+            document.getElementById('info-apy-message').style.display = "flex";
+            document.getElementById('info-apy-message-text').textContent = "Rewards for Ociswap ILIS LP are shared with DefiPlaza ILIS LP, with shares based on total ILIS provided.";
+            document.getElementById('token-held-2-section').style.display = "flex";
+            var personalValueProvided = 2 * (walletLpOci / lpOciSupply) * parseFloat(ilisLbpPoolAmount) + 2 * (walletLpOciNew / lpOciSupplyNew) * parseFloat(ilisLbpPoolAmountNew);
+            var totalValueProvided = 2 * parseFloat(ilisLbpPoolAmount) + 2 * parseFloat(ilisLbpPoolAmountNew) + parseFloat(ilisLbpPoolAmountDefi);
+            var daoValueProvided = 2 * (daoOciLpSupply / lpOciSupply) * parseFloat(ilisLbpPoolAmount);
+            console.log(personalValueProvided, totalValueProvided);
+            var fraction = personalValueProvided / (totalValueProvided - daoValueProvided);
+            var personalIlisOldProvided = (walletLpOci / lpOciSupply) * parseFloat(ilisLbpPoolAmount);
+            var personalIlisNewProvided = (walletLpOciNew / lpOciSupplyNew) * parseFloat(ilisLbpPoolAmountNew);
+            var personalXrdOldProvided = (walletLpOci / lpOciSupply) * parseFloat(xrdLbpPoolAmount);
+            var personalXrdNewProvided = (walletLpOciNew / lpOciSupplyNew) * parseFloat(xrdLbpPoolAmountNew);
+            var liqOne = personalXrdOldProvided + personalXrdNewProvided;
+            var liqTwo = personalIlisOldProvided + personalIlisNewProvided;
+
             var weeklyReward = incentive_actions[3][2];
-            var fraction = heldResource / circulatingResource;
             var reward = fraction * weeklyReward;
-            var apy = ((weeklyReward * parseFloat(ilisValue)) / (circulatingResource * resourceValue)) * 52 * 100;
-            console.log(weeklyReward, ilisValue, circulatingResource, resourceValue);
+            var apy = (weeklyReward / (totalValueProvided - daoValueProvided)) * 52 * 100;
+            console.log(weeklyReward, ilisValue);
             document.getElementById('total-weekly-rewards').textContent = weeklyReward  + " ILIS";
             document.getElementById('apy').textContent = apy.toFixed(2) + "%";
             document.getElementById('approximate-weekly-rewards').textContent = reward.toFixed(2) + " ILIS";
@@ -3603,6 +3910,33 @@ async function update_new_incentives() {
             document.getElementById('incentive-name').textContent = "ILIS/XRD LP";
             document.getElementById('incentive-logo-1').src = "https://ilikeitstable.com/images/radix-logo.svg"
             document.getElementById('incentive-logo-2').src = "https://ilikeitstable.com/images/ilislogo.png"
+        }
+        if (selectedIncentive == "DefiPlaza ILIS LP") {
+            document.getElementById('total-rewards-title').textContent = "Total Weekly Rewards*";
+            document.getElementById('token-held-2-section').style.display = "none";
+            document.getElementById('info-apy-message').style.display = "flex";
+            document.getElementById('info-apy-message-text').textContent = "Rewards for DefiPlaza ILIS LP are shared with Ociswap ILIS LP, with shares based on total ILIS provided.";
+            var personalValueProvided = (walletLpDefi / lpDefiSupply) * parseFloat(ilisLbpPoolAmountDefi);
+            var totalValueProvided = 2 * parseFloat(ilisLbpPoolAmount) + 2 * parseFloat(ilisLbpPoolAmountNew) + parseFloat(ilisLbpPoolAmountDefi);
+            var daoValueProvided = 2 * (daoOciLpSupply / lpOciSupply) * parseFloat(ilisLbpPoolAmount);
+            console.log(personalValueProvided, totalValueProvided);
+            var fraction = personalValueProvided / (totalValueProvided - daoValueProvided);
+            var personalIlisDefiProvided = (walletLpDefi / lpDefiSupply) * parseFloat(ilisLbpPoolAmountDefi);
+            var liqTwo = personalIlisDefiProvided;
+
+            var weeklyReward = incentive_actions[4][2];
+            var reward = fraction * weeklyReward;
+            var apy = (weeklyReward / (totalValueProvided - daoValueProvided)) * 52 * 100;
+            console.log(weeklyReward, ilisValue);
+            document.getElementById('total-weekly-rewards').textContent = weeklyReward  + " ILIS";
+            document.getElementById('apy').textContent = apy.toFixed(2) + "%";
+            document.getElementById('approximate-weekly-rewards').textContent = reward.toFixed(2) + " ILIS";
+            document.getElementById('token-held-1').textContent = liqTwo.toFixed(2) + " ILIS";
+            document.getElementById('incentive-title').textContent = "Liquidity Supplied";
+            document.getElementById('text').textContent = incentive_actions[4][3];
+            updateButtonLink(incentive_actions[4][4]);
+            document.getElementById('incentive-name').textContent = "ILIS/XRD LP";
+            document.getElementById('incentive-logo-1').src = "https://ilikeitstable.com/images/ilislogo.png";
         }
     }
 }
@@ -3960,6 +4294,17 @@ function getResourceAmount(resourceAddress, data, itemIndex) {
         const resource = item.fungible_resources.items.find(frItem => frItem.resource_address === resourceAddress);
         if (resource && resource.vaults && resource.vaults.items.length > 0) {
             return resource.vaults.items[0].amount;
+        }
+    }
+    return 0;
+}
+
+function getResourceAmountSecondVault(resourceAddress, data, itemIndex) {
+    let item = data[itemIndex];
+    if (item.fungible_resources && item.fungible_resources.items) {
+        const resource = item.fungible_resources.items.find(frItem => frItem.resource_address === resourceAddress);
+        if (resource && resource.vaults && resource.vaults.items.length > 0) {
+            return resource.vaults.items[1].amount;
         }
     }
     return 0;
@@ -4394,15 +4739,37 @@ function useData(data) {
     walletXrd = Math.max(getResourceAmountWallet(xrdAddress, unfilteredResources)- 0.0001, 0);
     walletLp = Math.max(getResourceAmountWallet(lpAddress, unfilteredResources)- 0.0001, 0);
     walletLpOci = Math.max(getResourceAmountWallet(lpOciAddress, unfilteredResources)- 0.0001, 0);
+    walletLpOciNew = Math.max(getResourceAmountWallet(lpOciAddressNew, unfilteredResources)- 0.0001, 0);
+    walletLpDefi = Math.max(getResourceAmountWallet(lpDefiAddress, unfilteredResources)- 0.0001, 0);
     walletStab = Math.max(getResourceAmountWallet(stabAddress, unfilteredResources)- 0.0001, 0);
     xrdPoolAmount = getResourceAmount(xrdAddress, data, 4);
     stabPoolAmount = getResourceAmount(stabAddress, data, 4);
+    collateralAmountInProtocol = parseFloat(getResourceAmountSecondVault(xrdAddress, data, 13)) + parseFloat(getResourceAmountSecondVault(lpLsuAddress, data, 13)) * (acceptedResources[1][7] / xrdPrice);
+
+    mintedStab = data[3].details.total_supply;
+
+    if (window.location.pathname == "/borrow") {
+        document.getElementById('stab-cr').textContent = (((collateralAmountInProtocol * xrdPrice) / (mintedStab * parseFloat(internalPrice))) * 100).toFixed(2) + "%";
+        console.log("wwwwwwwwwwwww");
+        console.log(collateralAmountInProtocol);
+        console.log(mintedStab);
+        console.log("wwwwwwwwwwwww");
+    }
+
     if (lbpEnded == false) {
         xrdLbpPoolAmount = getResourceAmount(xrdAddress, data, 6);
         ilisLbpPoolAmount = getResourceAmount(ilisAddress, data, 6);
     } else {
         xrdLbpPoolAmount = getResourceAmount(xrdAddress, data, 15);
         ilisLbpPoolAmount = getResourceAmount(ilisAddress, data, 15);
+        xrdLbpPoolAmountNew = getResourceAmount(xrdAddress, data, 19);
+        ilisLbpPoolAmountNew = getResourceAmount(ilisAddress, data, 19);
+        ilisLbpPoolAmountDefi = getResourceAmount(ilisAddress, data, 20);
+
+        var totalAmount = 2 * ilisLbpPoolAmount + 2 * ilisLbpPoolAmountNew + ilisLbpPoolAmountDefi;
+        ociOldFraction = (2 * ilisLbpPoolAmount) / totalAmount;
+        ociNewFraction = (2 * ilisLbpPoolAmountNew) / totalAmount;
+        defiFraction = ilisLbpPoolAmountDefi / totalAmount;
     }
     quorum = data[9].details.state.fields[9].fields[2].value;
     interestRate = (100 * ((data[1].details.state.fields[15].fields[6].value ** (24 * 60 * 365)) - 1)).toFixed(2);
@@ -4415,6 +4782,9 @@ function useData(data) {
     lpStabValue = 2 * xrdPrice * xrdPoolAmount / lpStabSupply;
     lpOciSupply =  parseFloat(data[16].details.total_supply);
     lpOciValue = 2 * xrdPrice * xrdLbpPoolAmount / lpOciSupply;
+
+    lpOciSupplyNew = parseFloat(data[18].details.total_supply);
+    lpDefiSupply = parseFloat(data[21].details.total_supply);
 
     if (proposalToView == -1 && window.location.pathname === '/governance') {
         document.getElementById('prop-id-counter').textContent = maxProposals;
@@ -5185,8 +5555,8 @@ function useData(data) {
         dropdownContent.innerHTML = '';
         var cdpExists = false;
         var counter;
-        if (data.length > 17) {
-            counter = data[18].length - 1;
+        if (data.length > 21) {
+            counter = data[22].length - 1;
         }
 
         cdp_ids.sort((a, b) => {
@@ -5201,17 +5571,17 @@ function useData(data) {
             }
             var name = "Receipt " + id;
             var logoUrl = 'images/receipt.png'
-            while (data[18][counter].is_burned == true && counter > 0) {
+            while (data[22][counter].is_burned == true && counter > 0) {
                 counter -= 1;
             }
             console.log(counter);
             console.log(id);
-            const resource = acceptedResources.find(ar => ar[1] === data[18][counter].data.programmatic_json.fields[0].value);
+            const resource = acceptedResources.find(ar => ar[1] === data[22][counter].data.programmatic_json.fields[0].value);
             validatorMultiplier = resource[4];
             resourcePrice = resource[7];
             stabResourceRatio = internalPrice / resourcePrice;
-            var cr = ((data[18][counter].data.programmatic_json.fields[3].value / data[18][counter].data.programmatic_json.fields[4].value) * resourcePrice * 100 / internalPrice / validatorMultiplier);
-            var status = data[18][counter].data.programmatic_json.fields[6].variant_name;
+            var cr = ((data[22][counter].data.programmatic_json.fields[3].value / data[22][counter].data.programmatic_json.fields[4].value) * resourcePrice * 100 / internalPrice / validatorMultiplier);
+            var status = data[22][counter].data.programmatic_json.fields[6].variant_name;
             if (status == "ForceLiquidated") {
                 status = "Redeemed"
             }

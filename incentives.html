@@ -81,7 +81,7 @@
                     <p id ="text">Get rewarded for supplying STAB/XRD liquidity to the protocol-native pool by holding LPSTAB.</p>
                 </div>
                 <div class="stat-box">
-                    <h3 class="stat-title">Total Weekly Rewards</h3>
+                    <h3 class="stat-title" id="total-rewards-title">Total Weekly Rewards</h3>
                     <p class="stat-value" style="display: flex; align-items: center; justify-content: center">
                         <img src="images/ilislogo.png" alt="Logo" class="logo"/><span id="collateralAmount" style="margin-right:5px"><span id="total-weekly-rewards" style="margin-right:5px">-</span>
                     </p>
@@ -94,7 +94,7 @@
                 </div> 
             </div>
             <div class="info-box" id="info-apy-message" style="margin-top: 20px; text-align: center; cursor: auto; display: flex; align-items: center; justify-content: center;">
-                <p class="paragraph-2">The APY is calculated under the assumption of a 250% collateralization ratio.</p>
+                <p class="paragraph-2" id="info-apy-message-text">The APY is calculated under the assumption of a 250% collateralization ratio.</p>
             </div>
             <h3 class="light-header">YOUR SHARE</h3>
             <div class="statistics" style="margin-top: 20px;">
@@ -116,6 +116,10 @@
                     <p class="stat-value" style="display: flex; align-items: center; justify-content: center">
                         <img src="images/ilislogo.png" alt="Logo" class="logo"/><span id="collateralAmount" style="margin-right:5px"></span> <span
                             id="approximate-weekly-rewards">-</span>
+                    </p>
+                    <p class="stat-value" id="personal-apy-section" style="display: none; align-items: center; justify-content: center">
+                        <span id="collateralAmount" style="margin-right:5px"></span> <span
+                            id="personal-apy">-</span>
                     </p>
                 </div>
             </div>
@@ -158,8 +162,8 @@
             navbarContainer.classList.toggle('scrolled', window.scrollY > 0);
         });
     </script>
-    <script src="dist/main.js?v=1.5.3"></script>
-    <script src="dist/784.main.js?v=1.5.3"></script>
+    <script src="dist/main.js?v=1.9.9"></script>
+    <script src="dist/784.main.js?v=1.9.9"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 </body>
 

@@ -21,8 +21,11 @@
   "dependencies": {
     "@radixdlt/radix-dapp-toolkit": "latest",
     "chart.js": "^4.4.4",
+    "cors": "^2.8.5",
     "d3": "^7.9.0",
     "d3-interpolate": "^3.0.1",
+    "express": "^4.21.2",
+    "http-proxy-middleware": "^3.0.3",
     "rxjs": "^7.8.1",
     "simple-notify": "^1.0.4"
   }
